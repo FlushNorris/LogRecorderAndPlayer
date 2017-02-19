@@ -46,9 +46,13 @@
   <ItemGroup>
     <Compile Include="Common\ResourceHelper.cs" />
     <Compile Include="Common\SerializationHelper.cs" />
+    <Compile Include="Configuration\ConfigurationHelper.cs" />
+    <Compile Include="Configuration\LRAPConfigurationSection.cs" />
+    <Compile Include="Dynamic\DynAssembly.cs" />
     <Compile Include="HTTP\HttpHandler.cs" />
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
+    <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />
     <Compile Include="WCF\WCFHook.cs" />

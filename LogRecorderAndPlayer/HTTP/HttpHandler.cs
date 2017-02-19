@@ -8,11 +8,11 @@ using System.Web.SessionState;
 
 namespace LogRecorderAndPlayer
 {
-    public class HttpHandler : IHttpHandler, IRequiresSessionState
+    public class LRAPHttpHandler : IHttpHandler, IRequiresSessionState
     {
         internal readonly IHttpHandler OriginalHandler;
 
-        public HttpHandler(IHttpHandler originalHandler)
+        public LRAPHttpHandler(IHttpHandler originalHandler)
         {
             OriginalHandler = originalHandler;
         }

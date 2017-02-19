@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -11,7 +12,7 @@ using System.Web.UI;
 
 namespace LogRecorderAndPlayer
 {
-    public class HttpModule : IHttpModule
+    public class LRAPHttpModule : IHttpModule
     {
         private StreamWatcher watcher;
         private HttpApplication context;
@@ -83,7 +84,7 @@ namespace LogRecorderAndPlayer
 
             HttpApplication app = (HttpApplication)sender;            
 
-            HttpHandler resourceHttpHandler = HttpContext.Current.Handler as HttpHandler;
+            LRAPHttpHandler resourceHttpHandler = HttpContext.Current.Handler as LRAPHttpHandler;
 
             if (resourceHttpHandler != null)
             {
@@ -177,14 +178,14 @@ namespace LogRecorderAndPlayer
             }
 
             // swap the current handler
-            app.Context.Handler = new MyHttpHandler(app.Context.Handler);
+            app.Context.Handler = new LRAPHttpHandler(app.Context.Handler);
         }
 
         private void Context_PostAcquireRequestState(object sender, EventArgs e)
         {
             HttpApplication app = (HttpApplication)sender;
 
-            MyHttpHandler resourceHttpHandler = HttpContext.Current.Handler as MyHttpHandler;
+            LRAPHttpHandler resourceHttpHandler = HttpContext.Current.Handler as LRAPHttpHandler;
 
             if (resourceHttpHandler != null)
             {
@@ -209,13 +210,24 @@ namespace LogRecorderAndPlayer
                 VirtualPathUtility.GetExtension(filePath);
             if (fileExtension.Equals(".aspx"))
             {
-                context.Response.Write("<h1><font color=red>" +
-                    "HelloWorldModuleXXX: Beginning of Request" +
-                    "</font></h1><hr>");
+                //context.Response.Write("<h1><font color=red>" +
+                //    "HelloWorldModuleXXX: Beginning of Request" +
+                //    "</font></h1><hr>");
             }
         }
         private void Context_EndRequest(object sender, EventArgs e)
         {
+            var weee = DynamicAssembly.LoadAssemblyInstances<ILogRecorderAndPlayer>("DynAssembly.dll").FirstOrDefault();
+            var ost = weee.DoStuff(6, 10);
+
+            //instantiatedTypes[0].DoStuff()
+
+            //var logRecorderAndPlayer = ass.CreateInstance("DynAssembly.ClassDyn") as ILogRecorderAndPlayer;
+
+            //System.Configuration
+
+            var ccc = ConfigurationHelper.GetConfigurationSection();
+
             string value = watcher.ToString();
 
             this.context.Response.Filter = null;
@@ -239,19 +251,29 @@ namespace LogRecorderAndPlayer
                     currentPageViewState["WHAT"] = "ALTERED";
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
-                    context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
+                    //context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
                 }
                 else
                 {
-                    var thingy = new LoggingThingy() { Id = 0, Title = "Some title", Timestamp = DateTime.Now };
+                    //var thingy = new LoggingThingy() { Id = 0, Title = "Some title", Timestamp = DateTime.Now };
                     context.Response.Clear();
-                    context.Response.Write(SerializationHelper.Serialize(thingy, SerializationType.Json));
+                    context.Response.Write("OK"); //SerializationHelper.Serialize(thingy, SerializationType.Json));
 
                     context.Response.Status = "200 OK";
                     context.Response.StatusCode = 200;
                     context.Response.StatusDescription = "OK";
 
                 }
+            }
+
+            if (fileExtension.Equals(".ashx"))
+            {
+                //context.Response.Clear();
+                //context.Response.Write("OK"); //SerializationHelper.Serialize(thingy, SerializationType.Json));
+
+                //context.Response.Status = "200 OK";
+                //context.Response.StatusCode = 200;
+                //context.Response.StatusDescription = "OK";
             }
 
             if (false) //value.IndexOf("Wee") != -1)
