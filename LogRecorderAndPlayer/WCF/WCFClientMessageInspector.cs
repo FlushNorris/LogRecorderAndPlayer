@@ -33,7 +33,7 @@ namespace LogRecorderAndPlayer
             ModifyReceivedRequest(ref reply);
             //ChangeMessage(ref reply);
             //throw new NotImplementedException();
-        }
+        }        
 
         private void ModifyReceivedRequest(ref Message message)
         {
