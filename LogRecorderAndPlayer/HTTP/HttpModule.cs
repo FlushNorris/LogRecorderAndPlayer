@@ -22,7 +22,7 @@ namespace LogRecorderAndPlayer
         {
             this.context = context;
             context.BeginRequest += Context_BeginRequest;
-            context.EndRequest += Context_EndRequest;        
+            context.EndRequest += Context_EndRequest;
 
             context.AcquireRequestState += Context_AcquireRequestState;
             context.PostAcquireRequestState += Context_PostAcquireRequestState;
@@ -64,7 +64,6 @@ namespace LogRecorderAndPlayer
                 currentPageViewState["WHAT"] = "ALTERED";
 
                 //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
-
             }
 
             //Denne skal med!
@@ -74,9 +73,8 @@ namespace LogRecorderAndPlayer
                 pageX = HttpContext.Current.Handler as System.Web.UI.Page;
             }
             if (pageX != null)
-            {
-                string xxx = ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js");
-                pageX.ClientScript.RegisterClientScriptBlock(pageX.GetType(), "LogRecorderAndPlayerScript", $"<script language=\"javascript\">{xxx}</script>");
+            {                
+                pageX.ClientScript.RegisterClientScriptBlock(pageX.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.aspx\"></script>");
             }
         }
 
@@ -137,13 +135,15 @@ namespace LogRecorderAndPlayer
         }
 
         private void Context_PreSendRequestContent(object sender, EventArgs e)
-        {
-
+        {            
         }
 
         private void Context_PreSendRequestHeaders(object sender, EventArgs e)
         {
-
+            context.Response.Status = "200 OK";
+            context.Response.StatusCode = 200;
+            context.Response.StatusDescription = "OK";
+            //context.Response.HeadersWritten = true;
         }
 
         private void Context_RequestCompleted(object sender, EventArgs e)
@@ -208,7 +208,7 @@ namespace LogRecorderAndPlayer
             if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
             {
                 return;
-            }
+            }                
 
             watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
             this.context.Response.Filter = watcher;
@@ -224,7 +224,7 @@ namespace LogRecorderAndPlayer
                 //    "HelloWorldModuleXXX: Beginning of Request" +
                 //    "</font></h1><hr>");
 
-            }
+            }            
         }
 
         private void Context_EndRequest(object sender, EventArgs e)
@@ -254,6 +254,28 @@ namespace LogRecorderAndPlayer
             string filePath = context.Request.FilePath;
             string fileExtension =
                 VirtualPathUtility.GetExtension(filePath);
+
+            //if (filePath.ToLower() == "/logrecorderandplayer.aspx")
+            //{
+            //    context.Response.Clear();
+            //    context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
+
+            //    context.Response.Status = "200 OK";
+            //    context.Response.StatusCode = 200;
+            //    context.Response.StatusDescription = "OK";
+            //}
+
+            if (filePath.ToLower() == "/logrecorderandplayerjs.aspx")
+            {
+                context.Response.Clear();
+                context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
+                //context.Response.Status = "200 OK";
+                //context.Response.StatusCode = 200;
+                //context.Response.StatusDescription = "OK";
+                return;
+            }
+
+
             if (fileExtension.Equals(".aspx"))
             {
                 //context.CurrentHandler      
@@ -276,22 +298,22 @@ namespace LogRecorderAndPlayer
                     context.Response.Clear();
                     context.Response.Write("OK"); //SerializationHelper.Serialize(thingy, SerializationType.Json));
 
-                    context.Response.Status = "200 OK";
-                    context.Response.StatusCode = 200;
-                    context.Response.StatusDescription = "OK";
+                    //context.Response.Status = "200 OK";
+                    //context.Response.StatusCode = 200;
+                    //context.Response.StatusDescription = "OK";
 
                 }
             }
 
-            if (fileExtension.Equals(".ashx"))
-            {
-                //context.Response.Clear();
-                //context.Response.Write("OK"); //SerializationHelper.Serialize(thingy, SerializationType.Json));
+            //if (fileExtension.Equals(".ashx"))
+            //{
+            //    context.Response.Clear();
+            //    context.Response.Write("OK"); //SerializationHelper.Serialize(thingy, SerializationType.Json));
 
-                //context.Response.Status = "200 OK";
-                //context.Response.StatusCode = 200;
-                //context.Response.StatusDescription = "OK";
-            }
+            //    //context.Response.Status = "200 OK";
+            //    //context.Response.StatusCode = 200;
+            //    //context.Response.StatusDescription = "OK";
+            //}
 
             if (false) //value.IndexOf("Wee") != -1)
             {
