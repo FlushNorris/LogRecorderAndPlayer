@@ -10,7 +10,7 @@ namespace LogRecorderAndPlayer.Common
 {
     public static class ResourceHelper
     {
-        public static string DoStuff(string resourceName)
+        public static string GetResourceContent(string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
             //var resourceName = "MyCompany.MyProduct.MyFile.txt";

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.SessionState;
 using System.Web.UI;
+using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
 {
@@ -21,8 +22,7 @@ namespace LogRecorderAndPlayer
         {
             this.context = context;
             context.BeginRequest += Context_BeginRequest;
-            context.EndRequest += Context_EndRequest;
-
+            context.EndRequest += Context_EndRequest;        
 
             context.AcquireRequestState += Context_AcquireRequestState;
             context.PostAcquireRequestState += Context_PostAcquireRequestState;
@@ -38,14 +38,6 @@ namespace LogRecorderAndPlayer
             context.ResolveRequestCache += Context_ResolveRequestCache;
             context.RequestCompleted += Context_RequestCompleted;
             context.UpdateRequestCache += Context_UpdateRequestCache;
-            //context.PostAuthenticateRequest
-            //context.PostAuthorizeRequest
-            //context.PostLogRequest
-            //context.MapRequestHandler
-            //context.LogRequest
-
-            //    application.PostAcquireRequestState += new EventHandler(Application_PostAcquireRequestState);
-            //    application.PostMapRequestHandler += new EventHandler(Application_PostMapRequestHandler);
         }
 
         private void Context_ReleaseRequestState1(object sender, EventArgs e)
@@ -73,6 +65,18 @@ namespace LogRecorderAndPlayer
 
                 //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
 
+            }
+
+            //Denne skal med!
+            var pageX = context?.CurrentHandler as System.Web.UI.Page;
+            if (pageX == null)
+            {
+                pageX = HttpContext.Current.Handler as System.Web.UI.Page;
+            }
+            if (pageX != null)
+            {
+                string xxx = ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js");
+                pageX.ClientScript.RegisterClientScriptBlock(pageX.GetType(), "LogRecorderAndPlayerScript", $"<script language=\"javascript\">{xxx}</script>");
             }
         }
 
@@ -164,7 +168,6 @@ namespace LogRecorderAndPlayer
 
         private void Context_AcquireRequestState(object sender, EventArgs e)
         {
-
         }
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
@@ -193,6 +196,8 @@ namespace LogRecorderAndPlayer
                 HttpContext.Current.Handler = resourceHttpHandler.OriginalHandler;
             }
 
+            
+
             // -> at this point session state should be available
 
             Debug.Assert(app.Session != null, "it did not work :(");
@@ -200,10 +205,15 @@ namespace LogRecorderAndPlayer
 
         private void Context_BeginRequest(object sender, EventArgs e)
         {
+            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
+            {
+                return;
+            }
+
             watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
             this.context.Response.Filter = watcher;
 
-            HttpApplication application = (HttpApplication)sender;
+            HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
             string fileExtension =
@@ -213,10 +223,17 @@ namespace LogRecorderAndPlayer
                 //context.Response.Write("<h1><font color=red>" +
                 //    "HelloWorldModuleXXX: Beginning of Request" +
                 //    "</font></h1><hr>");
+
             }
         }
+
         private void Context_EndRequest(object sender, EventArgs e)
         {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
+            {
+                return;
+            }
+
             var weee = DynamicAssembly.LoadAssemblyInstances<ILogRecorderAndPlayer>("DynAssembly.dll").FirstOrDefault();
             var ost = weee.DoStuff(6, 10);
 
@@ -251,7 +268,7 @@ namespace LogRecorderAndPlayer
                     currentPageViewState["WHAT"] = "ALTERED";
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
-                    //context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
+                    context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
                 }
                 else
                 {
