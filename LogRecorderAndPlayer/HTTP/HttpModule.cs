@@ -63,18 +63,9 @@ namespace LogRecorderAndPlayer
                 var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
                 currentPageViewState["WHAT"] = "ALTERED";
 
-                //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
-            }
+                page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
 
-            //Denne skal med!
-            var pageX = context?.CurrentHandler as System.Web.UI.Page;
-            if (pageX == null)
-            {
-                pageX = HttpContext.Current.Handler as System.Web.UI.Page;
-            }
-            if (pageX != null)
-            {                
-                pageX.ClientScript.RegisterClientScriptBlock(pageX.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.aspx\"></script>");
+                //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
             }
         }
 
@@ -255,6 +246,13 @@ namespace LogRecorderAndPlayer
             string fileExtension =
                 VirtualPathUtility.GetExtension(filePath);
 
+            if (filePath.ToLower() == "/logrecorderandplayerjs.lrap")
+            {
+                context.Response.Clear();
+                context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
+                return;
+            }
+
             //if (filePath.ToLower() == "/logrecorderandplayer.aspx")
             //{
             //    context.Response.Clear();
@@ -265,15 +263,15 @@ namespace LogRecorderAndPlayer
             //    context.Response.StatusDescription = "OK";
             //}
 
-            if (filePath.ToLower() == "/logrecorderandplayerjs.aspx")
-            {
-                context.Response.Clear();
-                context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
-                //context.Response.Status = "200 OK";
-                //context.Response.StatusCode = 200;
-                //context.Response.StatusDescription = "OK";
-                return;
-            }
+            //if (filePath.ToLower() == "/logrecorderandplayerjs.aspx")
+            //{
+            //    context.Response.Clear();
+            //    context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
+            //    //context.Response.Status = "200 OK";
+            //    //context.Response.StatusCode = 200;
+            //    //context.Response.StatusDescription = "OK";
+            //    return;
+            //}
 
 
             if (fileExtension.Equals(".aspx"))

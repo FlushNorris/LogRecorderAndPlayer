@@ -12,6 +12,11 @@ namespace LogRecorderAndPlayer
     {
         internal readonly IHttpHandler OriginalHandler;
 
+        public LRAPHttpHandler()
+        {
+            
+        }
+
         public LRAPHttpHandler(IHttpHandler originalHandler)
         {
             OriginalHandler = originalHandler;
@@ -24,9 +29,8 @@ namespace LogRecorderAndPlayer
         }
 
         public bool IsReusable
-        {
-            // IsReusable must be set to false since class has a member!
-            get { return false; }
+        {            
+            get { return false; } // IsReusable must be set to false since class has a member!
         }
     }
 }
