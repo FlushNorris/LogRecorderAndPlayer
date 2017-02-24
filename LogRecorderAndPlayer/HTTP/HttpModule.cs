@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.SessionState;
 using System.Web.UI;
+using System.Web.UI.WebControls;
 using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
@@ -227,6 +228,60 @@ namespace LogRecorderAndPlayer
             }            
         }
 
+        /// <summary>
+        /// Gets the ID of the post back control.
+        /// 
+        /// See: http://geekswithblogs.net/mahesh/archive/2006/06/27/83264.aspx
+        /// </summary>
+        /// <param name = "page">The page.</param>
+        /// <returns></returns>
+        public static string GetPostBackControlClientId(HttpContext context, Page page)
+        {                        
+            if (!page.IsPostBack)
+                return string.Empty;
+
+            Control control = null;
+            // first we will check the "__EVENTTARGET" because if post back made by the controls
+            // which used "_doPostBack" function also available in Request.Form collection.
+            string controlName = context.Request.Params["__EVENTTARGET"];
+            if (!String.IsNullOrEmpty(controlName))
+            {
+                control = page.FindControl(controlName);
+            }
+            else
+            {
+                // if __EVENTTARGET is null, the control is a button type and we need to
+                // iterate over the form collection to find it
+
+                // ReSharper disable TooWideLocalVariableScope
+                string controlId;
+                Control foundControl;
+                // ReSharper restore TooWideLocalVariableScope
+
+                foreach (string ctl in context.Request.Form)
+                {
+                    // handle ImageButton they having an additional "quasi-property" 
+                    // in their Id which identifies mouse x and y coordinates
+                    if (ctl.EndsWith(".x") || ctl.EndsWith(".y"))
+                    {
+                        controlId = ctl.Substring(0, ctl.Length - 2);
+                        foundControl = page.FindControl(controlId);
+                    }
+                    else
+                    {
+                        foundControl = page.FindControl(ctl);
+                    }
+
+                    if (!(foundControl is IButtonControl)) continue;
+
+                    control = foundControl;
+                    break;
+                }
+            }
+
+            return control == null ? String.Empty : control.ClientID;
+        }
+
         private void Context_EndRequest(object sender, EventArgs e)
         {
             if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
@@ -310,9 +365,12 @@ namespace LogRecorderAndPlayer
                     context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
 
                     context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                    var xxx = GetPostBackControlClientId(context, page);
                     var sessionGUID = LoggingHelper.GetSessionGUID(page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
                     context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{pageGUID}\");</script>");
+
+                    
                 }
                 else
                 {
