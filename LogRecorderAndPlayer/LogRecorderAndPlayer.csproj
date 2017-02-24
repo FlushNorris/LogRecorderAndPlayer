@@ -53,6 +53,8 @@
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
+    <Compile Include="Logging\Logging.cs" />
+    <Compile Include="Logging\LogHandlerDTO.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />
     <Compile Include="WCF\WCFHook.cs" />
@@ -62,6 +64,7 @@
   <ItemGroup>
     <EmbeddedResource Include="JS\LogRecorderAndPlayer.js" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

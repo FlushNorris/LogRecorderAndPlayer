@@ -63,7 +63,13 @@ namespace LogRecorderAndPlayer
                 var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
                 currentPageViewState["WHAT"] = "ALTERED";
 
+                if (currentPageViewState["LRAP_PageGUID"] == null)
+                {
+                    currentPageViewState["LRAP_PageGUID"] = Guid.NewGuid().ToString();
+                }
+
                 page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerSessionID", $"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{currentPageViewState["LRAP_PageGUID"]}\");</script>");
 
                 //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
             }
@@ -207,14 +213,29 @@ namespace LogRecorderAndPlayer
             HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
-            string fileExtension =
-                VirtualPathUtility.GetExtension(filePath);
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            if (filePath.ToLower() == "/logrecorderandplayerhandler.lrap")
+            {
+                LoggingHelper.LogHandlerRequest(context.Request["request"]);                
+                return;
+            }
+
             if (fileExtension.Equals(".aspx"))
             {
                 //context.Response.Write("<h1><font color=red>" +
                 //    "HelloWorldModuleXXX: Beginning of Request" +
                 //    "</font></h1><hr>");
 
+                var page = ((System.Web.UI.Page)context.CurrentHandler);
+                if (page != null)
+                {
+                    var pageType = page.GetType();
+
+                    var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
+                    var currentPageViewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+                    currentPageViewState["WHAT"] = "ALTERED";
+                }
             }            
         }
 
@@ -277,7 +298,7 @@ namespace LogRecorderAndPlayer
             if (fileExtension.Equals(".aspx"))
             {
                 //context.CurrentHandler      
-
+                
                 var page = ((System.Web.UI.Page)context.CurrentHandler);
                 if (page != null)
                 {
