@@ -50,28 +50,16 @@ namespace LogRecorderAndPlayer
             HttpApplication application = (HttpApplication)sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
-            string fileExtension =
-                VirtualPathUtility.GetExtension(filePath);
-            if (fileExtension.Equals(".aspx"))
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            if (fileExtension != null && fileExtension.Equals(".aspx"))
             {
-                //context.CurrentHandler      
-
                 var page = ((System.Web.UI.Page)context.CurrentHandler);
-                var pageType = page.GetType();
+                LoggingHelper.SetupSession(context, page);               
 
-                var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                currentPageViewState["WHAT"] = "ALTERED";
-
-                if (currentPageViewState["LRAP_PageGUID"] == null)
-                {
-                    currentPageViewState["LRAP_PageGUID"] = Guid.NewGuid().ToString();
-                }
-
-                page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
-                page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerSessionID", $"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{currentPageViewState["LRAP_PageGUID"]}\");</script>");
-
-                //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
+                //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                ////New GUID generated on every request, but clientside (setPageGUID) ignores all except the first delivered
+                //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerSessionID", $"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{LoggingHelper.GetPageGUID(page)}\");</script>");                
             }
         }
 
@@ -110,9 +98,9 @@ namespace LogRecorderAndPlayer
                 var page = ((System.Web.UI.Page)context.CurrentHandler);
                 var pageType = page.GetType();
 
-                var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                currentPageViewState["WHAT"] = "ALTERED";
+                //var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
+                //var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+                //currentPageViewState["WHAT"] = "ALTERED";
 
                 //pageType.InvokeMember("SaveViewState", BindingFlags.InvokeMethod, null, page, null);
 
@@ -233,8 +221,8 @@ namespace LogRecorderAndPlayer
                     var pageType = page.GetType();
 
                     var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                    var currentPageViewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                    currentPageViewState["WHAT"] = "ALTERED";
+                    var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+                    //currentPageViewState["WHAT"] = "ALTERED";
                 }
             }            
         }
@@ -264,8 +252,7 @@ namespace LogRecorderAndPlayer
             HttpApplication application = (HttpApplication)sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
-            string fileExtension =
-                VirtualPathUtility.GetExtension(filePath);
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
             if (filePath.ToLower() == "/logrecorderandplayerjs.lrap")
             {
@@ -298,18 +285,34 @@ namespace LogRecorderAndPlayer
             if (fileExtension.Equals(".aspx"))
             {
                 //context.CurrentHandler      
-                
                 var page = ((System.Web.UI.Page)context.CurrentHandler);
+
                 if (page != null)
                 {
-                    var pageType = page.GetType();
+                    LoggingHelper.SetupPage(context, page);
+                    //context.Session is null in Context_EndRequest, and sometimes I got an exception for accessing the page.Session as well... 
+                    //hmm, but not not anymore? If it continues to fails, split this method up and write the session value in the temporary viewstate in Context_PreRequestHandlerExecute
 
-                    var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                    var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                    currentPageViewState["WHAT"] = "ALTERED";
+                    //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                    //New GUID generated on every request, but clientside (setPageGUID) ignores all except the first delivered
+                    //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerSessionID", $"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{LoggingHelper.GetPageGUID(page)}\");</script>");
+
+
+                    //var vvv = LoggingHelper.GetPageGUID(page);
+                    
+                    //var pageType = page.GetType();
+
+                    //var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
+                    //var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+                    //currentPageViewState["WHAT"] = "ALTERED";
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
                     context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
+
+                    context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                    var sessionGUID = LoggingHelper.GetSessionGUID(page);
+                    var pageGUID = LoggingHelper.GetPageGUID(context, page);
+                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{pageGUID}\");</script>");
                 }
                 else
                 {

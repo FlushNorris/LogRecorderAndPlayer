@@ -13,17 +13,26 @@
         //alert("current page = " + (v != null ? v : "null") + " and new = " + _pageGUID);
         if (v == null) {
             var $frm = getPrimaryForm();
-            var action = $frm.attr("action");
-            var tag = "lrap-pageid";
-            $frm.attr("action", addQryStrElement(action, tag, _pageGUID));
+            $("<input type='hidden' />")
+                .attr("class", "LRAP-PAGEGUID")
+                .attr("name", "LRAP-PAGEGUID")
+                .val(_pageGUID)
+                .appendTo($frm);
+            //var action = $frm.prop("action");
+            //var tag = "lrap-pageid";
+            //$frm.prop("action", addQryStrElement(action, tag, _pageGUID));
         }
     }
 
     function getPageGUID() {
         var $frm = getPrimaryForm();
-        var action = $frm.attr("action");
-        var tag = "lrap-pageid";
-        return getQryStrElement(action, tag);
+        var $pageGUID = $frm.find(".LRAP-PAGEGUID");
+        if ($pageGUID.size() != 0)
+            return $pageGUID.val();
+        return null;
+        //var action = $frm.prop("action");
+        //var tag = "lrap-pageid";
+        //return getQryStrElement(action, tag);
     }
 
     function getPrimaryForm() {
