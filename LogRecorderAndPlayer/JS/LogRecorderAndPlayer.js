@@ -1,10 +1,34 @@
 ﻿var logRecorderAndPlayer = (function () {
 
     var handlerLRAPUrl = "/logrecorderandplayerhandler.lrap";
-    var pageGUID = null;
+    //var pageGUID = null;
 
     function setPageGUID(_pageGUID) {
-        pageGUID = _pageGUID;
+
+        //alert("setPageGUID called with (current=" + (pageGUID != null ? pageGUID : "null") + ") : " + _pageGUID);
+        //alert(getPageGUID());
+        //pageGUID = _pageGUID;
+
+        var v = getPageGUID();
+        //alert("current page = " + (v != null ? v : "null") + " and new = " + _pageGUID);
+        if (v == null) {
+            var $frm = getPrimaryForm();
+            var action = $frm.attr("action");
+            var tag = "lrap-pageid";
+            $frm.attr("action", addQryStrElement(action, tag, _pageGUID));
+        }
+    }
+
+    function getPageGUID() {
+        var $frm = getPrimaryForm();
+        var action = $frm.attr("action");
+        var tag = "lrap-pageid";
+        return getQryStrElement(action, tag);
+    }
+
+    function getPrimaryForm() {
+        var __EVENTTARGET = $("#__EVENTTARGET");
+        return __EVENTTARGET.closest("form");
     }
 
     var LogType =
@@ -108,9 +132,14 @@
         handlers.splice(0, 0, handler);
     }
 
+    function getQryStrElement(url, tag) {
+        var regEx = new RegExp("[?&]" + tag + "=([^\\Z$?&]*)[\\Z$?&]*");
+        var m = regEx.exec(url);
+        if (m != null) return m[1];       
+        return null;
+    }
+
     function removeQryStrElement(url, tag) {
-        //    var regEx = new RegExp("[?&]" + tag + "=\\d+[\\Z$?&]*");
-        //var regEx = new RegExp("[?&]" + tag + "=.+[\\Z$?&]+");
         var regEx = new RegExp("[?&]" + tag + "=[^\\Z$?&]*[\\Z$?&]*");
         var m = regEx.exec(url);
         if (m != null) {
@@ -135,6 +164,7 @@
     var publicMethods = {};
     publicMethods.init = init;
     publicMethods.setPageGUID = setPageGUID;
+    publicMethods.getPageGUID = getPageGUID;
     return publicMethods;
 }());
 
