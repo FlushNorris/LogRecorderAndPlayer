@@ -368,9 +368,7 @@ namespace LogRecorderAndPlayer
                     var xxx = GetPostBackControlClientId(context, page);
                     var sessionGUID = LoggingHelper.GetSessionGUID(page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
-                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{pageGUID}\");</script>");
-
-                    
+                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{pageGUID}\");logRecorderAndPlayer.setSessionGUID(\"{sessionGUID}\");</script>");                    
                 }
                 else
                 {

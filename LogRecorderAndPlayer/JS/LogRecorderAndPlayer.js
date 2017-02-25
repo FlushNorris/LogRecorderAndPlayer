@@ -1,16 +1,9 @@
 ﻿var logRecorderAndPlayer = (function () {
 
     var handlerLRAPUrl = "/logrecorderandplayerhandler.lrap";
-    //var pageGUID = null;
 
     function setPageGUID(_pageGUID) {
-
-        //alert("setPageGUID called with (current=" + (pageGUID != null ? pageGUID : "null") + ") : " + _pageGUID);
-        //alert(getPageGUID());
-        //pageGUID = _pageGUID;
-
         var v = getPageGUID();
-        //alert("current page = " + (v != null ? v : "null") + " and new = " + _pageGUID);
         if (v == null) {
             var $frm = getPrimaryForm();
             $("<input type='hidden' />")
@@ -18,9 +11,6 @@
                 .attr("name", "LRAP-PAGEGUID")
                 .val(_pageGUID)
                 .appendTo($frm);
-            //var action = $frm.prop("action");
-            //var tag = "lrap-pageid";
-            //$frm.prop("action", addQryStrElement(action, tag, _pageGUID));
         }
     }
 
@@ -30,10 +20,27 @@
         if ($pageGUID.size() != 0)
             return $pageGUID.val();
         return null;
-        //var action = $frm.prop("action");
-        //var tag = "lrap-pageid";
-        //return getQryStrElement(action, tag);
     }
+
+    function setSessionGUID(_sessionGUID) {
+        var v = getSessionGUID();
+        if (v == null) {
+            var $frm = getPrimaryForm();
+            $("<input type='hidden' />")
+                .attr("class", "LRAP-SESSIONGUID")
+                .attr("name", "LRAP-SESSIONGUID")
+                .val(_sessionGUID)
+                .appendTo($frm);
+        }
+    }
+
+    function getSessionGUID() {
+        var $frm = getPrimaryForm();
+        var $sessionGUID = $frm.find(".LRAP-SESSIONGUID");
+        if ($sessionGUID.size() != 0)
+            return $sessionGUID.val();
+        return null;
+    }    
 
     function getPrimaryForm() {
         var __EVENTTARGET = $("#__EVENTTARGET");
@@ -59,8 +66,9 @@
                 return;
             }
             alert('ajax send... log this');
-            options.url = addLogRecorderIdToQueryString(options.url, 1337); //1337-id'et kommer fra sidens qry-string ..... eller dvs, hvis den ikke er i qry-stringen, så skal den overføres via JS
-            doStuff(1337, options.url); //timestamp nytter jo ikke noget at det er clientside tid, men hvordan skal jeg så få den rigtige frem? En løsningen ville jo være at overføre serverens tid 
+            setupHandlerUrlForLogging();
+            //options.url = addLogRecorderIdToQueryString(options.url, 1337); //1337-id'et kommer fra sidens qry-string ..... eller dvs, hvis den ikke er i qry-stringen, så skal den overføres via JS
+            //doStuff(1337, options.url); //timestamp nytter jo ikke noget at det er clientside tid, men hvordan skal jeg så få den rigtige frem? En løsningen ville jo være at overføre serverens tid 
 
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
         });
@@ -71,6 +79,10 @@
         bindWindowUnloadFirst(function () {
             alert('first unload');
         });
+    }
+
+    function setupHandlerUrlForLogging() {
+        
     }
 
     function setupAjaxEvents(type) {
@@ -171,9 +183,13 @@
     ///#endregion
 
     var publicMethods = {};
+
     publicMethods.init = init;
     publicMethods.setPageGUID = setPageGUID;
     publicMethods.getPageGUID = getPageGUID;
+    publicMethods.setSessionGUID = setSessionGUID;
+    publicMethods.getSessionGUID = getSessionGUID;
+    
     return publicMethods;
 }());
 
