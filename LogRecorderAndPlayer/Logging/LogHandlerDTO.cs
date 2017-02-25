@@ -9,13 +9,15 @@ namespace LogRecorderAndPlayer
 {
     public class LogHandlerDTO
     {
+        public Guid GUID { get; set; } //To ensure we do not have dublets, if we need to log again due to an error
         public Guid SessionGUID { get; set; }
         public Guid PageGUID { get; set; }
-        public Guid BundleGUID { get; set; } //Bundle Ajax requests
+        public Guid? BundleGUID { get; set; } //Bundle Ajax requests
         public Guid? ProgressGUID { get; set; } //For LogPlayer
         public DateTime Timestamp { get; set; }
         public LogType LogType { get; set; }
         public string Element { get; set; } //(#ElementId [+ TagPath], HandlerUrl)
+        public string Value { get; set; }
     }
 
     public enum LogType

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
+using LogRecorderAndPlayer.Logging;
 
 namespace LogRecorderAndPlayer
 {
@@ -94,7 +95,21 @@ namespace LogRecorderAndPlayer
 
         public static void LogHandlerRequest(string request)
         {
-            SerializationHelper.Deserialize<Int32>(request, SerializationType.Json);
+            var logElements = SerializationHelper.Deserialize<LogHandlerDTO[]>(request, SerializationType.Json);
+            var config = ConfigurationHelper.GetConfigurationSection();
+            switch (config.LogType)
+            {
+                case LRAPConfigurationSectionLogType.CSV:
+                    LoggingCSV.LogElements(config.FilePath, logElements);
+                    break;
+                case LRAPConfigurationSectionLogType.JSON:
+                    LoggingJSON.LogElements(config.FilePath, logElements);
+                    break;
+                case LRAPConfigurationSectionLogType.DB:
+                    break;
+                default:
+                    throw new Exception("Unknown LogType");
+            }
         }
     }
 }

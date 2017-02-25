@@ -20,11 +20,13 @@ namespace LogRecorderAndPlayer
     {
         public static T Deserialize<T>(string content, SerializationType serializationType = SerializationType.Xml)
         {
-            var obj = Activator.CreateInstance<T>();
+//            var obj = Activator.CreateInstance<T>();
+
+            T obj = default(T);
 
             using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
             {
-                var serializer = GetSerializer(obj.GetType(), serializationType);
+                var serializer = GetSerializer(typeof(T)/*obj.GetType()*/, serializationType);
                 obj = (T)serializer.ReadObject(ms);
             }
 

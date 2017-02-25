@@ -36,6 +36,7 @@
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -53,7 +54,9 @@
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
-    <Compile Include="Logging\Logging.cs" />
+    <Compile Include="Logging\LoggingHelper.cs" />
+    <Compile Include="Logging\LoggingCSV.cs" />
+    <Compile Include="Logging\LoggingJSON.cs" />
     <Compile Include="Logging\LogHandlerDTO.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />

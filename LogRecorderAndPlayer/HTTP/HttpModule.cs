@@ -24,43 +24,36 @@ namespace LogRecorderAndPlayer
             this.context = context;
             context.BeginRequest += Context_BeginRequest;
             context.EndRequest += Context_EndRequest;
-
-            context.AcquireRequestState += Context_AcquireRequestState;
-            context.PostAcquireRequestState += Context_PostAcquireRequestState;
             context.PostMapRequestHandler += Context_PostMapRequestHandler;
-            context.PostReleaseRequestState += Context_PostReleaseRequestState;
-            context.PostRequestHandlerExecute += Context_PostRequestHandlerExecute; //læs session firsttime
-            context.PostResolveRequestCache += Context_PostResolveRequestCache;
-            context.PostUpdateRequestCache += Context_PostUpdateRequestCache;
             context.PreRequestHandlerExecute += Context_PreRequestHandlerExecute;
-            context.PreSendRequestHeaders += Context_PreSendRequestHeaders;
-            context.PreSendRequestContent += Context_PreSendRequestContent;
-            context.ReleaseRequestState += Context_ReleaseRequestState;
-            context.ResolveRequestCache += Context_ResolveRequestCache;
-            context.RequestCompleted += Context_RequestCompleted;
-            context.UpdateRequestCache += Context_UpdateRequestCache;
-        }
+            context.PostRequestHandlerExecute += Context_PostRequestHandlerExecute; //læs session firsttime
+            context.PostAcquireRequestState += Context_PostAcquireRequestState;
 
-        private void Context_ReleaseRequestState1(object sender, EventArgs e)
-        {
 
+            //Ikke nødvendige på nuværende tidspunkt:
+            //context.AcquireRequestState += Context_AcquireRequestState;
+            //context.PostReleaseRequestState += Context_PostReleaseRequestState;
+            //context.PostResolveRequestCache += Context_PostResolveRequestCache;
+            //context.PostUpdateRequestCache += Context_PostUpdateRequestCache;
+            //context.PreSendRequestHeaders += Context_PreSendRequestHeaders;
+            //context.PreSendRequestContent += Context_PreSendRequestContent;
+            //context.ReleaseRequestState += Context_ReleaseRequestState;
+            //context.ResolveRequestCache += Context_ResolveRequestCache;
+            //context.RequestCompleted += Context_RequestCompleted;
+            //context.UpdateRequestCache += Context_UpdateRequestCache;
         }
 
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
-            HttpApplication application = (HttpApplication)sender;
+            HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
             string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
             if (fileExtension != null && fileExtension.Equals(".aspx"))
             {
-                var page = ((System.Web.UI.Page)context.CurrentHandler);
-                LoggingHelper.SetupSession(context, page);               
-
-                //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerScript", "<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
-                ////New GUID generated on every request, but clientside (setPageGUID) ignores all except the first delivered
-                //page.ClientScript.RegisterClientScriptBlock(page.GetType(), "LogRecorderAndPlayerSessionID", $"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{LoggingHelper.GetPageGUID(page)}\");</script>");                
+                var page = ((System.Web.UI.Page) context.CurrentHandler);
+                LoggingHelper.SetupSession(context, page);
             }
         }
 
@@ -70,7 +63,7 @@ namespace LogRecorderAndPlayer
             //Og måske også sættes her... hmm
             //Skal være serializeable session value instanser, men det skal det jo alligevel for overhovedet at kunne være placeret i sessionen
 
-            HttpApplication app = (HttpApplication)sender;            
+            HttpApplication app = (HttpApplication) sender;
 
             LRAPHttpHandler resourceHttpHandler = HttpContext.Current.Handler as LRAPHttpHandler;
 
@@ -80,34 +73,34 @@ namespace LogRecorderAndPlayer
                 HttpContext.Current.Handler = resourceHttpHandler.OriginalHandler;
             }
 
-            // -> at this point session state should be available
+            //// -> at this point session state should be available
 
-            Debug.Assert(app.Session != null, "it did not work :(");
+            //Debug.Assert(app.Session != null, "it did not work :(");
 
-            //Dette virkede helt fint, er bare kommenteret ud pga test
-            //app.Session["SomeSessionThingy"] = "Woohooo";
+            ////Dette virkede helt fint, er bare kommenteret ud pga test
+            ////app.Session["SomeSessionThingy"] = "Woohooo";
 
-            HttpApplication application = (HttpApplication)sender;
-            HttpContext context = application.Context;
-            string filePath = context.Request.FilePath;
-            string fileExtension =
-                VirtualPathUtility.GetExtension(filePath);
-            if (fileExtension.Equals(".aspx"))
-            {
-                //context.CurrentHandler      
+            //HttpApplication application = (HttpApplication)sender;
+            //HttpContext context = application.Context;
+            //string filePath = context.Request.FilePath;
+            //string fileExtension =
+            //    VirtualPathUtility.GetExtension(filePath);
+            //if (fileExtension.Equals(".aspx"))
+            //{
+            //    //context.CurrentHandler      
 
-                var page = ((System.Web.UI.Page)context.CurrentHandler);
-                var pageType = page.GetType();
+            //    var page = ((System.Web.UI.Page)context.CurrentHandler);
+            //    var pageType = page.GetType();
 
-                //var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                //var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                //currentPageViewState["WHAT"] = "ALTERED";
+            //    //var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
+            //    //var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+            //    //currentPageViewState["WHAT"] = "ALTERED";
 
-                //pageType.InvokeMember("SaveViewState", BindingFlags.InvokeMethod, null, page, null);
+            //    //pageType.InvokeMember("SaveViewState", BindingFlags.InvokeMethod, null, page, null);
 
-                //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
+            //    //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
 
-            }
+            //}
         }
 
         private void Context_PostResolveRequestCache(object sender, EventArgs e)
@@ -121,7 +114,7 @@ namespace LogRecorderAndPlayer
         }
 
         private void Context_PreSendRequestContent(object sender, EventArgs e)
-        {            
+        {
         }
 
         private void Context_PreSendRequestHeaders(object sender, EventArgs e)
@@ -158,7 +151,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
         {
-            HttpApplication app = (HttpApplication)sender;
+            HttpApplication app = (HttpApplication) sender;
 
             if (app.Context.Handler is IReadOnlySessionState || app.Context.Handler is IRequiresSessionState)
             {
@@ -172,7 +165,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostAcquireRequestState(object sender, EventArgs e)
         {
-            HttpApplication app = (HttpApplication)sender;
+            HttpApplication app = (HttpApplication) sender;
 
             LRAPHttpHandler resourceHttpHandler = HttpContext.Current.Handler as LRAPHttpHandler;
 
@@ -182,7 +175,7 @@ namespace LogRecorderAndPlayer
                 HttpContext.Current.Handler = resourceHttpHandler.OriginalHandler;
             }
 
-            
+
 
             // -> at this point session state should be available
 
@@ -194,7 +187,7 @@ namespace LogRecorderAndPlayer
             if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
             {
                 return;
-            }                
+            }
 
             watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
             this.context.Response.Filter = watcher;
@@ -204,11 +197,11 @@ namespace LogRecorderAndPlayer
             string filePath = context.Request.FilePath;
             string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
-            if (filePath.ToLower() == "/logrecorderandplayerhandler.lrap")
-            {
-                LoggingHelper.LogHandlerRequest(context.Request["request"]);                
-                return;
-            }
+            //if (filePath.ToLower() == "/logrecorderandplayerhandler.lrap")
+            //{
+            //    LoggingHelper.LogHandlerRequest(context.Request["request"]);                
+            //    return;
+            //}
 
             if (fileExtension.Equals(".aspx"))
             {
@@ -216,16 +209,16 @@ namespace LogRecorderAndPlayer
                 //    "HelloWorldModuleXXX: Beginning of Request" +
                 //    "</font></h1><hr>");
 
-                var page = ((System.Web.UI.Page)context.CurrentHandler);
+                var page = ((System.Web.UI.Page) context.CurrentHandler);
                 if (page != null)
                 {
                     var pageType = page.GetType();
 
                     var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                    var currentPageViewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+                    var currentPageViewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
                     //currentPageViewState["WHAT"] = "ALTERED";
                 }
-            }            
+            }
         }
 
         /// <summary>
@@ -236,7 +229,7 @@ namespace LogRecorderAndPlayer
         /// <param name = "page">The page.</param>
         /// <returns></returns>
         public static string GetPostBackControlClientId(HttpContext context, Page page)
-        {                        
+        {
             if (!page.IsPostBack)
                 return string.Empty;
 
@@ -284,7 +277,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
-            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
+            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
             {
                 return;
             }
@@ -304,7 +297,7 @@ namespace LogRecorderAndPlayer
 
             this.context.Response.Filter = null;
 
-            HttpApplication application = (HttpApplication)sender;
+            HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
             string filePath = context.Request.FilePath;
             string fileExtension = VirtualPathUtility.GetExtension(filePath);
@@ -336,6 +329,21 @@ namespace LogRecorderAndPlayer
             //    return;
             //}
 
+            if (filePath.ToLower() == "/logrecorderandplayerhandler.lrap")
+            {
+                try
+                {
+                    LoggingHelper.LogHandlerRequest(context.Request["request"]);
+                }
+                catch (Exception ex)
+                {
+                    context.Response.Status = "500 Internal Server Error";
+                    context.Response.StatusCode = 500;
+                    context.Response.StatusDescription = "Internal Server Error";
+                }
+                
+                return;
+            }
 
             if (fileExtension.Equals(".aspx"))
             {
@@ -363,7 +371,7 @@ namespace LogRecorderAndPlayer
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
                     context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
-
+                    
                     context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
                     var xxx = GetPostBackControlClientId(context, page);
                     var sessionGUID = LoggingHelper.GetSessionGUID(page);
