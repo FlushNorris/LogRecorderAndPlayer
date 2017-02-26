@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Script.Serialization;
 using System.Web.SessionState;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -219,7 +221,55 @@ namespace LogRecorderAndPlayer
                     //currentPageViewState["WHAT"] = "ALTERED";
                 }
             }
+            if (fileExtension.Equals(".ashx"))
+            {                
+                var guid = new Guid(context.Request.Params[Consts.GUIDTag]);
+                var sessionGUID = new Guid(context.Request.Params[Consts.SessionGUIDTag]);
+                var pageGUID = new Guid(context.Request.Params[Consts.PageGUIDTag]);
+                var bundleGUID = new Guid(context.Request.Params[Consts.BundleGUIDTag]);
+
+                LoggingHelper.LogElement(new LogHandlerDTO()
+                {
+                    GUID = guid,
+                    SessionGUID = sessionGUID,
+                    PageGUID = pageGUID,
+                    BundleGUID = bundleGUID,
+                    ProgressGUID = null,
+                    Timestamp = DateTime.Now, //TODO Look into this
+                    LogType = LogType.OnAjaxRequestReceived,
+                    Element = context.Request.Params["URL"],
+                    Value = JavaScriptSerializeNameValueCollection(context.Request.Form)
+                });                
+            }
         }
+
+        private static string JavaScriptSerializeNameValueCollection(NameValueCollection nvc)
+        {
+            var dict = new Dictionary<string, object>();
+            foreach(var key in nvc.AllKeys)
+            {
+                dict.Add(key, nvc[key]);
+            }
+            return new JavaScriptSerializer().Serialize(dict);
+        }
+
+        //For Request.Params.. but we got way too much info for logging
+        //private static string BuildASHXLoggingValue(NameValueCollection nvc)
+        //{
+        //    var dict = new Dictionary<string, object>();
+        //    foreach (var key in nvc.AllKeys)
+        //    {
+        //        if (key == Consts.GUIDTag ||
+        //            key == Consts.SessionGUIDTag ||
+        //            key == Consts.PageGUIDTag ||
+        //            key == Consts.BundleGUIDTag ||
+        //            Consts.ForbiddenRequestParams.Contains(key))
+        //            continue;
+
+        //        dict.Add(key, nvc[key]);                
+        //    }
+        //    return new JavaScriptSerializer().Serialize(dict);
+        //}
 
         /// <summary>
         /// Gets the ID of the post back control.
@@ -282,18 +332,13 @@ namespace LogRecorderAndPlayer
                 return;
             }
 
-            var weee = DynamicAssembly.LoadAssemblyInstances<ILogRecorderAndPlayer>("DynAssembly.dll").FirstOrDefault();
-            var ost = weee.DoStuff(6, 10);
+            //TODO Look into this dynamic assembly.. it works, but is not in use atm
+            //var weee = DynamicAssembly.LoadAssemblyInstances<ILogRecorderAndPlayer>("DynAssembly.dll").FirstOrDefault();
+            //var ost = weee.DoStuff(6, 10);
 
-            //instantiatedTypes[0].DoStuff()
+            //var ccc = ConfigurationHelper.GetConfigurationSection();
 
-            //var logRecorderAndPlayer = ass.CreateInstance("DynAssembly.ClassDyn") as ILogRecorderAndPlayer;
-
-            //System.Configuration
-
-            var ccc = ConfigurationHelper.GetConfigurationSection();
-
-            string value = watcher.ToString();
+            string reponse = watcher.ToString();
 
             this.context.Response.Filter = null;
 
@@ -376,7 +421,7 @@ namespace LogRecorderAndPlayer
                     var xxx = GetPostBackControlClientId(context, page);
                     var sessionGUID = LoggingHelper.GetSessionGUID(page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
-                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.setPageGUID(\"{pageGUID}\");logRecorderAndPlayer.setSessionGUID(\"{sessionGUID}\");</script>");                    
+                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>");                    
                 }
                 else
                 {
@@ -390,7 +435,26 @@ namespace LogRecorderAndPlayer
 
                 }
             }
+            if (fileExtension.Equals(".ashx"))
+            {
+                var guid = new Guid(context.Request.Params[Consts.GUIDTag]);
+                var sessionGUID = new Guid(context.Request.Params[Consts.SessionGUIDTag]);
+                var pageGUID = new Guid(context.Request.Params[Consts.PageGUIDTag]);
+                var bundleGUID = new Guid(context.Request.Params[Consts.BundleGUIDTag]);
 
+                LoggingHelper.LogElement(new LogHandlerDTO()
+                {
+                    GUID = guid,
+                    SessionGUID = sessionGUID,
+                    PageGUID = pageGUID,
+                    BundleGUID = bundleGUID,
+                    ProgressGUID = null,
+                    Timestamp = DateTime.Now, //TODO Look into this
+                    LogType = LogType.OnAjaxResponseSend,
+                    Element = context.Request.Params["URL"],
+                    Value = reponse
+                });
+            }
             //if (fileExtension.Equals(".ashx"))
             //{
             //    context.Response.Clear();

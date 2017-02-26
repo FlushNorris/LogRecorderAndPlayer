@@ -8,9 +8,9 @@ namespace LogRecorderAndPlayer.Logging
 {
     public static class LoggingCSV
     {
-        public static void LogElements(string filePath, LogHandlerDTO[] logElements)
+        public static void LogElement(string filePath, LogHandlerDTO logElement)
         {
-            //System.IO.
+            throw new NotImplementedException();
         } 
     }
 }

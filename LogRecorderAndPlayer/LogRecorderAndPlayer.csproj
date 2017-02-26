@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\Consts.cs" />
     <Compile Include="Common\ResourceHelper.cs" />
     <Compile Include="Common\SerializationHelper.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />

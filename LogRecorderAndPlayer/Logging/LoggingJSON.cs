@@ -11,22 +11,18 @@ namespace LogRecorderAndPlayer.Logging
 {
     public static class LoggingJSON
     {
-        public static void LogElements(string filePath, LogHandlerDTO[] logElements)
+        public static void LogElement(string filePath, LogHandlerDTO logElement)
         {
-            foreach (var logElement in logElements)
+            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}.json";
+            var f = File.CreateText(filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName);
+            try
             {
-//                var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.GUID}_{(logElement.BundleGUID?.ToString() ?? "NoBundle")}_{logElement.PageGUID}_{logElement.SessionGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}.json";
-                var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}.json";
-                var f = File.CreateText(filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName);
-                try
-                {
-                    f.Write(new JavaScriptSerializer().Serialize(logElement));
-                }
-                finally
-                {
-                    f.Close();
-                }               
+                f.Write(new JavaScriptSerializer().Serialize(logElement));
             }
+            finally
+            {
+                f.Close();
+            }               
         }
 
         private static string prepareElementForIO(string element)

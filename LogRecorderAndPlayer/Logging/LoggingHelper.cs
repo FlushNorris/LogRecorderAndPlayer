@@ -96,14 +96,25 @@ namespace LogRecorderAndPlayer
         public static void LogHandlerRequest(string request)
         {
             var logElements = SerializationHelper.Deserialize<LogHandlerDTO[]>(request, SerializationType.Json);
+            foreach (var logElement in logElements)
+            {
+                logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
+                LogElement(logElement);
+            }
+        }
+
+        public static void LogElement(LogHandlerDTO logElement)
+        {
+            
+
             var config = ConfigurationHelper.GetConfigurationSection();
             switch (config.LogType)
             {
                 case LRAPConfigurationSectionLogType.CSV:
-                    LoggingCSV.LogElements(config.FilePath, logElements);
+                    LoggingCSV.LogElement(config.FilePath, logElement);
                     break;
                 case LRAPConfigurationSectionLogType.JSON:
-                    LoggingJSON.LogElements(config.FilePath, logElements);
+                    LoggingJSON.LogElement(config.FilePath, logElement);
                     break;
                 case LRAPConfigurationSectionLogType.DB:
                     break;

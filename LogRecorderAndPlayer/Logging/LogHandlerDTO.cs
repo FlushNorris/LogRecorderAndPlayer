@@ -18,6 +18,8 @@ namespace LogRecorderAndPlayer
         public LogType LogType { get; set; }
         public string Element { get; set; } //(#ElementId [+ TagPath], HandlerUrl)
         public string Value { get; set; }
+        public int Times { get; set; }
+        public DateTime? TimestampEnd { get; set; }
     }
 
     public enum LogType
@@ -27,6 +29,20 @@ namespace LogRecorderAndPlayer
         OnAjaxResponseSend=2,
         OnAjaxResponseReceived=3,
         OnBlur=4,
-        OnFocus=5
+        OnFocus=5,
+        OnChange=6,
+        OnSelect = 7,
+        OnCopy = 8,
+        OnCut = 9,
+        OnPaste = 10,
+        OnKeyDown = 11,
+        OnKeyUp = 12,
+        OnKeyPress = 13,
+        OnMouseDown = 14,
+        OnMouseUp = 15,
+        OnClick = 16,
+        OnDblClick = 17,
+        OnSearch = 18,
+        OnResize = 19
     }
 }
