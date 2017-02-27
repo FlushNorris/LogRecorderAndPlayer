@@ -202,7 +202,10 @@
     //regionend: Path to the element from the closest self or parent with an ID
 
     function setupBasicClientsideControlEvents($input) {
-        $input.bind('mousedown', function () { //left click vs right click?
+        $input.bind('mousedown', function (event) { //left click vs right click?
+            if (!event)
+                event = window.event;
+
             var v = {
                 button: event.button, //0=left 1=middle 2=right //The best supported
                 shiftKey: event.shiftKey,
@@ -220,7 +223,10 @@
             //console.log("mousedown: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
         });
 
-        $input.bind('mouseup', function () { //left click vs right click?
+        $input.bind('mouseup', function (event) { //left click vs right click?
+            if (!event)
+                event = window.event;
+
             var v = {
                 button: event.button,
                 shiftKey: event.shiftKey,
@@ -237,7 +243,10 @@
             //            console.log("mouseup: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
         });
 
-        $input.bind('click', function () {
+        $input.bind('click', function (event) {
+            if (!event)
+                event = window.event;
+
             if (event.pageX != 0 && event.pageY != 0) {
                 var elmP = document.elementFromPoint(event.pageX, event.pageY);
                 if (this != elmP)
@@ -248,7 +257,10 @@
             //console.log("click: " + getElementPath(this));
         });
 
-        $input.bind('dblclick', function () {
+        $input.bind('dblclick', function (event) {
+            if (!event)
+                event = window.event;
+
             if (event.pageX != 0 && event.pageY != 0) {
                 var elmP = document.elementFromPoint(event.pageX, event.pageY);
                 if (this != elmP)
@@ -300,7 +312,9 @@
             logElementEx(LogType.OnPaste, getElementPath(this), $(this).val());
         });
 
-        $input.bind('keydown', function () { //keyCode is incase-sensative
+        $input.bind('keydown', function (event) { //keyCode is incase-sensative
+            if (!event)
+                event = window.event;
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -315,7 +329,9 @@
             logElementEx(LogType.OnKeyDown, getElementPath(this), JSON.stringify(v));
         });
 
-        $input.bind('keyup', function () { //keyCode is incase-sensative
+        $input.bind('keyup', function (event) { //keyCode is incase-sensative
+            if (!event)
+                event = window.event;
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -330,7 +346,9 @@
             logElementEx(LogType.OnKeyUp, getElementPath(this), JSON.stringify(v));
         });
 
-        $input.bind('keypress', function () { //keyCode is case-sensative
+        $input.bind('keypress', function (event) { //keyCode is case-sensative
+            if (!event)
+                event = window.event;
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -429,11 +447,13 @@
         if (logElementsTimer != null) {
             clearTimeout(logElementsTimer);
             logElementsTimer = null;
-            handleLogElements();
+            handleLogElements(false);
         }
     }
 
-    function handleLogElements() {
+    function handleLogElements(async) {
+        async = typeof (async) == "undefined" || async;
+
         //console.log("handleLogElements called");
         var logElementsForHandler = logElements;
         logElements = [];
@@ -442,6 +462,7 @@
 
         if (logElementsForHandler.length > 0) {
             $.ajax({
+                async: async,
                 LRAPCall: true,
                 type: "POST",
                 url: handlerLRAPUrl,
@@ -467,6 +488,8 @@
         logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value);
     }
 
+    var debugCounter = 1;
+
     function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value) {
         var request = {
             GUID: generateGUID(),
@@ -479,7 +502,8 @@
             Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
             Value: value,
             Times: 1,
-            TimestampEnd: null
+            TimestampEnd: null,
+            DebugCounter: debugCounter++
         };
         if (logElements.length > 0) {            
             var lastRequest = logElements[logElements.length - 1];
@@ -618,8 +642,8 @@
         window.addEventListener("beforeunload", function (e) {
             fn();
 
-            (e || window.event).returnValue = null;
-            return null;
+            //(e || window.event).returnValue = null;
+            //return null;
         });
     }
 
