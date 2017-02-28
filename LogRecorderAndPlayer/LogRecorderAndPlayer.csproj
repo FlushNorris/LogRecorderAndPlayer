@@ -55,9 +55,11 @@
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
+    <Compile Include="Logging\LoggingHandler.cs" />
     <Compile Include="Logging\LoggingHelper.cs" />
-    <Compile Include="Logging\LoggingCSV.cs" />
-    <Compile Include="Logging\LoggingJSON.cs" />
+    <Compile Include="Logging\LoggingToCSV.cs" />
+    <Compile Include="Logging\LoggingToJSON.cs" />
+    <Compile Include="Logging\LoggingPage.cs" />
     <Compile Include="Logging\LogHandlerDTO.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />

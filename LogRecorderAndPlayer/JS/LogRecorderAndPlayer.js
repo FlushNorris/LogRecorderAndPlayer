@@ -79,7 +79,14 @@
         OnClick: 16,
         OnDblClick: 17,
         OnSearch: 18,
-        OnResize: 19
+        OnResize: 19,
+        OnDragStart: 20,
+        OnDragEnd: 21,
+        OnDragOver: 22,
+        OnDrop: 23,
+        OnScroll: 24,
+        OnPageRequest: 25,
+        OnPageResponse: 26
     };
 
     function init(sessionGUID, pageGUID) {
@@ -89,7 +96,7 @@
         setupAjaxEvents('ajaxSend');
         setupAjaxEvents('ajaxComplete');
 
-        bindAjaxSendFirst(function (event, xhr, options) {
+        bindAjaxSendFirst(function (event, xhr, options) {            
             if (options.LRAPCall) { //To avoid recurrency when logging via LRAP
                 return;
             }
@@ -104,7 +111,7 @@
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
         });
 
-        bindAjaxCompleteLast(function (event, xhr, options) {
+        bindAjaxCompleteFirst(function (event, xhr, options) { //has to be first, if one of the other events is doing a redirect we may not get to do this event...
             if (options.LRAPCall) { //To avoid recurrency when logging via LRAP
                 return;
             }
@@ -120,6 +127,10 @@
                 LogType.OnAjaxResponseReceived,
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
+
+            handleLogElements();
+            //Because this global ajaxComplete is called after the $.ajax-instance's success/complete/error which could do a redirect of the page, we are called.. but so late that the logelement-timer is no longer active, therefore
+            //do a handleLogElements to clean up always after an ajax-call
         });        
 
         bindWindowUnloadFirst(function () {
@@ -201,8 +212,9 @@
     }
     //regionend: Path to the element from the closest self or parent with an ID
 
-    function setupBasicClientsideControlEvents($input) {
-        $input.bind('mousedown', function (event) { //left click vs right click?
+    function setupBasicClientsideControlEvents($input, inputSelector) {
+        var $document = $(document);
+        $document.on('mousedown', inputSelector, function (event) { //left click vs right click?
             if (!event)
                 event = window.event;
 
@@ -223,7 +235,7 @@
             //console.log("mousedown: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
         });
 
-        $input.bind('mouseup', function (event) { //left click vs right click?
+        $document.on('mouseup', inputSelector, function (event) { //left click vs right click?
             if (!event)
                 event = window.event;
 
@@ -243,7 +255,7 @@
             //            console.log("mouseup: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
         });
 
-        $input.bind('click', function (event) {
+        $document.on('click', inputSelector, function (event) {
             if (!event)
                 event = window.event;
 
@@ -257,7 +269,7 @@
             //console.log("click: " + getElementPath(this));
         });
 
-        $input.bind('dblclick', function (event) {
+        $document.on('dblclick', inputSelector, function (event) {
             if (!event)
                 event = window.event;
 
@@ -271,65 +283,103 @@
             //console.log("dblclick: " + getElementPath(this));
         });
 
-        $.each($input,
-            function (idx, obj) {
-                //moveLastEventToFirst(obj, 'mouseover');
-                //moveLastEventToFirst(obj, 'mouseout');
-                moveLastEventToFirst(obj, 'mousedown');
-                moveLastEventToFirst(obj, 'mouseup');
-                moveLastEventToFirst(obj, 'click');
-                moveLastEventToFirst(obj, 'dblclick');
-            });
+        $document.on('dragstart', inputSelector, function (event) {            
+            var target = event.target ? event.target : event.srcElement;
+
+            logElementEx(LogType.OnDragStart, getElementPath(target), "");
+        });
+
+        $document.on('dragend', inputSelector, function (event) {
+            var target = event.target ? event.target : event.srcElement;
+
+            logElementEx(LogType.OnDragEnd, getElementPath(target), "");
+        });
+
+        $document.on('dragover', inputSelector, function (event) { //To tell if it is allowed
+            var target = event.target ? event.target : event.srcElement;
+
+            logElementEx(LogType.OnDragOver, getElementPath(target), "");
+        });
+
+        $document.on('drop', inputSelector, function (event) {
+            var target = event.target ? event.target : event.srcElement;
+
+            logElementEx(LogType.OnDrop, getElementPath(target), "");
+        });
+
+        $document.on('scroll', inputSelector, function (event) {
+            var $this = $(this);
+
+            var v = {
+                top: $this.scrollTop(),
+                left: $this.scrollLeft()
+            };
+
+            logElementEx(LogType.OnScroll, getElementPath(this), JSON.stringify(v), compareLogElementsNoValue);
+        });
+
+        //$.each($input,
+        //    function (idx, obj) {
+        //        //moveLastEventToFirst(obj, 'mouseover');
+        //        //moveLastEventToFirst(obj, 'mouseout');
+        //        moveLastEventToFirst(obj, 'mousedown');
+        //        moveLastEventToFirst(obj, 'mouseup');
+        //        moveLastEventToFirst(obj, 'click');
+        //        moveLastEventToFirst(obj, 'dblclick');
+        //    });
     }
 
-    function setupInputClientsideControlEvents($input) {
+    function setupInputClientsideControlEvents($input, inputSelector) {
 
-        $input.bind('blur', function () {
+        var $document = $(document);
+
+        $document.on('blur', inputSelector, function () {
             logElementEx(LogType.OnBlur, getElementPath(this), "");
         });
 
-        $input.bind('focus', function () {
+        $document.on('focus', inputSelector, function () {
             logElementEx(LogType.OnFocus, getElementPath(this), "");
         });
 
-        $input.bind('change', function () {
+        $document.on('change', inputSelector, function () {
             logElementEx(LogType.OnChange, getElementPath(this), $(this).val());
         });
 
-        $input.bind('select', function () { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
+        $document.on('select', inputSelector, function () { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
             logElementEx(LogType.OnSelect, getElementPath(this), getSelectionText(this));
         });
 
-        $input.bind('copy', function () {
+        $document.on('copy', inputSelector, function () {
             logElementEx(LogType.OnCopy, getElementPath(this), getSelectionText(this));
         });
 
-        $input.bind('cut', function () {
+        $document.on('cut', inputSelector, function () {
             logElementEx(LogType.OnCut, getElementPath(this), getSelectionText(this));
         });
 
-        $input.bind('paste', function () {
+        $document.on('paste', inputSelector, function () {
             logElementEx(LogType.OnPaste, getElementPath(this), $(this).val());
         });
 
-        $input.bind('keydown', function (event) { //keyCode is incase-sensative
-            if (!event)
-                event = window.event;
-            var charCode = event.which || event.keyCode;
-            var ch = String.fromCharCode(charCode);
+        $document.on('keydown', inputSelector,
+            function (event) {
+                if (!event)
+                    event = window.event;
+                var charCode = event.which || event.keyCode;
+                var ch = String.fromCharCode(charCode);
 
-            var v = {
-                charCode: charCode,
-                ch: ch,
-                shiftKey: event.shiftKey,
-                altKey: event.altKey,
-                ctrlKey: event.ctrlKey
-            };
+                var v = {
+                    charCode: charCode,
+                    ch: ch,
+                    shiftKey: event.shiftKey,
+                    altKey: event.altKey,
+                    ctrlKey: event.ctrlKey
+                };
 
-            logElementEx(LogType.OnKeyDown, getElementPath(this), JSON.stringify(v));
-        });
+                logElementEx(LogType.OnKeyDown, getElementPath(this), JSON.stringify(v));
+            });
 
-        $input.bind('keyup', function (event) { //keyCode is incase-sensative
+        $document.on('keyup', inputSelector, function (event) { //keyCode is incase-sensative
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -346,7 +396,7 @@
             logElementEx(LogType.OnKeyUp, getElementPath(this), JSON.stringify(v));
         });
 
-        $input.bind('keypress', function (event) { //keyCode is case-sensative
+        $document.on('keypress', inputSelector, function (event) { //keyCode is case-sensative
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -363,19 +413,31 @@
             logElementEx(LogType.OnKeyPress, getElementPath(this), JSON.stringify(v));
         });        
 
-        $.each($input,
-            function (idx, obj) {
-                moveLastEventToFirst(obj, 'blur');
-                moveLastEventToFirst(obj, 'focus');
-                moveLastEventToFirst(obj, 'change');
-                moveLastEventToFirst(obj, 'select');
-                moveLastEventToFirst(obj, 'copy');
-                moveLastEventToFirst(obj, 'cut');
-                moveLastEventToFirst(obj, 'paste');
-                moveLastEventToFirst(obj, 'keydown');
-                moveLastEventToFirst(obj, 'keyup');
-                moveLastEventToFirst(obj, 'keypress');
-            });
+        //$.each($input,
+        //    function (idx, obj) {
+        //        moveLastEventToFirst(obj, 'blur');
+        //        moveLastEventToFirst(obj, 'focus');
+        //        moveLastEventToFirst(obj, 'change');
+        //        moveLastEventToFirst(obj, 'select');
+        //        moveLastEventToFirst(obj, 'copy');
+        //        moveLastEventToFirst(obj, 'cut');
+        //        moveLastEventToFirst(obj, 'paste');
+        //        //moveLastEventToFirst(obj, 'keydown');
+        //        moveLastEventToFirst(obj, 'keyup');
+        //        moveLastEventToFirst(obj, 'keypress');
+        //    });
+    }
+
+    function logWindowScroll()
+    {
+        var $this = $(window);
+
+        var v = {
+            top: $this.scrollTop(),
+            left: $this.scrollLeft()
+        };
+
+        logElementEx(LogType.OnScroll, "window", JSON.stringify(v), compareLogElementsNoValue);
     }
 
     function logWindowSize() {
@@ -383,28 +445,30 @@
             width: window.outerWidth,
             height: window.outerHeight
         };        
-        logElementEx(LogType.OnResize, "window", JSON.stringify(v));
+        logElementEx(LogType.OnResize, "window", JSON.stringify(v), compareLogElementsNoValue);
     }
 
     function setupAllClientsideControlEvents() {
-        var $form = $("form");
-        $form.bind('submit', function() {
+        var $document = $(document);
+//        var $form = $("form");
+        $document.on('submit', 'form', function () {
             //logElementEx(LogType.OnSubmit, getElementPath(this), "");
         });
 
-        $form.bind('reset', function() {
+        $document.on('reset', 'form', function () {
             //logElementEx(LogType.OnReset, getElementPath(this), "");
         });
 
+        setupBasicClientsideControlEvents($("p"));
         setupBasicClientsideControlEvents($("div"));
         setupBasicClientsideControlEvents($("span"));
         setupBasicClientsideControlEvents($("textarea"));
         setupBasicClientsideControlEvents($("input"));
-        setupInputClientsideControlEvents($("textarea"));
-        setupInputClientsideControlEvents($("input")); //last one goes on top
+        setupInputClientsideControlEvents($("textarea"), "textarea");
+        setupInputClientsideControlEvents($("input"), "input"); //last one goes on top
 
-        var $inputSearch = $("input[type=search]");
-        $inputSearch.bind('search', function() {            
+//        var $inputSearch = $("input[type=search]");
+        $document.on('search', "input[type=search]", function () {
             logElementEx(LogType.OnSearch, getElementPath(this), $(this).val());
         });
 
@@ -420,8 +484,14 @@
         //    //document.getElementById("demo").innerHTML = txt;
         //});
 
-        $(window).resize(logWindowSize);
+        var $window = $(window);
+
+        $window.resize(logWindowSize);
         logWindowSize();
+
+        $window.scroll(logWindowScroll);        
+        logWindowScroll();
+
 
         //https://www.w3schools.com/jsref/dom_obj_event.asp
         //scroll?
@@ -484,13 +554,17 @@
         }
     }
 
-    function logElementEx(logType, element, value) {
-        logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value);
+    function logElementEx(logType, element, value, compareFn) {
+        logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value, compareFn);
     }
 
-    var debugCounter = 1;
+    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value, compareFn) {
+        if (element == null)
+            return;
 
-    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value) {
+        if (typeof (compareFn) == "undefined")
+            compareFn = compareLogElements;
+
         var request = {
             GUID: generateGUID(),
             SessionGUID: sessionGUID,
@@ -500,29 +574,34 @@
             Timestamp: getDataMemberDate(timestamp),
             LogType: logType,
             Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
+            Element2: null,
             Value: value,
             Times: 1,
-            TimestampEnd: null,
-            DebugCounter: debugCounter++
+            TimestampEnd: null
         };
         if (logElements.length > 0) {            
             var lastRequest = logElements[logElements.length - 1];
-            if (compareLogElements(lastRequest, request)) {
+            if (compareFn(lastRequest, request)) {
                 lastRequest.Times += request.Times;
                 lastRequest.TimestampEnd = request.Timestamp;
+                lastRequest.Value = request.Value;
                 return;
             }
         }
         logElements.push(request);        
     }
 
+    function compareLogElementsNoValue(le1, le2) { //NoValue compare would be used with e.g. resize events
+        return le1.SessionGUID == le2.SessionGUID &&
+            le1.PageGUID == le2.PageGUID &&
+            le1.BundleGUID == le2.BundleGUID &&
+            le1.ProgressGUID == le2.ProgressGUID &&
+            le1.LogType == le2.LogType &&
+            le1.Element == le2.Element;
+    }
+
     function compareLogElements(le1, le2) { //Without Timestamp compares atm... should build a delay check on the compare        
-        return  le1.SessionGUID == le2.SessionGUID &&
-                le1.PageGUID == le2.PageGUID &&
-                le1.BundleGUID == le2.BundleGUID &&
-                le1.ProgressGUID == le2.ProgressGUID &&
-                le1.LogType == le2.LogType &&
-                le1.Element == le2.Element &&
+        return compareLogElementsNoValue(le1, le2) &&
                 le1.Value == le2.Value;
     }
 
@@ -623,6 +702,11 @@
         moveLastEventToFirst(document, "ajaxSend");
     }
 
+    function bindAjaxCompleteFirst(fn) {
+        $(document).ajaxComplete(fn);
+        moveLastEventToFirst(document, "ajaxComplete");
+    }
+
     function bindAjaxCompleteLast(fn) {
         $(document).ajaxComplete(fn);
     }
@@ -649,6 +733,8 @@
 
     function moveLastEventToFirst(elm, action) {
         var handlers = $._data(elm, 'events')[action];
+        if (!handlers)
+            return;
         var handler = handlers.pop();
         handlers.splice(0, 0, handler);
     }

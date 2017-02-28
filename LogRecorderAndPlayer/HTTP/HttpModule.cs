@@ -54,8 +54,15 @@ namespace LogRecorderAndPlayer
 
             if (fileExtension != null && fileExtension.Equals(".aspx"))
             {
-                var page = ((System.Web.UI.Page) context.CurrentHandler);
+                var page = ((System.Web.UI.Page) context.CurrentHandler);                
                 LoggingHelper.SetupSession(context, page);
+                LoggingHelper.SetupPage(context, page);
+
+                LoggingPage.LogRequest(context, page);
+            }
+            if (fileExtension != null && fileExtension.Equals(".ashx"))
+            {
+                LoggingHandler.LogRequest(context);
             }
         }
 
@@ -204,125 +211,8 @@ namespace LogRecorderAndPlayer
             //    LoggingHelper.LogHandlerRequest(context.Request["request"]);                
             //    return;
             //}
-
-            if (fileExtension.Equals(".aspx"))
-            {
-                //context.Response.Write("<h1><font color=red>" +
-                //    "HelloWorldModuleXXX: Beginning of Request" +
-                //    "</font></h1><hr>");
-
-                var page = ((System.Web.UI.Page) context.CurrentHandler);
-                if (page != null)
-                {
-                    var pageType = page.GetType();
-
-                    var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-                    var currentPageViewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-                    //currentPageViewState["WHAT"] = "ALTERED";
-                }
-            }
-            if (fileExtension.Equals(".ashx"))
-            {                
-                var guid = new Guid(context.Request.Params[Consts.GUIDTag]);
-                var sessionGUID = new Guid(context.Request.Params[Consts.SessionGUIDTag]);
-                var pageGUID = new Guid(context.Request.Params[Consts.PageGUIDTag]);
-                var bundleGUID = new Guid(context.Request.Params[Consts.BundleGUIDTag]);
-
-                LoggingHelper.LogElement(new LogHandlerDTO()
-                {
-                    GUID = guid,
-                    SessionGUID = sessionGUID,
-                    PageGUID = pageGUID,
-                    BundleGUID = bundleGUID,
-                    ProgressGUID = null,
-                    Timestamp = DateTime.Now, //TODO Look into this
-                    LogType = LogType.OnAjaxRequestReceived,
-                    Element = context.Request.Params["URL"],
-                    Value = JavaScriptSerializeNameValueCollection(context.Request.Form)
-                });                
-            }
-        }
-
-        private static string JavaScriptSerializeNameValueCollection(NameValueCollection nvc)
-        {
-            var dict = new Dictionary<string, object>();
-            foreach(var key in nvc.AllKeys)
-            {
-                dict.Add(key, nvc[key]);
-            }
-            return new JavaScriptSerializer().Serialize(dict);
-        }
-
-        //For Request.Params.. but we got way too much info for logging
-        //private static string BuildASHXLoggingValue(NameValueCollection nvc)
-        //{
-        //    var dict = new Dictionary<string, object>();
-        //    foreach (var key in nvc.AllKeys)
-        //    {
-        //        if (key == Consts.GUIDTag ||
-        //            key == Consts.SessionGUIDTag ||
-        //            key == Consts.PageGUIDTag ||
-        //            key == Consts.BundleGUIDTag ||
-        //            Consts.ForbiddenRequestParams.Contains(key))
-        //            continue;
-
-        //        dict.Add(key, nvc[key]);                
-        //    }
-        //    return new JavaScriptSerializer().Serialize(dict);
-        //}
-
-        /// <summary>
-        /// Gets the ID of the post back control.
-        /// 
-        /// See: http://geekswithblogs.net/mahesh/archive/2006/06/27/83264.aspx
-        /// </summary>
-        /// <param name = "page">The page.</param>
-        /// <returns></returns>
-        public static string GetPostBackControlClientId(HttpContext context, Page page)
-        {
-            if (!page.IsPostBack)
-                return string.Empty;
-
-            Control control = null;
-            // first we will check the "__EVENTTARGET" because if post back made by the controls
-            // which used "_doPostBack" function also available in Request.Form collection.
-            string controlName = context.Request.Params["__EVENTTARGET"];
-            if (!String.IsNullOrEmpty(controlName))
-            {
-                control = page.FindControl(controlName);
-            }
-            else
-            {
-                // if __EVENTTARGET is null, the control is a button type and we need to
-                // iterate over the form collection to find it
-
-                // ReSharper disable TooWideLocalVariableScope
-                string controlId;
-                Control foundControl;
-                // ReSharper restore TooWideLocalVariableScope
-
-                foreach (string ctl in context.Request.Form)
-                {
-                    // handle ImageButton they having an additional "quasi-property" 
-                    // in their Id which identifies mouse x and y coordinates
-                    if (ctl.EndsWith(".x") || ctl.EndsWith(".y"))
-                    {
-                        controlId = ctl.Substring(0, ctl.Length - 2);
-                        foundControl = page.FindControl(controlId);
-                    }
-                    else
-                    {
-                        foundControl = page.FindControl(ctl);
-                    }
-
-                    if (!(foundControl is IButtonControl)) continue;
-
-                    control = foundControl;
-                    break;
-                }
-            }
-
-            return control == null ? String.Empty : control.ClientID;
+            
+            
         }
 
         private void Context_EndRequest(object sender, EventArgs e)
@@ -338,7 +228,7 @@ namespace LogRecorderAndPlayer
 
             //var ccc = ConfigurationHelper.GetConfigurationSection();
 
-            string reponse = watcher.ToString();
+            string response = watcher.ToString();
 
             this.context.Response.Filter = null;
 
@@ -397,7 +287,9 @@ namespace LogRecorderAndPlayer
 
                 if (page != null)
                 {
-                    LoggingHelper.SetupPage(context, page);
+                    //LoggingHelper.SetupPage(context, page); //Moved to Context_PreRequestHandlerExecute
+
+
                     //context.Session is null in Context_EndRequest, and sometimes I got an exception for accessing the page.Session as well... 
                     //hmm, but not not anymore? If it continues to fails, split this method up and write the session value in the temporary viewstate in Context_PreRequestHandlerExecute
 
@@ -407,7 +299,7 @@ namespace LogRecorderAndPlayer
 
 
                     //var vvv = LoggingHelper.GetPageGUID(page);
-                    
+
                     //var pageType = page.GetType();
 
                     //var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -415,12 +307,14 @@ namespace LogRecorderAndPlayer
                     //currentPageViewState["WHAT"] = "ALTERED";
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
-                    context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");
-                    
-                    context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
-                    var xxx = GetPostBackControlClientId(context, page);
+
                     var sessionGUID = LoggingHelper.GetSessionGUID(page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
+                    
+                    LoggingPage.LogResponse(context, page, response);                              
+
+//                    context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");                    
+                    context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
                     context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>");                    
                 }
                 else
@@ -437,23 +331,7 @@ namespace LogRecorderAndPlayer
             }
             if (fileExtension.Equals(".ashx"))
             {
-                var guid = new Guid(context.Request.Params[Consts.GUIDTag]);
-                var sessionGUID = new Guid(context.Request.Params[Consts.SessionGUIDTag]);
-                var pageGUID = new Guid(context.Request.Params[Consts.PageGUIDTag]);
-                var bundleGUID = new Guid(context.Request.Params[Consts.BundleGUIDTag]);
-
-                LoggingHelper.LogElement(new LogHandlerDTO()
-                {
-                    GUID = guid,
-                    SessionGUID = sessionGUID,
-                    PageGUID = pageGUID,
-                    BundleGUID = bundleGUID,
-                    ProgressGUID = null,
-                    Timestamp = DateTime.Now, //TODO Look into this
-                    LogType = LogType.OnAjaxResponseSend,
-                    Element = context.Request.Params["URL"],
-                    Value = reponse
-                });
+                LoggingHandler.LogResponse(context, response);                
             }
             //if (fileExtension.Equals(".ashx"))
             //{

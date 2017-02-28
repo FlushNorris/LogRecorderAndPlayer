@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
-using LogRecorderAndPlayer.Logging;
 
 namespace LogRecorderAndPlayer
 {
@@ -111,16 +110,36 @@ namespace LogRecorderAndPlayer
             switch (config.LogType)
             {
                 case LRAPConfigurationSectionLogType.CSV:
-                    LoggingCSV.LogElement(config.FilePath, logElement);
+                    LoggingToCSV.LogElement(config.FilePath, logElement);
                     break;
                 case LRAPConfigurationSectionLogType.JSON:
-                    LoggingJSON.LogElement(config.FilePath, logElement);
+                    LoggingToJSON.LogElement(config.FilePath, logElement);
                     break;
                 case LRAPConfigurationSectionLogType.DB:
                     break;
                 default:
                     throw new Exception("Unknown LogType");
             }
+        }
+
+        public static string StripUrlForLRAP(string url)
+        {
+            url = url.Trim();
+            var i = url.IndexOf('?');
+            if (i == -1 || i == url.Length-1)
+                return url;
+            var query = url.Substring(i + 1).Trim();
+            url = url.Substring(0, i);
+
+            var queryBuilder = HttpUtility.ParseQueryString(query);
+            queryBuilder.Remove(Consts.GUIDTag);
+            queryBuilder.Remove(Consts.SessionGUIDTag);
+            queryBuilder.Remove(Consts.PageGUIDTag);
+            queryBuilder.Remove(Consts.BundleGUIDTag);
+
+            query = queryBuilder.ToString();
+           
+            return $"{url}{(String.IsNullOrWhiteSpace(query)?"":"?")}{query}";
         }
     }
 }

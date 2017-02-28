@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.IO.Compression;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -70,5 +72,35 @@ namespace LogRecorderAndPlayer
 
             return serializer;
         }
+
+        public static string SerializeNameValueCollection(NameValueCollection nvc, SerializationType serializationType)
+        {
+            var dict = new Dictionary<string, object>();
+            foreach (var key in nvc.AllKeys)
+            {
+                dict.Add(key, nvc[key]);
+            }
+            return Serialize(dict, serializationType);
+            //return new JavaScriptSerializer().Serialize(dict);
+        }
+
+        //For Request.Params.. but we got way too much info for logging
+        //private static string BuildASHXLoggingValue(NameValueCollection nvc)
+        //{
+        //    var dict = new Dictionary<string, object>();
+        //    foreach (var key in nvc.AllKeys)
+        //    {
+        //        if (key == Consts.GUIDTag ||
+        //            key == Consts.SessionGUIDTag ||
+        //            key == Consts.PageGUIDTag ||
+        //            key == Consts.BundleGUIDTag ||
+        //            Consts.ForbiddenRequestParams.Contains(key))
+        //            continue;
+
+        //        dict.Add(key, nvc[key]);                
+        //    }
+        //    return new JavaScriptSerializer().Serialize(dict);
+        //}        
+
     }
 }

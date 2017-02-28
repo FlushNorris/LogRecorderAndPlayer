@@ -7,9 +7,9 @@ using System.Web.Script.Serialization;
 using File = System.IO.File;
 using Path = System.IO.Path;
 
-namespace LogRecorderAndPlayer.Logging
+namespace LogRecorderAndPlayer
 {
-    public static class LoggingJSON
+    public static class LoggingToJSON
     {
         public static void LogElement(string filePath, LogHandlerDTO logElement)
         {

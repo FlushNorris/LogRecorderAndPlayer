@@ -16,7 +16,8 @@ namespace LogRecorderAndPlayer
         public Guid? ProgressGUID { get; set; } //For LogPlayer
         public DateTime Timestamp { get; set; }
         public LogType LogType { get; set; }
-        public string Element { get; set; } //(#ElementId [+ TagPath], HandlerUrl)
+        public string Element { get; set; } //(#ElementId [+ TagPath], HandlerUrl, PageUrl) 
+        public string Element2 { get; set; } //e.g. postBackControlClientId or JSON-RequestForm for handlers which isn't connected request/response-wise by a LRAPGUID
         public string Value { get; set; }
         public int Times { get; set; }
         public DateTime? TimestampEnd { get; set; }
@@ -43,6 +44,13 @@ namespace LogRecorderAndPlayer
         OnClick = 16,
         OnDblClick = 17,
         OnSearch = 18,
-        OnResize = 19
+        OnResize = 19,
+        OnDragStart = 20,
+        OnDragEnd = 21,
+        OnDragOver = 22,
+        OnDrop = 23,
+        OnScroll = 24,
+        OnPageRequest = 25,
+        OnPageResponse = 26
     }
 }

@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogRecorderAndPlayer.Logging
+namespace LogRecorderAndPlayer
 {
-    public static class LoggingCSV
+    public static class LoggingToCSV
     {
         public static void LogElement(string filePath, LogHandlerDTO logElement)
         {
