@@ -128,7 +128,7 @@
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
 
-            handleLogElements();
+            //handleLogElements();
             //Because this global ajaxComplete is called after the $.ajax-instance's success/complete/error which could do a redirect of the page, we are called.. but so late that the logelement-timer is no longer active, therefore
             //do a handleLogElements to clean up always after an ajax-call
         });        
@@ -393,7 +393,7 @@
                 ctrlKey: event.ctrlKey
             };
 
-            logElementEx(LogType.OnKeyUp, getElementPath(this), JSON.stringify(v));
+            logElementEx(LogType.OnKeyUp, getElementPath(this), JSON.stringify(v), compareLogElementsKeyup, combineLogElementsKeyup);
         });
 
         $document.on('keypress', inputSelector, function (event) { //keyCode is case-sensative
@@ -409,8 +409,8 @@
                 altKey: event.altKey,
                 ctrlKey: event.ctrlKey
             };
-
-            logElementEx(LogType.OnKeyPress, getElementPath(this), JSON.stringify(v));
+            
+            logElementEx(LogType.OnKeyPress, getElementPath(this), JSON.stringify(v), compareLogElementsKeypress, combineLogElementsKeypress);
         });        
 
         //$.each($input,
@@ -492,7 +492,6 @@
         $window.scroll(logWindowScroll);        
         logWindowScroll();
 
-
         //https://www.w3schools.com/jsref/dom_obj_event.asp
         //scroll?
         //pageshow?
@@ -516,9 +515,9 @@
     function finalizeLogger() {
         if (logElementsTimer != null) {
             clearTimeout(logElementsTimer);
-            logElementsTimer = null;
-            handleLogElements(false);
+            logElementsTimer = null;            
         }
+        handleLogElements(false);
     }
 
     function handleLogElements(async) {
@@ -527,6 +526,10 @@
         //console.log("handleLogElements called");
         var logElementsForHandler = logElements;
         logElements = [];
+
+        console.log("logElementsForHandler.length = " + logElementsForHandler.length);
+        compressItAll(logElementsForHandler);
+        console.log("logElementsForHandler.length = " + logElementsForHandler.length);
 
         //console.log("logElementsForHandler.length = " + logElementsForHandler.length);
 
@@ -554,16 +557,19 @@
         }
     }
 
-    function logElementEx(logType, element, value, compareFn) {
-        logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value, compareFn);
+    function logElementEx(logType, element, value, compareFn, combineFn) {
+        logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value, compareFn, combineFn);
     }
 
-    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value, compareFn) {
+    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value, compareFn, combineFn) {
         if (element == null)
             return;
 
         if (typeof (compareFn) == "undefined")
             compareFn = compareLogElements;
+
+        if (typeof (combineFn) == "undefined")
+            combineFn = combineLogElements;
 
         var request = {
             GUID: generateGUID(),
@@ -579,16 +585,192 @@
             Times: 1,
             TimestampEnd: null
         };
-        if (logElements.length > 0) {            
-            var lastRequest = logElements[logElements.length - 1];
-            if (compareFn(lastRequest, request)) {
-                lastRequest.Times += request.Times;
-                lastRequest.TimestampEnd = request.Timestamp;
-                lastRequest.Value = request.Value;
+        logElements.push(request);
+
+    //    compactLogElementList(compareFn, combineFn);
+    }
+
+    function getCompareFnByLogType(logType) {
+        switch (logType) {
+            case LogType.OnKeyPress:
+                return compareLogElementsKeypress;
+            case LogType.OnKeyUp:
+                return compareLogElementsKeyup;
+            case LogType.OnScroll:
+                return compareLogElementsNoValue;
+            case LogType.OnResize:
+                return compareLogElementsNoValue;
+            default:
+                return compareLogElements;
+        }
+    }
+
+    function getCombineFnByLogType(logType) {
+        switch(logType) {
+            case LogType.OnKeyPress:
+                return combineLogElementsKeypress;
+            case LogType.OnKeyUp:
+                return combineLogElementsKeyup;
+            default:
+                return combineLogElements;
+        }
+    }   
+
+    function compressItAll(logElements) {
+        for(var i = logElements.length - 1; i > 0; i--) {
+            var le = logElements[i];
+
+            var compareFn = getCompareFnByLogType(le.LogType);
+            var combineFn = getCombineFnByLogType(le.LogType);
+
+            var removedElements = compactLogElementList(logElements, i, compareFn, combineFn);
+            //removedElements=0 træk 0 fra
+            //removedElements=1 træk 0 fra, da den nye jo også kan collapse videre
+            //removedElements=2 træk 1 fra da vi har mistet en
+            //removedElements=3 træk 2 fra...
+
+            //i -= (removedElements == 0 ? 0 : removedElements - 1);
+        }
+    }
+
+    //Returns how many logElements were removed
+    function compactLogElementList(logElements, fromIdx, compareFn, combineFn) {
+        var removed = 0;
+        while (fromIdx > 0) {
+            var secondLastRequest = logElements[fromIdx - 1];
+            var lastRequest = logElements[fromIdx];
+            var compareResult = compareFn(secondLastRequest, lastRequest, logElements, fromIdx);
+            if (compareResult) {
+                combineFn(secondLastRequest, lastRequest, compareResult);
+
+                //logElements.pop(); //remove lastRequest
+                logElements.splice(fromIdx, 1);
+                removed++;
+                fromIdx--;
+            } else
                 return;
+        }
+    }
+
+    //function compactLogElementList(compareFn, combineFn) {
+    //    var requestIdx = logElements.length - 1;
+
+    //    while (requestIdx > 0) {
+    //        var secondLastRequest = logElements[requestIdx - 1];
+    //        var lastRequest = logElements[requestIdx];
+    //        var compareResult = compareFn(secondLastRequest, lastRequest);
+    //        if (compareResult) {
+    //            combineFn(secondLastRequest, lastRequest, compareResult);
+
+    //            logElements.pop(); //remove lastRequest
+    //            requestIdx--;
+    //        } else
+    //            return;
+    //    }
+    //}
+
+
+
+    function combineLogElementsKeypress(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
+        le1.TimestampEnd = le2.Timestamp;
+        le1.Value = le2.Value;
+        le1.LogType = le2.LogType;
+        if (compareResult == 2) {
+            le1.Times += le2.Times;
+        }
+    }
+
+    function combineLogElementsKeyup(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
+        le1.TimestampEnd = le2.Timestamp;
+        if (compareResult == 2) {
+            le1.Times += le2.Times;
+        }
+    }
+
+    function getKeyUpDownKeypadChar(charCode) {
+        if (charCode >= 96 && charCode <= 105)
+            return String.fromCharCode(charCode - 48);
+        return "";
+    }
+
+    function compareLogElementsKeypress(le1, le2) {
+        //return 0;
+        if (le1.SessionGUID == le2.SessionGUID &&
+            le1.PageGUID == le2.PageGUID &&
+            le1.BundleGUID == le2.BundleGUID &&
+            le1.ProgressGUID == le2.ProgressGUID &&
+            le1.Times == le2.Times &&
+            le1.LogType == LogType.OnKeyDown &&
+            le2.LogType == LogType.OnKeyPress) {
+
+            var v1 = JSON.parse(htmlDecode(le1.Value));
+            var v2 = JSON.parse(htmlDecode(le2.Value));
+
+            //console.log("getKeyUpDownKeypadChar(v1.charCode) = " + getKeyUpDownKeypadChar(v1.charCode));
+            //console.log("v2.ch = " + v2.ch);
+            //console.log("getKeyUpDownKeypadChar(v1.charCode) == v2.ch === " + (getKeyUpDownKeypadChar(v1.charCode) == v2.ch));
+
+            if ((
+                    getKeyUpDownKeypadChar(v1.charCode) == v2.ch ||
+                    v1.ch.toUpperCase() == v2.ch.toUpperCase()
+                ) &&
+                v1.shiftKey == v2.shiftKey &&
+                v1.altKey == v2.altKey &&
+                v1.ctrlKey == v2.ctrlKey) {
+                return 1;
+            }
+        }                       
+
+        if (compareLogElements(le1, le2))
+            return 2;
+
+        return 0;
+    }
+
+    function compareLogElementsKeyup(le1, le2, logElements, le2Idx) {
+        if (le1.SessionGUID == le2.SessionGUID &&
+            le1.PageGUID == le2.PageGUID &&
+            le1.BundleGUID == le2.BundleGUID &&
+            le1.ProgressGUID == le2.ProgressGUID &&
+            le1.Times == le2.Times &&
+            le1.LogType == LogType.OnKeyPress &&
+            le2.LogType == LogType.OnKeyUp) {
+
+            var v1 = JSON.parse(htmlDecode(le1.Value));
+            var v2 = JSON.parse(htmlDecode(le2.Value));
+
+            if ((
+                    v1.ch == getKeyUpDownKeypadChar(v2.charCode) ||
+                    v1.ch.toUpperCase() == v2.ch.toUpperCase()
+                ) &&
+                v1.shiftKey == v2.shiftKey &&
+                v1.altKey == v2.altKey &&
+                v1.ctrlKey == v2.ctrlKey) {
+
+                //Extended test
+                if (le2Idx - 3 >= 0) {
+                    var leM0 = logElements[le2Idx - 2];
+                    var leM1 = logElements[le2Idx - 3];
+
+                    if (leM0.LogType == LogType.OnKeyDown &&
+                        leM1.LogType != LogType.OnKeyPress) {
+                        return 1;
+                    }
+                }                
             }
         }
-        logElements.push(request);        
+
+        if (le1.Times == le2.Times && compareLogElements(le1, le2))
+            return 2;
+
+        return 0;
+    }
+
+    function combineLogElements(le1, le2) { // le1 = le1 + le2 (non pure)
+        le1.Times += le2.Times;
+        le1.TimestampEnd = le2.Timestamp;
+        le1.Value = le2.Value;
+        le1.LogType = le2.LogType;
     }
 
     function compareLogElementsNoValue(le1, le2) { //NoValue compare would be used with e.g. resize events
