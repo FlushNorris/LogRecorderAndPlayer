@@ -11,10 +11,22 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingToJSON
     {
+        private readonly static int maxFilePathLength = 248;
+
         public static void LogElement(string filePath, LogHandlerDTO logElement)
         {
-            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}.json";
-            var f = File.CreateText(filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName);
+            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";            
+            var filePathAndName = filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName;
+            var fileExtension = ".json";
+
+            var finalPath = filePathAndName + fileExtension;
+            if (finalPath.Length > maxFilePathLength)
+            {
+                filePathAndName = filePathAndName.Substring(0, maxFilePathLength - fileExtension.Length);
+                finalPath = filePathAndName + fileExtension;
+            }
+
+            var f = File.CreateText(finalPath);
             try
             {
                 f.Write(new JavaScriptSerializer().Serialize(logElement));

@@ -19,7 +19,7 @@ namespace LogRecorderAndPlayer
             LoggingHelper.LogElement(new LogHandlerDTO()
             {
                 GUID = Guid.NewGuid(),
-                SessionGUID = LoggingHelper.GetSessionGUID(page).Value,
+                SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
                 PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
                 BundleGUID = null,
                 ProgressGUID = null,
@@ -38,7 +38,7 @@ namespace LogRecorderAndPlayer
             LoggingHelper.LogElement(new LogHandlerDTO()
             {
                 GUID = Guid.NewGuid(),
-                SessionGUID = LoggingHelper.GetSessionGUID(page).Value,
+                SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
                 PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
                 BundleGUID = null,
                 ProgressGUID = null,

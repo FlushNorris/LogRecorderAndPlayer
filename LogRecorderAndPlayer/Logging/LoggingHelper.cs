@@ -13,7 +13,7 @@ namespace LogRecorderAndPlayer
     {
         public static void SetupSession(HttpContext context, System.Web.UI.Page page)
         {
-            var v = GetSessionGUID(page);
+            var v = GetSessionGUID(context, page);
             if (v == null)
             {
                 v = Guid.NewGuid();
@@ -31,8 +31,18 @@ namespace LogRecorderAndPlayer
             }            
         }
 
-        public static Guid? GetPageGUID(HttpContext context, System.Web.UI.Page page)
+        public static Guid? GetPageGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
         {
+            if (context == null)
+                return defaultValue != null ? defaultValue() : null;
+
+            var requestPageGUID = context.Request?.Params[Consts.PageGUIDTag];
+            if (requestPageGUID != null)
+                return new Guid(requestPageGUID);
+
+            if (page == null)
+                return defaultValue != null ? defaultValue() : null;
+
             //Couldn't use the querystring, because it resulted in a redirect on postback
             //var qryStr = HttpUtility.ParseQueryString(page.ClientQueryString);
             //var tag = "lrap-pageid";
@@ -50,7 +60,10 @@ namespace LogRecorderAndPlayer
 
             var viewState = GetViewState(page);
 
-            return viewState["LRAP_PageGUID"] as Guid?;
+            var pageGUID = viewState["LRAP_PageGUID"] as Guid?;
+            if (pageGUID == null)
+                return defaultValue != null ? defaultValue() : null;
+            return pageGUID;
         }
 
         private static StateBag GetViewState(System.Web.UI.Page page)
@@ -70,15 +83,52 @@ namespace LogRecorderAndPlayer
             viewState["LRAP_PageGUID"] = Guid.NewGuid();
         }
 
-        public static Guid? GetSessionGUID(System.Web.UI.Page page)
+        public static Guid? GetInstanceGUID(HttpContext context, Func<Guid?> defaultValue = null)
         {
+            if (context == null)
+                return defaultValue != null ? defaultValue() : null;
+
+            var requestGUID = context.Request?.Params[Consts.GUIDTag];
+            if (requestGUID != null)
+                return new Guid(requestGUID);
+
+            return defaultValue != null ? defaultValue() : null;
+        }
+
+        public static Guid? GetBundleGUID(HttpContext context, Func<Guid?> defaultValue = null)
+        {
+            if (context == null)
+                return defaultValue != null ? defaultValue() : null;
+
+            var requestGUID = context.Request?.Params[Consts.BundleGUIDTag];
+            if (requestGUID != null)
+                return new Guid(requestGUID);
+
+            return defaultValue != null ? defaultValue() : null;
+        }
+
+        public static Guid? GetSessionGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
+        {
+            if (context == null)
+                return defaultValue != null ? defaultValue() : null;
+
+            var requestSessionGUID = context.Request?.Params[Consts.SessionGUIDTag];
+            if (requestSessionGUID != null)
+                return new Guid(requestSessionGUID);
+
+            if (page == null)
+                return defaultValue != null ? defaultValue() : null;
+
             var viewState = GetViewState(page);
 
             var v = viewState["SessionGUID"] as Guid?;
             if (v != null)
                 return v;
 
-            return page.Session["LRAP-SessionGUID"] as Guid?;
+            var sessionGUID = page.Session["LRAP-SessionGUID"] as Guid?;
+            if (sessionGUID == null)
+                return defaultValue != null ? defaultValue() : null;
+            return sessionGUID;
         }
 
         private static void SetSessionGUID(System.Web.UI.Page page, Guid sessionGUID)
@@ -103,9 +153,7 @@ namespace LogRecorderAndPlayer
         }
 
         public static void LogElement(LogHandlerDTO logElement)
-        {
-            
-
+        {           
             var config = ConfigurationHelper.GetConfigurationSection();
             switch (config.LogType)
             {

@@ -86,7 +86,9 @@
         OnDrop: 23,
         OnScroll: 24,
         OnPageRequest: 25,
-        OnPageResponse: 26
+        OnPageResponse: 26,
+        OnWCFServiceRequest: 27,
+        OnWCFServiceResponse: 28    
     };
 
     function init(sessionGUID, pageGUID) {

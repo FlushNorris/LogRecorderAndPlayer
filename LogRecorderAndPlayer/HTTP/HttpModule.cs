@@ -308,7 +308,7 @@ namespace LogRecorderAndPlayer
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
 
-                    var sessionGUID = LoggingHelper.GetSessionGUID(page);
+                    var sessionGUID = LoggingHelper.GetSessionGUID(context, page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
                     
                     LoggingPage.LogResponse(context, page, response);                              

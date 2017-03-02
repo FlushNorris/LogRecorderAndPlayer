@@ -9,12 +9,24 @@ using System.ServiceModel.Channels;
 using System.ServiceModel.Dispatcher;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
+using System.Web.UI;
 using System.Xml;
 
 namespace LogRecorderAndPlayer
 {
     public class WCFClientMessageInspector : IClientMessageInspector
     {
+        private class LoggingState
+        {
+            public Guid GUID { get; set; }
+            public Guid SessionGUID { get; set; }
+            public Guid PageGUID { get; set; }
+            public Guid BundleGUID { get; set; }
+            public string Url { get; set; }
+            public string Action { get; set; }
+        }
+
         public object BeforeSendRequest(ref System.ServiceModel.Channels.Message request, IClientChannel channel)
         {
             //var via = channel.Via;
@@ -24,18 +36,67 @@ namespace LogRecorderAndPlayer
             //var LocalAddress = channel.LocalAddress;
             //var state = channel.State;            
 
-            return null;
-            //throw new NotImplementedException();
+            var loggingState = new LoggingState()
+            {
+                GUID = LoggingHelper.GetInstanceGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
+                SessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => Guid.NewGuid()).GetValueOrDefault(),
+                PageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => Guid.NewGuid()).GetValueOrDefault(),
+                BundleGUID = LoggingHelper.GetBundleGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
+                Url = LoggingHelper.StripUrlForLRAP(channel.Via.ToString()),
+                Action = request.Headers.Action
+            };            
+
+            string messageBody = GetMessageBody(request);
+
+            LoggingHelper.LogElement(new LogHandlerDTO()
+            {
+                GUID = loggingState.GUID,
+                SessionGUID = loggingState.SessionGUID,
+                PageGUID = loggingState.PageGUID,
+                BundleGUID = loggingState.BundleGUID,
+                ProgressGUID = null,
+                Timestamp = DateTime.Now,
+                LogType = LogType.OnWCFServiceRequest,
+                Element = Path.GetFileName(loggingState.Action),
+                Element2 = null,
+                Value = messageBody,
+                Times = 1,
+                TimestampEnd = null
+            });
+
+            request = BuildMessage(messageBody, request);
+
+            return loggingState;
         }
 
         public void AfterReceiveReply(ref System.ServiceModel.Channels.Message reply, object correlationState)
         {
-            ModifyReceivedRequest(ref reply);
-            //ChangeMessage(ref reply);
-            //throw new NotImplementedException();
-        }        
+            var loggingState = correlationState as LoggingState;
+            if (loggingState != null)
+            {
+                string messageBody = GetMessageBody(reply);
 
-        private void ModifyReceivedRequest(ref Message message)
+                LoggingHelper.LogElement(new LogHandlerDTO()
+                {
+                    GUID = loggingState.GUID,
+                    SessionGUID = loggingState.SessionGUID,
+                    PageGUID = loggingState.PageGUID,
+                    BundleGUID = loggingState.BundleGUID,
+                    ProgressGUID = null,
+                    Timestamp = DateTime.Now,
+                    LogType = LogType.OnWCFServiceResponse,
+                    Element = Path.GetFileName(loggingState.Action),
+                    Element2 = null,
+                    Value = messageBody,
+                    Times = 1,
+                    TimestampEnd = null
+                });
+
+                reply = BuildMessage(messageBody, reply);
+            }
+        }
+
+        private string GetMessageBody(Message message) //BuildMessage must be called afterwards to build a new message, because we cannot read from the message more than once
         {
             var buffer = message.CreateBufferedCopy(int.MaxValue);
             message = buffer.CreateMessage();
@@ -45,185 +106,25 @@ namespace LogRecorderAndPlayer
             XmlWriterSettings writerSettings = new XmlWriterSettings { Encoding = encoding };
             writerSettings.ConformanceLevel = ConformanceLevel.Auto;
             XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(ms));
-            //buffer.WriteMessage(ms);
             message.WriteMessage(writer);
-            //message.WriteBodyContents(writer);
             writer.Flush();
-            string messageBodyString = encoding.GetString(ms.ToArray());
+            return encoding.GetString(ms.ToArray());
+        }
 
+        private Message BuildMessage(string messageBody, Message originalMessage)
+        {
             // change the message body
             //messageBodyString = messageBodyString.Replace("<HelloWorldResult>Hello World 1337</HelloWorldResult>", "<HelloWorldResult>Hello World HIJACKED!</HelloWorldResult>");
 
-            ms = new MemoryStream(encoding.GetBytes(messageBodyString));
+            Encoding encoding = Encoding.UTF8;
+            MemoryStream ms = new MemoryStream(encoding.GetBytes(messageBody));
             var dictReader = XmlDictionaryReader.Create(ms);
-            //var s = dictReader.ReadString();
-            //var s2 = dictReader.ReadContentAsString();
 
-            //XmlReader bodyReader = XmlReader.Create(ms);
-            var originalMessage = message;
-            //message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, bodyReader);
-            message = System.ServiceModel.Channels.Message.CreateMessage(dictReader, int.MaxValue, originalMessage.Version);
-            message.Headers.CopyHeadersFrom(originalMessage);            
-            //var msgX = message.CreateBufferedCopy(int.MaxValue);
-            //message = msgX.CreateMessage();
-        }
-
-        private void ModifyReceivedRequestOLD(ref Message message)
-        {
-            MemoryStream ms = new MemoryStream();
-            Encoding encoding = Encoding.UTF8;
-            XmlWriterSettings writerSettings = new XmlWriterSettings { Encoding = encoding };
-            writerSettings.ConformanceLevel = ConformanceLevel.Fragment;
-            writerSettings.Indent = true;
-            XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(ms, writerSettings));
-            //message.WriteBodyContents(writer);            
-            //message.WriteStartEnvelope(writer);
-            message.WriteMessage(writer);
-            writer.Flush();
-
-            ms.Position = 0;            
-            var sr = new StreamReader(ms);
-            var myStr = sr.ReadToEnd();
-
-            ms.Position = 0;
-            XmlDocument xDoc = new XmlDocument();
-            //xDoc.
-            //xDoc.Load(new StringReader(@"<?xml version=""1.0"" encoding=""UTF-8""?>" + message.ToString()));
-            xDoc.Load(ms);
-            ms.Flush();
-            ms = new MemoryStream();
-
-            // XML stuff
-
-            GC.Collect();
-            xDoc.Save(ms);
-            ms.Position = 0;
-            //XmlWriter xmlWriter = XmlWriter.Create(ms);
-            //XmlDictionaryWriter xmlDict = XmlDictionaryWriter.CreateDictionaryWriter(xmlWriter);            
-            XmlReaderSettings readerSettings = new XmlReaderSettings();
-            readerSettings.ConformanceLevel = ConformanceLevel.Fragment;            
-            XmlReader xmlReader = XmlReader.Create(ms, readerSettings);
-            XmlDictionaryReader xmlDict2 = XmlDictionaryReader.CreateDictionaryReader(xmlReader);
-            var inner2 = xmlDict2.ReadInnerXml();
-            var outer2 = xmlDict2.ReadOuterXml();
-
-            //XmlReader bodyReader = XmlReader.Create(ms);
-            Message originalMessage = message;            
-            //XmlObjectSerializer xx = new DataContractJsonSerializer(typeof(int));
-            //message = Message.CreateMessage(originalMessage.Version, null, message.ToString(), xx);
-            message = Message.CreateMessage(xmlDict2, 10000, originalMessage.Version);
-            //message = Message.CreateMessage(originalMessage.Version, null, bodyReader);
-            message.Headers.CopyHeadersFrom(originalMessage);
-            var before = originalMessage.ToString();
-            var after = message.ToString();
-        }
-
-        private void ChangeMessage(ref System.ServiceModel.Channels.Message messageX)
-        {
-            MemoryStream ms = new MemoryStream();
-            Encoding encoding = Encoding.UTF8;
-            XmlWriterSettings writerSettings = new XmlWriterSettings { Encoding = encoding };
-            writerSettings.ConformanceLevel = ConformanceLevel.Fragment;
-            //XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(ms));
-            var writer = XmlDictionaryWriter.Create(ms);                        
-            messageX.WriteBody(writer);
-            //messageX.WriteBodyContents(writer);
-            writer.Flush();
-            string messageBodyString = encoding.GetString(ms.ToArray());
-
-            var xxx = " < Envelope><Header /></Envelope>";
-            ms = new MemoryStream();
-            writer = XmlDictionaryWriter.Create(ms);
-//            writer.Settings.ConformanceLevel = ConformanceLevel.Auto;                
-            writer.WriteString(xxx);
-//An exception of type 'System.InvalidOperationException' occurred in System.Xml.dll but was not handled in user code
-//Additional information: Token Text in state Start would result in an invalid XML document. Make sure that the ConformanceLevel setting is set to ConformanceLevel.Fragment or ConformanceLevel.Auto if you want to write an XML fragment.
-            writer.Flush();
-            string messageBodyStringWTF = encoding.GetString(ms.ToArray());
-
-            messageBodyString = messageX.ToString();
-            //messageBodyString = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + message.ToString();
-
-            // change the message body
-            //messageBodyString = messageBodyString.Replace("<HelloWorldResult>Hello World 1337</HelloWorldResult>", "<HelloWorldResult>Hello World HIJACKED!</HelloWorldResult>");
-            
-            //var x = messageX.GetReaderAtBodyContents();
-            //messageX.WriteBodyContents(x);
-
-            ms = new MemoryStream(encoding.GetBytes(messageBodyString));
-            XmlReader bodyReader = XmlReader.Create(ms);
-            System.ServiceModel.Channels.Message originalMessage = messageX;
-            //System.ServiceModel.Channels.Message message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, bodyReader);
-            System.ServiceModel.Channels.Message message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, writer);
-            message.Headers.CopyHeadersFrom(originalMessage);
-
-            messageX = message;
-
-
-            //ms = new MemoryStream();
-            //writerSettings = new XmlWriterSettings { Encoding = encoding };
-            //writer = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(ms));
-            //message.WriteBodyContents(writer);
-            //writer.Flush();
-            //string messageBodyString3 = encoding.GetString(ms.ToArray());
-            //if (messageBodyString != messageBodyString3)
-            //{
-            //    throw new Exception("NOOOOO");
-            //}
-
-            //string messageBodyString4 = message.ToString();
-
-            //if (messageBodyString2 != messageBodyString4)
-            //{
-            //    throw new Exception("NOOOOO");
-            //}
-        }
-
-        private void ChangeMessageXXX(ref System.ServiceModel.Channels.Message message)
-        {
-            MemoryStream ms = new MemoryStream();
-            Encoding encoding = Encoding.UTF8;
-            //XmlWriterSettings writerSettings = new XmlWriterSettings { Encoding = encoding };            
-            //https://msdn.microsoft.com/en-us/library/system.xml.xmlwritersettings.conformancelevel(v=vs.110).aspx
-            //writerSettings.ConformanceLevel = ConformanceLevel.Auto;
-            //XmlDictionaryWriter writer = XmlDictionaryWriter.CreateDictionaryWriter(XmlWriter.Create(ms));
-            //message.WriteBodyContents(writer);
-            //writer.Flush();
-            string messageBodyString = message.ToString();
-            //string messageBodyString = encoding.GetString(ms.ToArray());
-
-            var f = System.IO.File.CreateText($"c:\\LogTest\\Response{DateTime.Now.ToString("HHmmssfff")}.txt");
-            f.WriteLine(messageBodyString);
-            f.Close();
-
-            // change the message body
-            //messageBodyString = messageBodyString.Replace("<HelloWorldResult>Hello World 1337</HelloWorldResult>", "<HelloWorldResult>Hello World HIJACKED!</HelloWorldResult>");
-
-            ms = new MemoryStream(encoding.GetBytes(messageBodyString));
-            XmlReader bodyReader = XmlReader.Create(ms);
-            System.ServiceModel.Channels.Message originalMessage = message;
-
-            var outer = bodyReader.ReadOuterXml();
-            var inner = bodyReader.ReadInnerXml();
-
-            message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, bodyReader);
-            //message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, new TextBodyWriter(messageBodyString));
-                        
-            var bDebug = bodyReader.ToString();
-
-            //BodyWriter x = new 
-
-            //message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, "action", messageBodyString);
-            //message = System.ServiceModel.Channels.Message.CreateMessage(originalMessage.Version, null, message.GetReaderAtBodyContents());
+            var message = System.ServiceModel.Channels.Message.CreateMessage(dictReader, int.MaxValue, originalMessage.Version);
             //message.Headers.CopyHeadersFrom(originalMessage);
 
-            string messageBodyString2 = message.ToString();
-
-            if (messageBodyString != messageBodyString2)
-            {
-                throw new Exception("NOOOOO");
-            }
-        }
+            return message;
+        }        
     }
 
     // <summary>
