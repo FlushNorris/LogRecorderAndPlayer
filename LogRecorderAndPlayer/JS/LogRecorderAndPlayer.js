@@ -214,7 +214,7 @@
     }
     //regionend: Path to the element from the closest self or parent with an ID
 
-    function setupBasicClientsideControlEvents($input, inputSelector) {
+    function setupBasicClientsideControlEvents(inputSelector) {
         var $document = $(document);
         $document.on('mousedown', inputSelector, function (event) { //left click vs right click?
             if (!event)
@@ -331,7 +331,7 @@
         //    });
     }
 
-    function setupInputClientsideControlEvents($input, inputSelector) {
+    function setupInputClientsideControlEvents(inputSelector) {
 
         var $document = $(document);
 
@@ -461,13 +461,13 @@
             //logElementEx(LogType.OnReset, getElementPath(this), "");
         });
 
-        setupBasicClientsideControlEvents($("p"));
-        setupBasicClientsideControlEvents($("div"));
-        setupBasicClientsideControlEvents($("span"));
-        setupBasicClientsideControlEvents($("textarea"));
-        setupBasicClientsideControlEvents($("input"));
-        setupInputClientsideControlEvents($("textarea"), "textarea");
-        setupInputClientsideControlEvents($("input"), "input"); //last one goes on top
+        setupBasicClientsideControlEvents("p");
+        setupBasicClientsideControlEvents("div");
+        setupBasicClientsideControlEvents("span");
+        setupBasicClientsideControlEvents("textarea");
+        setupBasicClientsideControlEvents("input");
+        setupInputClientsideControlEvents("textarea");
+        setupInputClientsideControlEvents("input"); //last one goes on top
 
 //        var $inputSearch = $("input[type=search]");
         $document.on('search', "input[type=search]", function () {
