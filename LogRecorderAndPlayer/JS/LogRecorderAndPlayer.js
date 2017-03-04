@@ -228,7 +228,10 @@
             };
 
             //Avoid "bubbling" to other logevents.. but preserve the normal bubbling for other events
-            var elmP = document.elementFromPoint(event.pageX, event.pageY);
+            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
+            //console.log('mousedown: event.pageX=' + event.pageX + " : event.pageY=" + event.pageY);
+            //console.log('window: window.pageXOffset=' + window.pageXOffset + " : window.pageYOffset=" + window.pageYOffset);
+            //console.log(elmP);
             if (this != elmP)
                 return;
 
@@ -249,7 +252,7 @@
             };
 
             //Avoid "bubbling" to other logevents.. but preserve the normal bubbling for other events
-            var elmP = document.elementFromPoint(event.pageX, event.pageY);
+            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
             if (this != elmP)
                 return;
 
@@ -262,7 +265,7 @@
                 event = window.event;
 
             if (event.pageX != 0 && event.pageY != 0) {
-                var elmP = document.elementFromPoint(event.pageX, event.pageY);
+                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
                 if (this != elmP)
                     return;
             }
@@ -276,7 +279,7 @@
                 event = window.event;
 
             if (event.pageX != 0 && event.pageY != 0) {
-                var elmP = document.elementFromPoint(event.pageX, event.pageY);
+                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
                 if (this != elmP)
                     return;
             }
