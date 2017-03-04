@@ -1,17 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
-using System.Web.Script.Serialization;
 using System.Web.SessionState;
-using System.Web.UI;
-using System.Web.UI.WebControls;
 using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
@@ -37,8 +27,8 @@ namespace LogRecorderAndPlayer
             //context.PostReleaseRequestState += Context_PostReleaseRequestState;
             //context.PostResolveRequestCache += Context_PostResolveRequestCache;
             //context.PostUpdateRequestCache += Context_PostUpdateRequestCache;
-            //context.PreSendRequestHeaders += Context_PreSendRequestHeaders;
-            //context.PreSendRequestContent += Context_PreSendRequestContent;
+            //context.PreSendRequestHeaders += Context_PreSendRequestHeaders; //Was no commented earlier
+            //context.PreSendRequestContent += Context_PreSendRequestContent; //Was no commented earlier
             //context.ReleaseRequestState += Context_ReleaseRequestState;
             //context.ResolveRequestCache += Context_ResolveRequestCache;
             //context.RequestCompleted += Context_RequestCompleted;
@@ -47,14 +37,14 @@ namespace LogRecorderAndPlayer
 
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
-            HttpApplication application = (HttpApplication) sender;
-            HttpContext context = application.Context;
+            HttpApplication app = (HttpApplication) sender;
+            HttpContext context = app.Context;
             string filePath = context.Request.FilePath;
             string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
             if (fileExtension != null && fileExtension.Equals(".aspx"))
             {
-                var page = ((System.Web.UI.Page) context.CurrentHandler);                
+                var page = ((System.Web.UI.Page) context.CurrentHandler);
                 LoggingHelper.SetupSession(context, page);
                 LoggingHelper.SetupPage(context, page);
 
@@ -64,6 +54,25 @@ namespace LogRecorderAndPlayer
             {
                 LoggingHandler.LogRequest(context);
             }
+
+            //if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
+            //{
+            //    try
+            //    {
+            //        if (app.Session != null)
+            //        {
+            //            app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //        }
+            //    }
+            //    catch (System.Exception)
+            //    {
+            //    }
+
+            //    if (context.Session != null)
+            //    {
+            //        context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
         }
 
         private void Context_PostRequestHandlerExecute(object sender, EventArgs e)
@@ -124,10 +133,58 @@ namespace LogRecorderAndPlayer
 
         private void Context_PreSendRequestContent(object sender, EventArgs e)
         {
+            //HttpApplication app = (HttpApplication)sender;
+            //HttpContext context = app.Context;
+            //string filePath = context.Request.FilePath;
+            //string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            //if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
+            //{
+            //    try
+            //    {
+            //        if (app.Session != null)
+            //        {
+            //            app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //        }
+            //    }
+            //    catch (System.Exception)
+            //    {
+            //    }
+
+            //    if (context.Session != null)
+            //    {
+            //        context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
         }
 
         private void Context_PreSendRequestHeaders(object sender, EventArgs e)
         {
+            //HttpApplication app = (HttpApplication)sender;
+            //HttpContext context = app.Context;
+            //string filePath = context.Request.FilePath;
+            //string fileExtension = VirtualPathUtility.GetExtension(filePath);            
+
+            //if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
+            //{
+            //    try
+            //    {
+            //        if (app.Session != null)
+            //        {
+            //            app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //        }
+            //    }
+            //    catch (System.Exception)
+            //    {
+            //    }
+
+            //    if (context.Session != null)
+            //    {
+            //        context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
+
+            //Bliver dette Response status overhovedet anvendt?
             context.Response.Status = "200 OK";
             context.Response.StatusCode = 200;
             context.Response.StatusDescription = "OK";
@@ -170,6 +227,23 @@ namespace LogRecorderAndPlayer
 
             // swap the current handler
             app.Context.Handler = new LRAPHttpHandler(app.Context.Handler);
+
+            //try
+            //{
+            //    if (app.Session != null)
+            //    {
+            //        app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
+            //catch (System.Exception)
+            //{
+            //}
+
+            //var context = app.Context;
+            //if (context.Session != null)
+            //{
+            //    context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //}
         }
 
         private void Context_PostAcquireRequestState(object sender, EventArgs e)
@@ -184,6 +258,25 @@ namespace LogRecorderAndPlayer
                 HttpContext.Current.Handler = resourceHttpHandler.OriginalHandler;
             }
 
+            //try
+            //{
+            //    if (app.Session != null)
+            //    {
+            //        app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
+            //catch (System.Exception)
+            //{
+            //}
+
+            //if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
+            //{
+            //    var context = app.Context;
+            //    if (context.Session != null)
+            //    {
+            //        context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
 
 
             // -> at this point session state should be available
@@ -193,7 +286,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_BeginRequest(object sender, EventArgs e)
         {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
+            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;
             }
@@ -201,8 +294,8 @@ namespace LogRecorderAndPlayer
             watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
             this.context.Response.Filter = watcher;
 
-            HttpApplication application = (HttpApplication) sender;
-            HttpContext context = application.Context;
+            HttpApplication app = (HttpApplication) sender;
+            HttpContext context = app.Context;
             string filePath = context.Request.FilePath;
             string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
@@ -211,13 +304,27 @@ namespace LogRecorderAndPlayer
             //    LoggingHelper.LogHandlerRequest(context.Request["request"]);                
             //    return;
             //}
-            
-            
+
+            //try
+            //{
+            //    if (app.Session != null)
+            //    {
+            //        app.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //    }
+            //}
+            //catch (System.Exception)
+            //{                
+            //}
+
+            //if (context.Session != null)
+            //{
+            //    context.Session["WHATTHEFUCK"] = "WOOHOOO";
+            //}
         }
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension == ".axd")
+            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;
             }
@@ -268,7 +375,9 @@ namespace LogRecorderAndPlayer
             {
                 try
                 {
-                    LoggingHelper.LogHandlerRequest(context.Request["request"]);
+                    var logResponse = LoggingHelper.LogHandlerRequest(context.Request["request"]);
+                    var logResponseXML = SerializationHelper.Serialize(logResponse, SerializationType.Xml);
+                    context.Response.Write(logResponseXML);
                 }
                 catch (Exception ex)
                 {
@@ -280,7 +389,7 @@ namespace LogRecorderAndPlayer
                 return;
             }
 
-            if (fileExtension.Equals(".aspx"))
+            if (fileExtension.ToLower().Equals(".aspx"))
             {
                 //context.CurrentHandler      
                 var page = ((System.Web.UI.Page)context.CurrentHandler);
@@ -308,14 +417,34 @@ namespace LogRecorderAndPlayer
 
                     //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
 
+                    //if (context.Session != null)
+                    //{
+                    //    context.Session["WHATTHEFUCK"] = "WOOHOOO22222222222";
+                    //}
+
+                    //if (page.Session != null)
+                    //{
+                    //    page.Session["WHATTHEFUCK"] = "WOOHOOO2222222222222";
+                    //}
+
                     var sessionGUID = LoggingHelper.GetSessionGUID(context, page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
                     
                     LoggingPage.LogResponse(context, page, response);                              
 
+                    
+                    //context.Response.Write("<script/>");
+
+                    string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>";
+
+                    var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapScript);
+                    context.Response.Clear();
+                    context.Response.Write(newResponse);
+                    //context.Response.Write(response.Replace("beregninger.js", "beregningerXXX.js"));
+
 //                    context.Response.Write("<hr><h1><font color=red>" + "HelloWorldModuleXXXARGH2: End of Request</font></h1>");                    
-                    context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
-                    context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>");                    
+                    //context.Response.Write("<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script>");
+                    //context.Response.Write($"<script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>");                    
                 }
                 else
                 {
@@ -329,7 +458,7 @@ namespace LogRecorderAndPlayer
 
                 }
             }
-            if (fileExtension.Equals(".ashx"))
+            if (fileExtension.ToLower().Equals(".ashx"))
             {
                 LoggingHandler.LogResponse(context, response);                
             }

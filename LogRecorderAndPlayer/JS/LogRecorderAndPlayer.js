@@ -98,7 +98,7 @@
         setupAjaxEvents('ajaxSend');
         setupAjaxEvents('ajaxComplete');
 
-        bindAjaxSendFirst(function (event, xhr, options) {            
+        bindAjaxSendFirst(function (event, xhr, options) {
             if (options.LRAPCall) { //To avoid recurrency when logging via LRAP
                 return;
             }

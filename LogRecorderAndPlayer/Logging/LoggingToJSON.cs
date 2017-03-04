@@ -15,7 +15,7 @@ namespace LogRecorderAndPlayer
 
         public static void LogElement(string filePath, LogHandlerDTO logElement)
         {
-            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";            
+            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.SessionGUID}__{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";            
             var filePathAndName = filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName;
             var fileExtension = ".json";
 

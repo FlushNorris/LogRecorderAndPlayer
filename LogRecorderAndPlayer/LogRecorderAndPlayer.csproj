@@ -49,6 +49,8 @@
     <Compile Include="Common\Consts.cs" />
     <Compile Include="Common\ResourceHelper.cs" />
     <Compile Include="Common\SerializationHelper.cs" />
+    <Compile Include="Common\SessionHelper.cs" />
+    <Compile Include="Common\WebHelper.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />
     <Compile Include="Configuration\LRAPConfigurationSection.cs" />
     <Compile Include="Dynamic\DynAssembly.cs" />

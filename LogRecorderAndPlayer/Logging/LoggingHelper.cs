@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Web;
+using System.Web.SessionState;
 using System.Web.UI;
 
 namespace LogRecorderAndPlayer
@@ -17,7 +17,7 @@ namespace LogRecorderAndPlayer
             if (v == null)
             {
                 v = Guid.NewGuid();
-                SetSessionGUID(page, v.Value);
+                SetSessionGUID(context.Session, v.Value);
             }
             SetSessionGUIDInViewState(page, v.Value);
         }
@@ -28,7 +28,7 @@ namespace LogRecorderAndPlayer
             if (pageGUID == null)
             {
                 SetPageGUID(page, Guid.NewGuid());
-            }            
+            }
         }
 
         public static Guid? GetPageGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
@@ -52,7 +52,7 @@ namespace LogRecorderAndPlayer
             //    return new Guid(v);
             //}
 
-            string v = page.IsPostBack ? context.Request.Form["LRAP-PAGEGUID"] : null;
+            string v = page.IsPostBack ? context.Request.Form[Consts.PageGUIDTag] : null;
             if (v != null)
             {
                 return new Guid(v);
@@ -60,7 +60,7 @@ namespace LogRecorderAndPlayer
 
             var viewState = GetViewState(page);
 
-            var pageGUID = viewState["LRAP_PageGUID"] as Guid?;
+            var pageGUID = viewState[Consts.PageGUIDTag] as Guid?;
             if (pageGUID == null)
                 return defaultValue != null ? defaultValue() : null;
             return pageGUID;
@@ -71,7 +71,7 @@ namespace LogRecorderAndPlayer
             var pageType = page.GetType();
 
             var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-            var viewState = (StateBag)viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
+            var viewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
 
             return viewState;
         }
@@ -80,7 +80,7 @@ namespace LogRecorderAndPlayer
         {
             var viewState = GetViewState(page);
 
-            viewState["LRAP_PageGUID"] = Guid.NewGuid();
+            viewState[Consts.PageGUIDTag] = Guid.NewGuid();
         }
 
         public static Guid? GetInstanceGUID(HttpContext context, Func<Guid?> defaultValue = null)
@@ -121,52 +121,69 @@ namespace LogRecorderAndPlayer
 
             var viewState = GetViewState(page);
 
-            var v = viewState["SessionGUID"] as Guid?;
+            var v = viewState[Consts.SessionGUIDTag] as Guid?;
             if (v != null)
                 return v;
 
-            var sessionGUID = page.Session["LRAP-SessionGUID"] as Guid?;
+            var sessionGUID = page.Session[Consts.SessionGUIDTag] as Guid?;
             if (sessionGUID == null)
                 return defaultValue != null ? defaultValue() : null;
             return sessionGUID;
         }
 
-        private static void SetSessionGUID(System.Web.UI.Page page, Guid sessionGUID)
+        public static void SetSessionGUID(HttpSessionState session, Guid sessionGUID)
         {
-            page.Session["LRAP-SessionGUID"] = sessionGUID;
+            session[Consts.SessionGUIDTag] = sessionGUID;
+        }
+
+        public static Guid? GetSessionGUID(HttpSessionState session)
+        {
+            return session[Consts.SessionGUIDTag] as Guid?;
         }
 
         private static void SetSessionGUIDInViewState(System.Web.UI.Page page, Guid sessionGUID)
         {
             var viewState = GetViewState(page);
-            viewState["LRAP-SessionGUID"] = sessionGUID;
+            viewState[Consts.SessionGUIDTag] = sessionGUID;
         }
 
-        public static void LogHandlerRequest(string request)
+        public static LogResponse LogHandlerRequest(string request)
         {
+            LogResponse logResponse = null;
+
             var logElements = SerializationHelper.Deserialize<LogHandlerDTO[]>(request, SerializationType.Json);
             foreach (var logElement in logElements)
             {
                 logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
-                LogElement(logElement);
+                logResponse += LogElement(logElement);
             }
+
+            return logResponse;
         }
 
-        public static void LogElement(LogHandlerDTO logElement)
-        {           
-            var config = ConfigurationHelper.GetConfigurationSection();
-            switch (config.LogType)
+        public static LogResponse LogElement(LogHandlerDTO logElement)
+        {
+            try
             {
-                case LRAPConfigurationSectionLogType.CSV:
-                    LoggingToCSV.LogElement(config.FilePath, logElement);
-                    break;
-                case LRAPConfigurationSectionLogType.JSON:
-                    LoggingToJSON.LogElement(config.FilePath, logElement);
-                    break;
-                case LRAPConfigurationSectionLogType.DB:
-                    break;
-                default:
-                    throw new Exception("Unknown LogType");
+                var config = ConfigurationHelper.GetConfigurationSection();
+                switch (config.LogType)
+                {
+                    case LRAPConfigurationSectionLogType.CSV:
+                        LoggingToCSV.LogElement(config.FilePath, logElement);
+                        break;
+                    case LRAPConfigurationSectionLogType.JSON:
+                        LoggingToJSON.LogElement(config.FilePath, logElement);
+                        break;
+                    case LRAPConfigurationSectionLogType.DB:
+                        break;
+                    default:
+                        throw new Exception("Unknown LogType");
+                }
+                return new LogResponse() {Success = true};
+            }
+            catch (Exception ex)
+            {
+                return new LogResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
             }
         }
 
@@ -188,6 +205,55 @@ namespace LogRecorderAndPlayer
             query = queryBuilder.ToString();
            
             return $"{url}{(String.IsNullOrWhiteSpace(query)?"":"?")}{query}";
+        }
+
+        public static int GetHtmlIndexForInsertingLRAPJS(string html)
+        {
+            Regex r = new Regex("(?i)<\\s*script[^>]+src\\s*=(\\s*\\S*jquery[^>/]+)(/*)>");
+            var m = r.Matches(html);
+
+            int indexToInsertLRAP = -1;
+            if (m.Count > 0)
+            {
+                var mLast = m[m.Count - 1];
+                var mSlashCheck = mLast.Groups[2];
+                bool seperatedEndTag = mSlashCheck.Value != "/";
+                if (seperatedEndTag)
+                {
+                    var rEndTag = new Regex("<\\s*/\\s*script[^>/]*>");
+                    var mEndTag = rEndTag.Match(html, mSlashCheck.Index);
+                    if (mEndTag.Success)
+                    {
+                        indexToInsertLRAP = mEndTag.Index + mEndTag.Length;
+                    }
+                }
+                else
+                {
+                    indexToInsertLRAP = mLast.Index + mLast.Length;
+                }
+            }
+
+            if (indexToInsertLRAP == -1)
+            {
+                indexToInsertLRAP = html.Length;
+            }
+
+            return indexToInsertLRAP;
+        }
+    }
+
+    public class LogResponse
+    {
+        public bool Success;
+        public string Message;
+
+        public static LogResponse operator +(LogResponse left, LogResponse right)
+        {
+            return new LogResponse()
+            {
+                Success = (left?.Success ?? true) && (right?.Success ?? true),
+                Message = (left?.Success ?? true) ? left?.Message : right?.Message
+            };
         }
     }
 }
