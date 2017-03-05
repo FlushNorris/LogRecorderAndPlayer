@@ -50,6 +50,7 @@
     <Compile Include="Common\ResourceHelper.cs" />
     <Compile Include="Common\SerializationHelper.cs" />
     <Compile Include="Common\SessionHelper.cs" />
+    <Compile Include="Common\TimeHelper.cs" />
     <Compile Include="Common\WebHelper.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />
     <Compile Include="Configuration\LRAPConfigurationSection.cs" />
@@ -74,7 +75,6 @@
   <ItemGroup>
     <EmbeddedResource Include="JS\LogRecorderAndPlayer.js" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

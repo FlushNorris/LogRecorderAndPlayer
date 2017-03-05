@@ -376,8 +376,9 @@ namespace LogRecorderAndPlayer
                 try
                 {
                     var logResponse = LoggingHelper.LogHandlerRequest(context.Request["request"]);
-                    var logResponseXML = SerializationHelper.Serialize(logResponse, SerializationType.Xml);
-                    context.Response.Write(logResponseXML);
+                    var logResponseJSON = SerializationHelper.Serialize(logResponse, SerializationType.Json);
+                    context.Response.ContentType = "application/json";
+                    context.Response.Write(logResponseJSON);
                 }
                 catch (Exception ex)
                 {
@@ -430,11 +431,11 @@ namespace LogRecorderAndPlayer
                     var sessionGUID = LoggingHelper.GetSessionGUID(context, page);
                     var pageGUID = LoggingHelper.GetPageGUID(context, page);
                     
-                    LoggingPage.LogResponse(context, page, response);                              
+                    LoggingPage.LogResponse(context, page, response);
 
-                    
+
                     //context.Response.Write("<script/>");
-
+                    
                     string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>";
 
                     var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapScript);

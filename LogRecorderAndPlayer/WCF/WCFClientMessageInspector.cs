@@ -48,20 +48,20 @@ namespace LogRecorderAndPlayer
 
             string messageBody = GetMessageBody(request);
 
-            LoggingHelper.LogElement(new LogHandlerDTO()
+            LoggingHelper.LogElement(new LogElementDTO()
             {
                 GUID = loggingState.GUID,
                 SessionGUID = loggingState.SessionGUID,
                 PageGUID = loggingState.PageGUID,
                 BundleGUID = loggingState.BundleGUID,
                 ProgressGUID = null,
-                Timestamp = DateTime.Now,
+                UnixTimestamp = TimeHelper.UnixTimestamp(),
                 LogType = LogType.OnWCFServiceRequest,
                 Element = Path.GetFileName(loggingState.Action),
                 Element2 = null,
                 Value = messageBody,
                 Times = 1,
-                TimestampEnd = null
+                UnixTimestampEnd = null
             });
 
             request = BuildMessage(messageBody, request);
@@ -76,20 +76,20 @@ namespace LogRecorderAndPlayer
             {
                 string messageBody = GetMessageBody(reply);
 
-                LoggingHelper.LogElement(new LogHandlerDTO()
+                LoggingHelper.LogElement(new LogElementDTO()
                 {
                     GUID = loggingState.GUID,
                     SessionGUID = loggingState.SessionGUID,
                     PageGUID = loggingState.PageGUID,
                     BundleGUID = loggingState.BundleGUID,
                     ProgressGUID = null,
-                    Timestamp = DateTime.Now,
+                    UnixTimestamp = TimeHelper.UnixTimestamp(),
                     LogType = LogType.OnWCFServiceResponse,
                     Element = Path.GetFileName(loggingState.Action),
                     Element2 = null,
                     Value = messageBody,
                     Times = 1,
-                    TimestampEnd = null
+                    UnixTimestampEnd = null
                 });
 
                 reply = BuildMessage(messageBody, reply);

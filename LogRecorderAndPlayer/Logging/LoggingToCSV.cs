@@ -8,7 +8,7 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingToCSV
     {
-        public static void LogElement(string filePath, LogHandlerDTO logElement)
+        public static void LogElement(string filePath, LogElementDTO logElement)
         {
             throw new NotImplementedException();
         } 

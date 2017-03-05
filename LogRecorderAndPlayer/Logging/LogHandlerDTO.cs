@@ -9,18 +9,23 @@ namespace LogRecorderAndPlayer
 {
     public class LogHandlerDTO
     {
+        public LogElementDTO[] LogElements { get; set; }
+    }
+
+    public class LogElementDTO
+    {
         public Guid GUID { get; set; } //To ensure we do not have dublets, if we need to log again due to an error
         public Guid SessionGUID { get; set; }
         public Guid PageGUID { get; set; }
         public Guid? BundleGUID { get; set; } //Bundle Ajax requests
         public Guid? ProgressGUID { get; set; } //For LogPlayer
-        public DateTime Timestamp { get; set; }
+        public double UnixTimestamp { get; set; }
         public LogType LogType { get; set; }
         public string Element { get; set; } //(#ElementId [+ TagPath], HandlerUrl, PageUrl) 
         public string Element2 { get; set; } //e.g. postBackControlClientId or JSON-RequestForm for handlers which isn't connected request/response-wise by a LRAPGUID
         public string Value { get; set; }
         public int Times { get; set; }
-        public DateTime? TimestampEnd { get; set; }
+        public double? UnixTimestampEnd { get; set; }
     }
 
     public enum LogType

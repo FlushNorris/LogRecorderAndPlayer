@@ -11,14 +11,14 @@ namespace LogRecorderAndPlayer
     {
         public static void LogRequest(HttpContext context)
         {
-            LoggingHelper.LogElement(new LogHandlerDTO()
+            LoggingHelper.LogElement(new LogElementDTO()
             {
                 GUID = LoggingHelper.GetInstanceGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
                 SessionGUID = LoggingHelper.GetSessionGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
                 PageGUID = LoggingHelper.GetPageGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
                 BundleGUID = LoggingHelper.GetBundleGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
                 ProgressGUID = null,
-                Timestamp = DateTime.Now, //TODO Look into this
+                UnixTimestamp = TimeHelper.UnixTimestamp(),
                 LogType = LogType.OnAjaxRequestReceived,
                 Element = LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 Element2 = null,
@@ -31,14 +31,14 @@ namespace LogRecorderAndPlayer
             //Need to parse info from request to response... in this case where ashx is called from a external website
             var requestContainsInstanceGuid = context.Request.Params[Consts.GUIDTag] != null;
 
-            LoggingHelper.LogElement(new LogHandlerDTO()
+            LoggingHelper.LogElement(new LogElementDTO()
             {
                 GUID = LoggingHelper.GetInstanceGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
                 SessionGUID = LoggingHelper.GetSessionGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
                 PageGUID = LoggingHelper.GetPageGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
                 BundleGUID = LoggingHelper.GetBundleGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
                 ProgressGUID = null,
-                Timestamp = DateTime.Now, //TODO Look into this
+                UnixTimestamp = TimeHelper.UnixTimestamp(),
                 LogType = LogType.OnAjaxResponseSend,
                 Element = LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 Element2 = !requestContainsInstanceGuid ? SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json) : null,

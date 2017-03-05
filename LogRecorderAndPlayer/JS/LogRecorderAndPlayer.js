@@ -5,14 +5,31 @@
     var pageGUIDCache = null;
     var sessionGUIDCache = null;
 
+    var GUIDTag = "lrap-guid";
+    var SessionGUIDTag = "lrap-sessionguid";
+    var PageGUIDTag = "lrap-pageguid";
+    var BundleGUIDTag = "lrap-bundleguid";
+
+    function unixTimestamp(dt) { //seconds since 1970/1/1
+        if (typeof (dt) == "undefined" || dt == null)
+            dt = new Date();
+        return dt.getTime() / 1000.0;
+    }
+
+    var clientTimeOffset = 0;
+
+    function unitTimeStampByOffset() {
+        return unixTimestamp() + clientTimeOffset;
+    }
+
     function setPageGUID(_pageGUID) {
         var v = getPageGUID();
         if (v == null) {
             pageGUIDCache = _pageGUID;
             var $frm = getPrimaryForm();
             $("<input type='hidden' />")
-                .attr("class", "LRAP-PAGEGUID")
-                .attr("name", "LRAP-PAGEGUID")
+                .attr("class", PageGUIDTag)
+                .attr("name", PageGUIDTag)
                 .val(_pageGUID)
                 .appendTo($frm);
         }
@@ -23,7 +40,7 @@
             return pageGUIDCache;
 
         var $frm = getPrimaryForm();
-        var $pageGUID = $frm.find(".LRAP-PAGEGUID");
+        var $pageGUID = $frm.find("." + PageGUIDTag);
         if ($pageGUID.size() != 0) 
             pageGUIDCache = $pageGUID.val();       
         return pageGUIDCache;
@@ -35,8 +52,8 @@
             sessionGUIDCache = _sessionGUID;
             var $frm = getPrimaryForm();
             $("<input type='hidden' />")
-                .attr("class", "LRAP-SESSIONGUID")
-                .attr("name", "LRAP-SESSIONGUID")
+                .attr("class", SessionGUIDTag)
+                .attr("name", SessionGUIDTag)
                 .val(_sessionGUID)
                 .appendTo($frm);
         }
@@ -47,7 +64,7 @@
             return sessionGUIDCache;
 
         var $frm = getPrimaryForm();
-        var $sessionGUID = $frm.find(".LRAP-SESSIONGUID");
+        var $sessionGUID = $frm.find("." + SessionGUIDTag);
         if ($sessionGUID.size() != 0) 
             sessionGUIDCache = $sessionGUID.val();        
         return sessionGUIDCache;
@@ -107,7 +124,7 @@
             options.lrapBundleGUID = generateGUID();
             options.lrapOrigURL = options.url;
 
-            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, new Date(), LogType.OnAjaxRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
+            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unitTimeStampByOffset(), LogType.OnAjaxRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
             options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID);
 
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
@@ -125,7 +142,7 @@
                 pageGUID,
                 bundleGUID,
                 null,
-                new Date(),
+                unitTimeStampByOffset(),
                 LogType.OnAjaxResponseReceived,
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
@@ -525,6 +542,18 @@
         handleLogElements(false);
     }
 
+    // the NTP algorithm
+    // t0 is the client's timestamp of the request packet transmission,
+    // t1 is the server's timestamp of the request packet reception,
+    // t2 is the server's timestamp of the response packet transmission and
+    // t3 is the client's timestamp of the response packet reception.
+    function ntp(t0, t1, t2, t3) {
+        return {
+            roundtripdelay: (t3 - t0) - (t2 - t1),
+            offset: ((t1 - t0) + (t2 - t3)) / 2
+        };
+    }
+
     function handleLogElements(async) {
         async = typeof (async) == "undefined" || async;
 
@@ -539,34 +568,58 @@
         //console.log("logElementsForHandler.length = " + logElementsForHandler.length);
 
         if (logElementsForHandler.length > 0) {
-            $.ajax({
-                async: async,
-                LRAPCall: true,
-                type: "POST",
-                url: handlerLRAPUrl,
-                data: {
-                    'request': JSON.stringify(logElementsForHandler)
-                },
-                //complete: function (event, xhr, options) {
-                //    alert('log complete : '+JSON.stringify(xhr));
-                //},
-                success: function (data) {
-                    //OKIDOKI
-                },
-                error: function(data) {
-                    logElements = logElementsForHandler.concat(logElements); //Put elements back in queue
-                    console.log(logElements);
-                    alert('Failed to log: Contact administrator');
-                }
-            });
+            var logHandlerRequest = {            
+                LogElements: logElementsForHandler
+            };
+            callLogHandler(async, logHandlerRequest);
         }
     }
 
-    function logElementEx(logType, element, value, compareFn, combineFn) {
-        logElement(getSessionGUID(), getPageGUID(), null, null, new Date(), logType, element, value, compareFn, combineFn);
+    function callLogHandler(async, logHandlerRequest) {
+        async = typeof (async) == "undefined" || async;
+
+        if (typeof (logHandlerRequest) == "undefined") {
+            logHandlerRequest = {
+                LogElements: []
+            };
+        }
+
+        var clientTimeStart = unixTimestamp();        
+        $.ajax({
+            async: async,
+            LRAPCall: true,
+            type: "POST",
+            url: handlerLRAPUrl,
+            data: {
+                'request': JSON.stringify(logHandlerRequest)
+            },
+            success: function (data) {
+                var clientTimeEnd = unixTimestamp();
+                //console.log("clientTimeStart = " + clientTimeStart);
+                //console.log("data.ServerTimeStart = " + data.ServerTimeStart);
+                //console.log("data.ServerTimeEnd = " + data.ServerTimeEnd);
+                //console.log("clientTimeEnd = " + clientTimeEnd);
+                var ntpR = ntp(clientTimeStart, data.ServerTimeStart, data.ServerTimeEnd, clientTimeEnd);
+                //console.log("offset was changed from " + clientTimeOffset + " to " + ntpR.offset);
+                clientTimeOffset = ntpR.offset;
+            },
+            error: function (data) {
+                logElements = logElementsForHandler.concat(logElements); //Put elements back in queue
+                console.log(logElements);
+                alert('Failed to log: Contact administrator');
+            }
+        });
     }
 
-    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, timestamp, logType, element, value, compareFn, combineFn) {
+    function parseJsonDate(jsonDateString) {
+        return new Date(parseInt(jsonDateString.replace('/Date(', '')));
+    }
+
+    function logElementEx(logType, element, value, compareFn, combineFn) {
+        logElement(getSessionGUID(), getPageGUID(), null, null, unitTimeStampByOffset(), logType, element, value, compareFn, combineFn);
+    }
+
+    function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, unixTimestamp, logType, element, value, compareFn, combineFn) {
         if (element == null)
             return;
 
@@ -582,13 +635,13 @@
             PageGUID: pageGUID,
             BundleGUID: bundleGUID,
             ProgressGUID: progressGUID,
-            Timestamp: getDataMemberDate(timestamp),
+            UnixTimestamp: unixTimestamp, //getDataMemberDate(timestamp),
             LogType: logType,
             Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
             Element2: null,
             Value: value,
             Times: 1,
-            TimestampEnd: null
+            UnixTimestampEnd: null
         };
         logElements.push(request);
 
@@ -675,7 +728,7 @@
     }
 
     function combineLogElementsKeypress(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
-        le1.TimestampEnd = le2.Timestamp;
+        le1.UnixTimestampEnd = le2.UnixTimestamp;
         le1.Value = le2.Value;
         le1.LogType = le2.LogType;
         if (compareResult == 2) {
@@ -684,7 +737,7 @@
     }
 
     function combineLogElementsKeyup(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
-        le1.TimestampEnd = le2.Timestamp;
+        le1.UnixTimestampEnd = le2.UnixTimestamp;
         if (compareResult == 2) {
             le1.Times += le2.Times;
         }
@@ -768,7 +821,7 @@
 
     function combineLogElements(le1, le2) { // le1 = le1 + le2 (non pure)
         le1.Times += le2.Times;
-        le1.TimestampEnd = le2.Timestamp;
+        le1.UnixTimestampEnd = le2.UnixTimestamp;
         le1.Value = le2.Value;
         le1.LogType = le2.LogType;
     }
@@ -782,7 +835,7 @@
             le1.Element == le2.Element;
     }
 
-    function compareLogElements(le1, le2) { //Without Timestamp compares atm... should build a delay check on the compare        
+    function compareLogElements(le1, le2) { //Without UnixTimestamp compares atm... should build a delay check on the compare        
         return compareLogElementsNoValue(le1, le2) &&
                 le1.Value == le2.Value;
     }
@@ -850,15 +903,10 @@
     }
 
     function getHandlerUrlForLogging(url, sessionGUID, pageGUID, bundleGUID) {
-        var guidTag = "lrap-guid";
-        var sessionGUIDTag = "lrap-sessionguid";
-        var pageGUIDTag = "lrap-pageguid";
-        var bundleGUIDTag = "lrap-bundleguid";        
-
-        url = addQryStrElement(removeQryStrElement(url, guidTag), guidTag, generateGUID());
-        url = addQryStrElement(removeQryStrElement(url, sessionGUIDTag), sessionGUIDTag, sessionGUID);
-        url = addQryStrElement(removeQryStrElement(url, pageGUIDTag), pageGUIDTag, pageGUID);
-        url = addQryStrElement(removeQryStrElement(url, bundleGUIDTag), bundleGUIDTag, bundleGUID);
+        url = addQryStrElement(removeQryStrElement(url, GUIDTag), GUIDTag, generateGUID());
+        url = addQryStrElement(removeQryStrElement(url, SessionGUIDTag), SessionGUIDTag, sessionGUID);
+        url = addQryStrElement(removeQryStrElement(url, PageGUIDTag), PageGUIDTag, pageGUID);
+        url = addQryStrElement(removeQryStrElement(url, BundleGUIDTag), BundleGUIDTag, bundleGUID);
         return url;
     }
 
@@ -950,7 +998,10 @@
     publicMethods.init = init;
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
+    publicMethods.callLogHandler = callLogHandler;
     
     return publicMethods;
 }());
+
+logRecorderAndPlayer.callLogHandler(false/*async*/); //To sync server and client time
 

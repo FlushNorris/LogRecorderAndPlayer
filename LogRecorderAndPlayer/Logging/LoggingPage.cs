@@ -16,14 +16,14 @@ namespace LogRecorderAndPlayer
         {
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
-            LoggingHelper.LogElement(new LogHandlerDTO()
+            LoggingHelper.LogElement(new LogElementDTO()
             {
                 GUID = Guid.NewGuid(),
                 SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
                 PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
                 BundleGUID = null,
                 ProgressGUID = null,
-                Timestamp = DateTime.Now, //TODO Look into this
+                UnixTimestamp = TimeHelper.UnixTimestamp(),
                 LogType = LogType.OnPageRequest,
                 Element = context.Request.RawUrl,
                 Element2 = postBackControlClientId,
@@ -35,14 +35,14 @@ namespace LogRecorderAndPlayer
         {
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
-            LoggingHelper.LogElement(new LogHandlerDTO()
+            LoggingHelper.LogElement(new LogElementDTO()
             {
                 GUID = Guid.NewGuid(),
                 SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
                 PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
                 BundleGUID = null,
                 ProgressGUID = null,
-                Timestamp = DateTime.Now, //TODO Look into this
+                UnixTimestamp = TimeHelper.UnixTimestamp(),
                 LogType = LogType.OnPageResponse,
                 Element = context.Request.RawUrl,
                 Element2 = postBackControlClientId,

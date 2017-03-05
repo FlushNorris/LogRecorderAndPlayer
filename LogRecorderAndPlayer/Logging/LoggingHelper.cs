@@ -147,21 +147,30 @@ namespace LogRecorderAndPlayer
             viewState[Consts.SessionGUIDTag] = sessionGUID;
         }
 
-        public static LogResponse LogHandlerRequest(string request)
+        public static LogHandlerResponse LogHandlerRequest(string requestJSON)
         {
-            LogResponse logResponse = null;
-
-            var logElements = SerializationHelper.Deserialize<LogHandlerDTO[]>(request, SerializationType.Json);
-            foreach (var logElement in logElements)
+            var request = SerializationHelper.Deserialize<LogHandlerDTO>(requestJSON, SerializationType.Json);
+            var now = DateTime.Now;
+            var logHandlerResponse = new LogHandlerResponse()
+            {
+                ServerTimeStart = TimeHelper.UnixTimestamp()
+            };
+            
+            var logElementResponse = new LogElementResponse();
+            foreach (var logElement in request.LogElements)
             {
                 logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
-                logResponse += LogElement(logElement);
+                logElementResponse += LogElement(logElement);
             }
 
-            return logResponse;
+            logHandlerResponse.Success = logElementResponse.Success;
+            logHandlerResponse.Message = logElementResponse.Message;
+            logHandlerResponse.ServerTimeEnd = TimeHelper.UnixTimestamp();
+
+            return logHandlerResponse;
         }
 
-        public static LogResponse LogElement(LogHandlerDTO logElement)
+        public static LogElementResponse LogElement(LogElementDTO logElement)
         {
             try
             {
@@ -179,11 +188,11 @@ namespace LogRecorderAndPlayer
                     default:
                         throw new Exception("Unknown LogType");
                 }
-                return new LogResponse() {Success = true};
+                return new LogElementResponse() {Success = true};
             }
             catch (Exception ex)
             {
-                return new LogResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
+                return new LogElementResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
             }
         }
 
@@ -242,14 +251,23 @@ namespace LogRecorderAndPlayer
         }
     }
 
-    public class LogResponse
+    public class LogHandlerResponse
     {
         public bool Success;
         public string Message;
 
-        public static LogResponse operator +(LogResponse left, LogResponse right)
+        public double ServerTimeStart;
+        public double ServerTimeEnd;
+    }
+
+    public class LogElementResponse
+    {
+        public bool Success;
+        public string Message;
+
+        public static LogElementResponse operator +(LogElementResponse left, LogElementResponse right)
         {
-            return new LogResponse()
+            return new LogElementResponse()
             {
                 Success = (left?.Success ?? true) && (right?.Success ?? true),
                 Message = (left?.Success ?? true) ? left?.Message : right?.Message

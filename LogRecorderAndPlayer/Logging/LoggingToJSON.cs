@@ -13,9 +13,10 @@ namespace LogRecorderAndPlayer
     {
         private readonly static int maxFilePathLength = 248;
 
-        public static void LogElement(string filePath, LogHandlerDTO logElement)
+        public static void LogElement(string filePath, LogElementDTO logElement)
         {
-            var fileName = $"{logElement.Timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.SessionGUID}__{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";            
+            var timestamp = TimeHelper.UnixTimeStampToDateTime(logElement.UnixTimestamp);
+            var fileName = $"{timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.SessionGUID}__{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";            
             var filePathAndName = filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName;
             var fileExtension = ".json";
 
