@@ -12,8 +12,7 @@ namespace LogRecorderAndPlayer.Common
     {
         public static string GetResourceContent(string resourceName)
         {
-            var assembly = Assembly.GetExecutingAssembly();
-            //var resourceName = "MyCompany.MyProduct.MyFile.txt";
+            var assembly = Assembly.GetExecutingAssembly();            
 
             using (Stream stream = assembly.GetManifestResourceStream(resourceName))
             using (StreamReader reader = new StreamReader(stream))

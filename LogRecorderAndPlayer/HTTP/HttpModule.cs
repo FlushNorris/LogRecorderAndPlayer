@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Web;
 using System.Web.SessionState;
 using LogRecorderAndPlayer.Common;
@@ -346,8 +347,10 @@ namespace LogRecorderAndPlayer
 
             if (filePath.ToLower() == "/logrecorderandplayerjs.lrap")
             {
-                context.Response.Clear();
-                context.Response.Write(ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"));
+                //context.Response.Status = "304 NOT MODIFIED";
+                //context.Response.StatusCode = 304;
+                //context.Response.StatusDescription = "NOT MODIFIED";
+                ResponseHelper.Write(context.Response, "text/javascript", ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"), new TimeSpan(1, 0, 0));
                 return;
             }
 

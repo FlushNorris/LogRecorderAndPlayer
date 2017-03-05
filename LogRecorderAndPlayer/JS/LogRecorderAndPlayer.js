@@ -18,9 +18,9 @@
 
     var clientTimeOffset = 0;
 
-    function unitTimeStampByOffset() {
-        return unixTimestamp() + clientTimeOffset;
-    }
+    //function unitTimeStampByOffset() {
+    //    return unixTimestamp() + clientTimeOffset;
+    //}
 
     function setPageGUID(_pageGUID) {
         var v = getPageGUID();
@@ -124,7 +124,7 @@
             options.lrapBundleGUID = generateGUID();
             options.lrapOrigURL = options.url;
 
-            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unitTimeStampByOffset(), LogType.OnAjaxRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
+            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unixTimestamp(), LogType.OnAjaxRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
             options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID);
 
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
@@ -142,7 +142,7 @@
                 pageGUID,
                 bundleGUID,
                 null,
-                unitTimeStampByOffset(),
+                unixTimestamp(),
                 LogType.OnAjaxResponseReceived,
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
@@ -162,7 +162,10 @@
 
         setupAllClientsideControlEvents();
 
-        setupLogger();
+        //To sync server and client time
+        callLogHandler(false/*async*/, undefined, function() {
+            setupLogger();
+        });
     }
 
     function getSelectionText(elm) {
@@ -575,7 +578,7 @@
         }
     }
 
-    function callLogHandler(async, logHandlerRequest) {
+    function callLogHandler(async, logHandlerRequest, fSuccess) {
         async = typeof (async) == "undefined" || async;
 
         if (typeof (logHandlerRequest) == "undefined") {
@@ -583,6 +586,10 @@
                 LogElements: []
             };
         }
+                
+        $.each(logHandlerRequest.LogElements,function(idx, v) {
+            v.UnixTimestamp = v.UnixClientTimestamp + clientTimeOffset;
+        });        
 
         var clientTimeStart = unixTimestamp();        
         $.ajax({
@@ -602,6 +609,9 @@
                 var ntpR = ntp(clientTimeStart, data.ServerTimeStart, data.ServerTimeEnd, clientTimeEnd);
                 //console.log("offset was changed from " + clientTimeOffset + " to " + ntpR.offset);
                 clientTimeOffset = ntpR.offset;
+
+                if (fSuccess)
+                    fSuccess();
             },
             error: function (data) {
                 logElements = logElementsForHandler.concat(logElements); //Put elements back in queue
@@ -616,7 +626,7 @@
     }
 
     function logElementEx(logType, element, value, compareFn, combineFn) {
-        logElement(getSessionGUID(), getPageGUID(), null, null, unitTimeStampByOffset(), logType, element, value, compareFn, combineFn);
+        logElement(getSessionGUID(), getPageGUID(), null, null, unixTimestamp(), logType, element, value, compareFn, combineFn);
     }
 
     function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, unixTimestamp, logType, element, value, compareFn, combineFn) {
@@ -635,7 +645,7 @@
             PageGUID: pageGUID,
             BundleGUID: bundleGUID,
             ProgressGUID: progressGUID,
-            UnixTimestamp: unixTimestamp, //getDataMemberDate(timestamp),
+            UnixClientTimestamp: unixTimestamp, //getDataMemberDate(timestamp),
             LogType: logType,
             Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
             Element2: null,
@@ -998,10 +1008,8 @@
     publicMethods.init = init;
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
-    publicMethods.callLogHandler = callLogHandler;
     
     return publicMethods;
 }());
 
-logRecorderAndPlayer.callLogHandler(false/*async*/); //To sync server and client time
 
