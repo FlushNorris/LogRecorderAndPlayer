@@ -56,11 +56,16 @@
     <Compile Include="Common\WebHelper.cs" />
     <Compile Include="Configuration\ConfigurationHelper.cs" />
     <Compile Include="Configuration\LRAPConfigurationSection.cs" />
+    <Compile Include="DB\SqlCommandLRAP.cs" />
+    <Compile Include="DB\SqlCommandLRAPExtensions.cs" />
+    <Compile Include="DB\SqlDataReaderExtensions.cs" />
+    <Compile Include="DB\SqlDataReaderLRAP.cs" />
     <Compile Include="Dynamic\DynAssembly.cs" />
     <Compile Include="HTTP\HttpHandler.cs" />
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
+    <Compile Include="Logging\LoggingDB.cs" />
     <Compile Include="Logging\LoggingHandler.cs" />
     <Compile Include="Logging\LoggingHelper.cs" />
     <Compile Include="Logging\LoggingToCSV.cs" />

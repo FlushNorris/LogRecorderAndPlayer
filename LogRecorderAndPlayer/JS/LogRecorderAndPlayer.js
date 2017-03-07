@@ -105,7 +105,9 @@
         OnPageRequest: 25,
         OnPageResponse: 26,
         OnWCFServiceRequest: 27,
-        OnWCFServiceResponse: 28    
+        OnWCFServiceResponse: 28,
+        OnDatabaseRequest: 29,
+        OnDatabaseResponse: 30
     };
 
     function init(sessionGUID, pageGUID) {
@@ -235,6 +237,7 @@
     //regionend: Path to the element from the closest self or parent with an ID
 
     function setupBasicClientsideControlEvents(inputSelector) {
+        console.log('testing img1');
         var $document = $(document);
         $document.on('mousedown', inputSelector, function (event) { //left click vs right click?
             if (!event)
@@ -252,10 +255,26 @@
             //console.log('mousedown: event.pageX=' + event.pageX + " : event.pageY=" + event.pageY);
             //console.log('window: window.pageXOffset=' + window.pageXOffset + " : window.pageYOffset=" + window.pageYOffset);
             //console.log(elmP);
-            if (this != elmP)
-                return;
+            if (this != elmP) {
 
-            logElementEx(LogType.OnMouseDown, getElementPath(this), JSON.stringify(v));
+                //var $parent = $(elmP).parent();
+                
+                //var parent = $parent[0]
+                //if (this != parent) {
+                //    console.log('argh3... found the following...');
+                //    console.log(parent);
+                //    console.log('should have been....');
+                //    console.log(this);
+
+                //    //find parent... could be an img-tag with a 
+                //    return;
+                //} else {
+                //    console.log('wooohoooooooo!!!')
+                //}
+                return;
+            }
+
+            logElementEx(LogType.OnMouseDown, getElementPath(current), JSON.stringify(v));
 
             //console.log("mousedown: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
         });
@@ -286,8 +305,22 @@
 
             if (event.pageX != 0 && event.pageY != 0) {
                 var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
-                if (this != elmP)
+
+                if (this != elmP) {
+                    //console.log(elmP);
+                    //var $parent = $(elmP).parent();
+                    //if (this != $parent[0]) {
+                    //    console.log('click argh2... found the following...');
+                    //    console.log($parent[0]);
+                    //    console.log('should have been....');
+                    //    console.log(this);
+
+                    //    //find parent... could be an img-tag with a 
+                    //    return;
+                    //}
                     return;
+                }
+
             }
 
             logElementEx(LogType.OnClick, getElementPath(this), "");
@@ -484,13 +517,17 @@
             //logElementEx(LogType.OnReset, getElementPath(this), "");
         });
 
+        setupBasicClientsideControlEvents("a");
         setupBasicClientsideControlEvents("p");
         setupBasicClientsideControlEvents("div");
         setupBasicClientsideControlEvents("span");
         setupBasicClientsideControlEvents("textarea");
         setupBasicClientsideControlEvents("input");
+        setupBasicClientsideControlEvents("select");
+        setupBasicClientsideControlEvents("img");
         setupInputClientsideControlEvents("textarea");
         setupInputClientsideControlEvents("input"); //last one goes on top
+        setupInputClientsideControlEvents("select"); //last one goes on top
 
 //        var $inputSearch = $("input[type=search]");
         $document.on('search', "input[type=search]", function () {

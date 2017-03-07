@@ -16,38 +16,40 @@ namespace LogRecorderAndPlayer
         {
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
-            LoggingHelper.LogElement(new LogElementDTO()
-            {
-                GUID = Guid.NewGuid(),
-                SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
-                PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
-                BundleGUID = null,
-                ProgressGUID = null,
-                UnixTimestamp = TimeHelper.UnixTimestamp(),
-                LogType = LogType.OnPageRequest,
-                Element = context.Request.RawUrl,
-                Element2 = postBackControlClientId,
-                Value = SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json)
-            });
+            LoggingHelper.LogElement(new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: LogType.OnPageRequest,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json),
+                times: 1,
+                unixTimestampEnd: null
+            ));
         }
 
         public static void LogResponse(HttpContext context, Page page, string response)
         {
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
-            LoggingHelper.LogElement(new LogElementDTO()
-            {
-                GUID = Guid.NewGuid(),
-                SessionGUID = LoggingHelper.GetSessionGUID(context, page).Value,
-                PageGUID = LoggingHelper.GetPageGUID(context, page).Value,
-                BundleGUID = null,
-                ProgressGUID = null,
-                UnixTimestamp = TimeHelper.UnixTimestamp(),
-                LogType = LogType.OnPageResponse,
-                Element = context.Request.RawUrl,
-                Element2 = postBackControlClientId,
-                Value = response
-            });
+            LoggingHelper.LogElement(new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: LogType.OnPageResponse,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: response,
+                times: 1,
+                unixTimestampEnd: null
+            ));
         }
 
         /// <summary>

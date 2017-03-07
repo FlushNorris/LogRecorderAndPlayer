@@ -26,6 +26,24 @@ namespace LogRecorderAndPlayer
         public string Value { get; set; }
         public int Times { get; set; }
         public double? UnixTimestampEnd { get; set; }
+
+        public LogElementDTO() { }
+
+        public LogElementDTO(Guid guid, Guid sessionGUID, Guid pageGUID, Guid? bundleGUID, Guid? progressGUID, double unixTimestamp, LogType logType, string element, string element2, string value, int times, double? unixTimestampEnd)
+        {
+            GUID = guid;
+            SessionGUID = sessionGUID;
+            PageGUID = pageGUID;
+            BundleGUID = bundleGUID;
+            ProgressGUID = progressGUID;
+            UnixTimestamp = unixTimestamp;
+            LogType = logType;
+            Element = element;
+            Element2 = element2;
+            Value = value;
+            Times = times;
+            UnixTimestampEnd = unixTimestampEnd;
+        }
     }
 
     public enum LogType
@@ -58,6 +76,8 @@ namespace LogRecorderAndPlayer
         OnPageRequest = 25,
         OnPageResponse = 26,
         OnWCFServiceRequest = 27,
-        OnWCFServiceResponse = 28
+        OnWCFServiceResponse = 28,
+        OnDatabaseRequest = 29,
+        OnDatabaseResponse = 30
     }
 }

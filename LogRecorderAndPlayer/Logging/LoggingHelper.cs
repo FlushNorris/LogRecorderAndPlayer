@@ -264,6 +264,7 @@ namespace LogRecorderAndPlayer
     {
         public bool Success;
         public string Message;
+        public object Object;
 
         public static LogElementResponse operator +(LogElementResponse left, LogElementResponse right)
         {

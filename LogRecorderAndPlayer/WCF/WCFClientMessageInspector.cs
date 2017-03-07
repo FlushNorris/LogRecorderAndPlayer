@@ -48,21 +48,20 @@ namespace LogRecorderAndPlayer
 
             string messageBody = GetMessageBody(request);
 
-            LoggingHelper.LogElement(new LogElementDTO()
-            {
-                GUID = loggingState.GUID,
-                SessionGUID = loggingState.SessionGUID,
-                PageGUID = loggingState.PageGUID,
-                BundleGUID = loggingState.BundleGUID,
-                ProgressGUID = null,
-                UnixTimestamp = TimeHelper.UnixTimestamp(),
-                LogType = LogType.OnWCFServiceRequest,
-                Element = Path.GetFileName(loggingState.Action),
-                Element2 = null,
-                Value = messageBody,
-                Times = 1,
-                UnixTimestampEnd = null
-            });
+            LoggingHelper.LogElement(new LogElementDTO(
+                guid: loggingState.GUID,
+                sessionGUID: loggingState.SessionGUID,
+                pageGUID: loggingState.PageGUID,
+                bundleGUID: loggingState.BundleGUID,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: LogType.OnWCFServiceRequest,
+                element: Path.GetFileName(loggingState.Action),
+                element2: null,
+                value: messageBody,
+                times: 1,
+                unixTimestampEnd: null
+            ));
 
             request = BuildMessage(messageBody, request);
 
@@ -76,21 +75,20 @@ namespace LogRecorderAndPlayer
             {
                 string messageBody = GetMessageBody(reply);
 
-                LoggingHelper.LogElement(new LogElementDTO()
-                {
-                    GUID = loggingState.GUID,
-                    SessionGUID = loggingState.SessionGUID,
-                    PageGUID = loggingState.PageGUID,
-                    BundleGUID = loggingState.BundleGUID,
-                    ProgressGUID = null,
-                    UnixTimestamp = TimeHelper.UnixTimestamp(),
-                    LogType = LogType.OnWCFServiceResponse,
-                    Element = Path.GetFileName(loggingState.Action),
-                    Element2 = null,
-                    Value = messageBody,
-                    Times = 1,
-                    UnixTimestampEnd = null
-                });
+                LoggingHelper.LogElement(new LogElementDTO(
+                    guid: loggingState.GUID,
+                    sessionGUID: loggingState.SessionGUID,
+                    pageGUID: loggingState.PageGUID,
+                    bundleGUID: loggingState.BundleGUID,
+                    progressGUID: null,
+                    unixTimestamp: TimeHelper.UnixTimestamp(),
+                    logType: LogType.OnWCFServiceResponse,
+                    element: Path.GetFileName(loggingState.Action),
+                    element2: null,
+                    value: messageBody,
+                    times: 1,
+                    unixTimestampEnd: null
+                ));
 
                 reply = BuildMessage(messageBody, reply);
             }
