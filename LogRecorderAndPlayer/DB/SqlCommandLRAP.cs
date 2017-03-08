@@ -12,9 +12,31 @@ namespace LogRecorderAndPlayer
     {
         public SqlCommand Cmd { get; private set; }
 
+        public SqlCommandLRAP()
+        {
+            Cmd = new SqlCommand();
+        }
+
         public SqlCommandLRAP(string sql, SqlConnection conn)
         {
             Cmd = new SqlCommand(sql, conn);
+        }
+
+        public SqlCommandLRAP(string sql, SqlConnection conn, SqlTransaction trans)
+        {
+            Cmd = new SqlCommand(sql, conn, trans);
+        }
+
+        public int CommandTimeout
+        {
+            get { return Cmd.CommandTimeout; }
+            set { Cmd.CommandTimeout = value; }
+        }
+
+        public SqlTransaction Transaction
+        {
+            get { return Cmd.Transaction; }
+            set { Cmd.Transaction = value; }
         }
 
         public CommandType CommandType
@@ -41,8 +63,34 @@ namespace LogRecorderAndPlayer
         }
 
         public SqlParameter CreateParameter()
-        {
+        {            
             return Cmd.CreateParameter();
+        }
+
+        public async Task<SqlDataReaderLRAP> ExecuteReaderAsync(CommandBehavior behavior = CommandBehavior.Default)
+        {
+            var reqResult = LoggingDB.LogRequest(this, LoggingDBType.CmdReader, behavior);
+            var cmdDto = reqResult.Object as SqlCommandDTO;
+            var result = await Cmd.ExecuteReaderAsync(behavior);
+            return new SqlDataReaderLRAP(cmdDto, result);
+        }
+
+        public async Task<object> ExecuteScalarAsync()
+        {
+            var reqResult = LoggingDB.LogRequest(this, LoggingDBType.CmdNonQuery);
+            var cmdDto = reqResult.Object as SqlCommandDTO;
+            var cmdResult = await Cmd.ExecuteScalarAsync();
+            LoggingDB.LogResponse(cmdDto, cmdResult);
+            return cmdResult;
+        }
+
+        public async Task<int> ExecuteNonQueryAsync()
+        {
+            var reqResult = LoggingDB.LogRequest(this, LoggingDBType.CmdNonQuery);
+            var cmdDto = reqResult.Object as SqlCommandDTO;
+            var cmdResult = await Cmd.ExecuteNonQueryAsync();
+            LoggingDB.LogResponse(cmdDto, cmdResult);
+            return cmdResult;
         }
 
         public SqlDataReaderLRAP ExecuteReader(CommandBehavior behavior = CommandBehavior.Default)

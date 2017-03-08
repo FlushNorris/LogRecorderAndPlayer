@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
@@ -89,15 +90,82 @@ namespace LogRecorderAndPlayer
             return Reader.IsDBNull(i);
         }
 
+        public object GetValue(int i)
+        {
+            return Reader.GetValue(i);
+        }
+
+        public Type GetFieldType(int i)
+        {
+            return Reader.GetFieldType(i);
+        }
+
         public int GetInt32(int i)
         {
             return Reader.GetInt32(i);
         }
 
-        public DateTime GetDateTime(int i)
+        public Guid GetGuid(int i)
         {
+            return Reader.GetGuid(i);
+        }
+
+        public Char GetChar(int i)
+        {
+            return Reader.GetChar(i);
+        }
+
+        public bool GetBoolean(int i)
+        {
+            return Reader.GetBoolean(i);
+        }
+
+        public double GetDouble(int i)
+        {
+            return Reader.GetDouble(i);
+        }
+
+        public byte GetByte(int i)
+        {
+            return Reader.GetByte(i);
+        }
+
+        public short GetInt16(int i)
+        {
+            return Reader.GetInt16(i);
+        }
+
+        public long GetInt64(int i)
+        {
+            return Reader.GetInt64(i);
+        }
+
+        public float GetFloat(int i)
+        {
+            return Reader.GetFloat(i);
+        }
+
+        public string GetString(int i)
+        {
+            return Reader.GetString(i);
+        }
+
+        public DateTime GetDateTime(int i)
+        {             
             return Reader.GetDateTime(i);
         }
+
+        public DataTable GetSchemaTable()
+        {
+            return Reader.GetSchemaTable();
+        }
+
+        public string GetName(int i)
+        {
+            return Reader.GetName(i);
+        }
+
+        public int FieldCount => Reader.FieldCount;
 
         public bool HasRows => Reader.HasRows;
     }
