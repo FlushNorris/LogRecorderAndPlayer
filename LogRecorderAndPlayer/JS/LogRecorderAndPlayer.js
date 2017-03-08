@@ -236,8 +236,44 @@
     }
     //regionend: Path to the element from the closest self or parent with an ID
 
+    function getEvents(elm, type) {
+        var events = $._data(elm, 'events');
+        if (events) {
+            var typeEvents = events[type];
+            if (typeEvents)
+                return typeEvents;
+        }
+        return null;
+    }
+
+    function logEvent(that, v, eventType, logType) {
+        v.events = [];
+
+        var events = getEvents(that, eventType);
+        if (events) {
+            v.events.push("jQueryEvent:" + events.length);
+        }
+
+        var $that = $(that);
+        var attr = $that.attr('on' + eventType);
+        if (attr) {
+            v.events.push(attr);
+        }
+
+        if (v.events.length > 0) {
+            logElementEx(logType, getElementPath(that), JSON.stringify(v));
+            return;
+        }
+
+        if (event.pageX != 0 && event.pageY != 0) {
+            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
+            if (that == elmP) {                
+                logElementEx(logType, getElementPath(that), JSON.stringify(v));
+            }
+        }
+    }
+
     function setupBasicClientsideControlEvents(inputSelector) {
-        console.log('testing img1');
         var $document = $(document);
         $document.on('mousedown', inputSelector, function (event) { //left click vs right click?
             if (!event)
@@ -250,33 +286,7 @@
                 ctrlKey: event.ctrlKey
             };
 
-            //Avoid "bubbling" to other logevents.. but preserve the normal bubbling for other events
-            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
-            //console.log('mousedown: event.pageX=' + event.pageX + " : event.pageY=" + event.pageY);
-            //console.log('window: window.pageXOffset=' + window.pageXOffset + " : window.pageYOffset=" + window.pageYOffset);
-            //console.log(elmP);
-            if (this != elmP) {
-
-                //var $parent = $(elmP).parent();
-                
-                //var parent = $parent[0]
-                //if (this != parent) {
-                //    console.log('argh3... found the following...');
-                //    console.log(parent);
-                //    console.log('should have been....');
-                //    console.log(this);
-
-                //    //find parent... could be an img-tag with a 
-                //    return;
-                //} else {
-                //    console.log('wooohoooooooo!!!')
-                //}
-                return;
-            }
-
-            logElementEx(LogType.OnMouseDown, getElementPath(current), JSON.stringify(v));
-
-            //console.log("mousedown: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
+            logEvent(this, v, 'mousedown', LogType.OnMouseDown);
         });
 
         $document.on('mouseup', inputSelector, function (event) { //left click vs right click?
@@ -290,55 +300,25 @@
                 ctrlKey: event.ctrlKey
             };
 
-            //Avoid "bubbling" to other logevents.. but preserve the normal bubbling for other events
-            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
-            if (this != elmP)
-                return;
+            logEvent(this, v, 'mouseup', LogType.OnMouseUp);
+        });        
 
-            logElementEx(LogType.OnMouseUp, getElementPath(this), JSON.stringify(v));
-            //            console.log("mouseup: " + getElementPath(this) + " button=" + event.button + " shiftKey=" + event.shiftKey + " altKey=" + event.altKey + " ctrlKey=" + event.ctrlKey);
-        });
-
-        $document.on('click', inputSelector, function (event) {
+        $document.on('click', inputSelector, function(event) { //Only elements with onclick/click event attached will be logged
             if (!event)
                 event = window.event;
 
-            if (event.pageX != 0 && event.pageY != 0) {
-                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
+            var v = {};
 
-                if (this != elmP) {
-                    //console.log(elmP);
-                    //var $parent = $(elmP).parent();
-                    //if (this != $parent[0]) {
-                    //    console.log('click argh2... found the following...');
-                    //    console.log($parent[0]);
-                    //    console.log('should have been....');
-                    //    console.log(this);
-
-                    //    //find parent... could be an img-tag with a 
-                    //    return;
-                    //}
-                    return;
-                }
-
-            }
-
-            logElementEx(LogType.OnClick, getElementPath(this), "");
-            //console.log("click: " + getElementPath(this));
+            logEvent(this, v, 'click', LogType.OnClick);
         });
 
         $document.on('dblclick', inputSelector, function (event) {
             if (!event)
                 event = window.event;
 
-            if (event.pageX != 0 && event.pageY != 0) {
-                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
-                if (this != elmP)
-                    return;
-            }
+            var v = {};
 
-            logElementEx(LogType.OnDblClick, getElementPath(this), "");
-            //console.log("dblclick: " + getElementPath(this));
+            logEvent(this, v, 'dblclick', LogType.OnDblClick);
         });
 
         $document.on('dragstart', inputSelector, function (event) {            
@@ -375,16 +355,6 @@
 
             logElementEx(LogType.OnScroll, getElementPath(this), JSON.stringify(v), compareLogElementsNoValue);
         });
-
-        //$.each($input,
-        //    function (idx, obj) {
-        //        //moveLastEventToFirst(obj, 'mouseover');
-        //        //moveLastEventToFirst(obj, 'mouseout');
-        //        moveLastEventToFirst(obj, 'mousedown');
-        //        moveLastEventToFirst(obj, 'mouseup');
-        //        moveLastEventToFirst(obj, 'click');
-        //        moveLastEventToFirst(obj, 'dblclick');
-        //    });
     }
 
     function setupInputClientsideControlEvents(inputSelector) {
@@ -470,20 +440,6 @@
             
             logElementEx(LogType.OnKeyPress, getElementPath(this), JSON.stringify(v), compareLogElementsKeypress, combineLogElementsKeypress);
         });        
-
-        //$.each($input,
-        //    function (idx, obj) {
-        //        moveLastEventToFirst(obj, 'blur');
-        //        moveLastEventToFirst(obj, 'focus');
-        //        moveLastEventToFirst(obj, 'change');
-        //        moveLastEventToFirst(obj, 'select');
-        //        moveLastEventToFirst(obj, 'copy');
-        //        moveLastEventToFirst(obj, 'cut');
-        //        moveLastEventToFirst(obj, 'paste');
-        //        //moveLastEventToFirst(obj, 'keydown');
-        //        moveLastEventToFirst(obj, 'keyup');
-        //        moveLastEventToFirst(obj, 'keypress');
-        //    });
     }
 
     function logWindowScroll()
@@ -508,13 +464,12 @@
 
     function setupAllClientsideControlEvents() {
         var $document = $(document);
-//        var $form = $("form");
         $document.on('submit', 'form', function () {
-            //logElementEx(LogType.OnSubmit, getElementPath(this), "");
+            logElementEx(LogType.OnSubmit, getElementPath(this), "");
         });
 
         $document.on('reset', 'form', function () {
-            //logElementEx(LogType.OnReset, getElementPath(this), "");
+            logElementEx(LogType.OnReset, getElementPath(this), "");
         });
 
         setupBasicClientsideControlEvents("a");
@@ -526,25 +481,12 @@
         setupBasicClientsideControlEvents("select");
         setupBasicClientsideControlEvents("img");
         setupInputClientsideControlEvents("textarea");
-        setupInputClientsideControlEvents("input"); //last one goes on top
-        setupInputClientsideControlEvents("select"); //last one goes on top
+        setupInputClientsideControlEvents("input"); 
+        setupInputClientsideControlEvents("select"); 
 
-//        var $inputSearch = $("input[type=search]");
         $document.on('search', "input[type=search]", function () {
             logElementEx(LogType.OnSearch, getElementPath(this), $(this).val());
         });
-
-        //var $body = $("body");
-
-        //console.log($body.resize);
-        //$body.resize(function () { //log load body size ... no, resize event is also called on load
-        //    console.log('body size??');
-        //    console.log("body size = " + window.outerWidth + " : " + window.outerHeight);
-        //    //var w = window.outerWidth;
-        //    //var h = window.outerHeight;
-        //    //var txt = "Window size: width=" + w + ", height=" + h;
-        //    //document.getElementById("demo").innerHTML = txt;
-        //});
 
         var $window = $(window);
 
@@ -553,14 +495,6 @@
 
         $window.scroll(logWindowScroll);        
         logWindowScroll();
-
-        //https://www.w3schools.com/jsref/dom_obj_event.asp
-        //scroll?
-        //pageshow?
-        //pagehide
-        //hashchange
-        //error
-        //search          
     }
 
     var logElements = [];
@@ -597,15 +531,8 @@
     function handleLogElements(async) {
         async = typeof (async) == "undefined" || async;
 
-        //console.log("handleLogElements called");
         var logElementsForHandler = logElements;
         logElements = [];
-
-        //console.log("logElementsForHandler.length = " + logElementsForHandler.length);
-        //compressItAll(logElementsForHandler);
-        //console.log("logElementsForHandler.length = " + logElementsForHandler.length);
-
-        //console.log("logElementsForHandler.length = " + logElementsForHandler.length);
 
         if (logElementsForHandler.length > 0) {
             var logHandlerRequest = {            
@@ -639,12 +566,7 @@
             },
             success: function (data) {
                 var clientTimeEnd = unixTimestamp();
-                //console.log("clientTimeStart = " + clientTimeStart);
-                //console.log("data.ServerTimeStart = " + data.ServerTimeStart);
-                //console.log("data.ServerTimeEnd = " + data.ServerTimeEnd);
-                //console.log("clientTimeEnd = " + clientTimeEnd);
                 var ntpR = ntp(clientTimeStart, data.ServerTimeStart, data.ServerTimeEnd, clientTimeEnd);
-                //console.log("offset was changed from " + clientTimeOffset + " to " + ntpR.offset);
                 clientTimeOffset = ntpR.offset;
 
                 if (fSuccess)
