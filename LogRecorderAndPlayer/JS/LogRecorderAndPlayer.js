@@ -246,8 +246,20 @@
         return null;
     }
 
-    function logEvent(that, v, eventType, logType) {
-        v.events = [];
+    function getAttributes(that) {
+        var result = {};
+        $.each(that.attributes, function(i, v) {
+            result[v.name] = v.value;
+        });
+        return result;
+    }
+
+    function logEvent(that, value, eventType, logType) {
+        var v = {
+            attributes: getAttributes(that),
+            events: [],
+            value: value
+        };
 
         var events = getEvents(that, eventType);
         if (events) {
@@ -357,36 +369,45 @@
         });
     }
 
+    function logInputClientsideControlEvent(that, logType, value, compareFn, combineFn) {
+        var v = {
+            attributes: getAttributes(that),
+            value: value
+        };         
+
+        logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn, combineFn);
+    }
+
     function setupInputClientsideControlEvents(inputSelector) {
 
         var $document = $(document);
 
         $document.on('blur', inputSelector, function () {
-            logElementEx(LogType.OnBlur, getElementPath(this), "");
+            logInputClientsideControlEvent(this, LogType.OnBlur, "");
         });
 
         $document.on('focus', inputSelector, function () {
-            logElementEx(LogType.OnFocus, getElementPath(this), "");
+            logInputClientsideControlEvent(this, LogType.OnFocus, "");
         });
 
         $document.on('change', inputSelector, function () {
-            logElementEx(LogType.OnChange, getElementPath(this), $(this).val());
+            logInputClientsideControlEvent(this, LogType.OnChange, $(this).val());
         });
 
         $document.on('select', inputSelector, function () { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
-            logElementEx(LogType.OnSelect, getElementPath(this), getSelectionText(this));
+            logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionText(this));
         });
 
         $document.on('copy', inputSelector, function () {
-            logElementEx(LogType.OnCopy, getElementPath(this), getSelectionText(this));
+            logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionText(this));
         });
 
         $document.on('cut', inputSelector, function () {
-            logElementEx(LogType.OnCut, getElementPath(this), getSelectionText(this));
+            logInputClientsideControlEvent(this, LogType.OnCut, getSelectionText(this));
         });
 
         $document.on('paste', inputSelector, function () {
-            logElementEx(LogType.OnPaste, getElementPath(this), $(this).val());
+            logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val());
         });
 
         $document.on('keydown', inputSelector,
@@ -404,7 +425,7 @@
                     ctrlKey: event.ctrlKey
                 };
 
-                logElementEx(LogType.OnKeyDown, getElementPath(this), JSON.stringify(v));
+                logInputClientsideControlEvent(this, LogType.OnKeyDown, v);
             });
 
         $document.on('keyup', inputSelector, function (event) { //keyCode is incase-sensative
@@ -421,7 +442,7 @@
                 ctrlKey: event.ctrlKey
             };
 
-            logElementEx(LogType.OnKeyUp, getElementPath(this), JSON.stringify(v), compareLogElementsKeyup, combineLogElementsKeyup);
+            logInputClientsideControlEvent(this, LogType.OnKeyUp, v, compareLogElementsKeyup, combineLogElementsKeyup);
         });
 
         $document.on('keypress', inputSelector, function (event) { //keyCode is case-sensative
@@ -438,7 +459,7 @@
                 ctrlKey: event.ctrlKey
             };
             
-            logElementEx(LogType.OnKeyPress, getElementPath(this), JSON.stringify(v), compareLogElementsKeypress, combineLogElementsKeypress);
+            logInputClientsideControlEvent(this, LogType.OnKeyPress, v, compareLogElementsKeypress, combineLogElementsKeypress);
         });        
     }
 
@@ -480,6 +501,7 @@
         setupBasicClientsideControlEvents("input");
         setupBasicClientsideControlEvents("select");
         setupBasicClientsideControlEvents("img");
+        setupBasicClientsideControlEvents("area");
         setupInputClientsideControlEvents("textarea");
         setupInputClientsideControlEvents("input"); 
         setupInputClientsideControlEvents("select"); 
@@ -679,12 +701,13 @@
     //    }
     //}
 
-    function compactLogElementList(compareFn, combineFn) {
+    function compactLogElementList(compareFn, combineFn) { //Denne kan kun compacte udfra de aktuelle compareFn og combineFn der er overført... de burde blive gemt for de enkelte logelements
         var requestIdx = logElements.length - 1;
 
         while (requestIdx > 0) {
             var secondLastRequest = logElements[requestIdx - 1];
             var lastRequest = logElements[requestIdx];
+
             var compareResult = compareFn(secondLastRequest, lastRequest);
             if (compareResult) {
                 combineFn(secondLastRequest, lastRequest, compareResult);
@@ -728,8 +751,8 @@
             le1.LogType == LogType.OnKeyDown &&
             le2.LogType == LogType.OnKeyPress) {
 
-            var v1 = JSON.parse(htmlDecode(le1.Value));
-            var v2 = JSON.parse(htmlDecode(le2.Value));
+            var v1 = JSON.parse(htmlDecode(le1.Value)).value;
+            var v2 = JSON.parse(htmlDecode(le2.Value)).value;
 
             if ((
                     getKeyUpDownKeypadChar(v1.charCode) == v2.ch ||
@@ -740,10 +763,11 @@
                 v1.ctrlKey == v2.ctrlKey) {
                 return 1;
             }
-        }                       
+        }
 
-        if (compareLogElements(le1, le2))
+        if (compareLogElements(le1, le2)) {
             return 2;
+        }
 
         return 0;
     }
@@ -757,8 +781,8 @@
             le1.LogType == LogType.OnKeyPress &&
             le2.LogType == LogType.OnKeyUp) {
 
-            var v1 = JSON.parse(htmlDecode(le1.Value));
-            var v2 = JSON.parse(htmlDecode(le2.Value));
+            var v1 = JSON.parse(htmlDecode(le1.Value)).value;
+            var v2 = JSON.parse(htmlDecode(le2.Value)).value;
 
             if ((
                     v1.ch == getKeyUpDownKeypadChar(v2.charCode) ||
@@ -782,8 +806,9 @@
             }
         }
 
-        if (le1.Times == le2.Times && compareLogElements(le1, le2))
+        if (le1.Times == le2.Times && compareLogElements(le1, le2)) {
             return 2;
+        }
 
         return 0;
     }
@@ -805,7 +830,7 @@
     }
 
     function compareLogElements(le1, le2) { //Without UnixTimestamp compares atm... should build a delay check on the compare        
-        return compareLogElementsNoValue(le1, le2) &&
+        return  compareLogElementsNoValue(le1, le2) &&
                 le1.Value == le2.Value;
     }
 
