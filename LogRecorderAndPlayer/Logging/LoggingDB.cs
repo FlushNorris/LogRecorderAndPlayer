@@ -70,10 +70,10 @@ namespace LogRecorderAndPlayer
 
             var result = LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID:LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page).Value,
-                pageGUID:LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page).Value,
-                bundleGUID:cmdDTO.BundleGUID,
-                progressGUID:null,
+                sessionGUID: LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
+                bundleGUID: cmdDTO.BundleGUID,
+                progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: LogType.OnDatabaseRequest,
                 element: cmdDTO.CommandText,
@@ -92,15 +92,15 @@ namespace LogRecorderAndPlayer
         {
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page).Value,
-                pageGUID: LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page).Value,
+                sessionGUID: LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
                 bundleGUID: cmdDTO.BundleGUID,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: LogType.OnDatabaseResponse,
                 element: cmdDTO.CommandText,
                 element2: null,
-                value: SerializationHelper.Serialize(value, SerializationType.Json),
+                value: value != null ? SerializationHelper.Serialize(value, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null
             ));            

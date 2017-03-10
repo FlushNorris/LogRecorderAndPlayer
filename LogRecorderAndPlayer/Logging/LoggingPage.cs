@@ -18,8 +18,8 @@ namespace LogRecorderAndPlayer
 
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, page).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, page).Value,
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
@@ -38,8 +38,8 @@ namespace LogRecorderAndPlayer
 
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, page).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, page).Value,
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),

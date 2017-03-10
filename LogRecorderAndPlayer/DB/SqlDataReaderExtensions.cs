@@ -19,7 +19,7 @@ namespace LogRecorderAndPlayer
         }
 
         public static Decimal GetDecimal(this SqlDataReaderLRAP me, int no, Decimal defaultIfNull = -1)
-        {
+        {            
             return me.IsDBNull(no) ? defaultIfNull : me.GetDecimal(no);
         }
 

@@ -12,10 +12,10 @@ namespace LogRecorderAndPlayer
         public static void LogRequest(HttpContext context)
         {
             LoggingHelper.LogElement(new LogElementDTO(
-                guid: LoggingHelper.GetInstanceGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
-                pageGUID: LoggingHelper.GetPageGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
-                bundleGUID: LoggingHelper.GetBundleGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
+                guid: LoggingHelper.GetInstanceGUID(context, () => new Guid()).GetValueOrDefault(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid()).GetValueOrDefault(),
+                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid()).GetValueOrDefault(),
+                bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid()).GetValueOrDefault(),
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: LogType.OnAjaxRequestReceived,
@@ -33,10 +33,10 @@ namespace LogRecorderAndPlayer
             var requestContainsInstanceGuid = context.Request.Params[Consts.GUIDTag] != null;
 
             LoggingHelper.LogElement(new LogElementDTO(
-                guid: LoggingHelper.GetInstanceGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
-                pageGUID: LoggingHelper.GetPageGUID(context, null, () => Guid.NewGuid()).GetValueOrDefault(),
-                bundleGUID: LoggingHelper.GetBundleGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
+                guid: LoggingHelper.GetInstanceGUID(context, () => new Guid()).GetValueOrDefault(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid()).GetValueOrDefault(),
+                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid()).GetValueOrDefault(),
+                bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid()).GetValueOrDefault(),
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: LogType.OnAjaxResponseSend,

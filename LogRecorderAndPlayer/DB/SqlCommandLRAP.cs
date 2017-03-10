@@ -122,6 +122,8 @@ namespace LogRecorderAndPlayer
         public void Dispose()
         {
             Cmd.Dispose();
+            Cmd = null;
+            //GC.SuppressFinalize(this);
         }        
     }
 }

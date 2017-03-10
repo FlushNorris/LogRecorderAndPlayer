@@ -431,8 +431,8 @@ namespace LogRecorderAndPlayer
                     //    page.Session["WHATTHEFUCK"] = "WOOHOOO2222222222222";
                     //}
 
-                    var sessionGUID = LoggingHelper.GetSessionGUID(context, page);
-                    var pageGUID = LoggingHelper.GetPageGUID(context, page);
+                    var sessionGUID = LoggingHelper.GetSessionGUID(context, page, () => new Guid());
+                    var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
                     
                     LoggingPage.LogResponse(context, page, response);
 

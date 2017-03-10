@@ -608,7 +608,7 @@
             LogType: logType,
             Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
             Element2: null,
-            Value: value,
+            Value: value != null ? htmlEncode(value) : null,
             Times: 1,
             UnixTimestampEnd: null
         };

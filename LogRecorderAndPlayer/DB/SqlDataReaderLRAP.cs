@@ -18,18 +18,12 @@ namespace LogRecorderAndPlayer
 
         public object this[string name]
         {
-            get
-            {
-                return Reader[name];
-            }
+            get { return Reader[name]; }
         }
 
         public object this[int i]
         {
-            get
-            {
-                return Reader[i];
-            }
+            get { return Reader[i]; }
         }
 
         public SqlDataReaderLRAP(SqlCommandDTO cmdDTO, SqlDataReader reader)
@@ -83,6 +77,8 @@ namespace LogRecorderAndPlayer
         {
             DoLogging();
             Reader.Dispose();
+            Reader = null;
+            //GC.SuppressFinalize(this);
         }
 
         public bool IsDBNull(int i)
@@ -103,6 +99,11 @@ namespace LogRecorderAndPlayer
         public int GetInt32(int i)
         {
             return Reader.GetInt32(i);
+        }
+
+        public decimal GetDecimal(int i)
+        {
+            return Reader.GetDecimal(i);
         }
 
         public Guid GetGuid(int i)

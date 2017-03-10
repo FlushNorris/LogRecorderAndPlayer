@@ -33,7 +33,7 @@ namespace LogRecorderAndPlayer
 
         public static Guid? GetPageGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
         {
-            if (context == null)
+            if (context == null || context.Handler == null)
                 return defaultValue != null ? defaultValue() : null;
 
             var requestPageGUID = context.Request?.Params[Consts.PageGUIDTag];
@@ -109,7 +109,7 @@ namespace LogRecorderAndPlayer
 
         public static Guid? GetSessionGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
         {
-            if (context == null)
+            if (context == null || context.Handler == null)
                 return defaultValue != null ? defaultValue() : null;
 
             var requestSessionGUID = context.Request?.Params[Consts.SessionGUIDTag];
@@ -160,6 +160,7 @@ namespace LogRecorderAndPlayer
             foreach (var logElement in request.LogElements)
             {
                 logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
+                logElement.Value = logElement.Value != null ? HttpUtility.HtmlDecode(logElement.Value) : null; //Has to be encoded when sending from client to server, due to asp.net default security
                 logElementResponse += LogElement(logElement);
             }
 

@@ -39,8 +39,8 @@ namespace LogRecorderAndPlayer
             var loggingState = new LoggingState()
             {
                 GUID = LoggingHelper.GetInstanceGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
-                SessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => Guid.NewGuid()).GetValueOrDefault(),
-                PageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => Guid.NewGuid()).GetValueOrDefault(),
+                SessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => new Guid()).GetValueOrDefault(),
+                PageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => new Guid()).GetValueOrDefault(),
                 BundleGUID = LoggingHelper.GetBundleGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
                 Url = LoggingHelper.StripUrlForLRAP(channel.Via.ToString()),
                 Action = request.Headers.Action
