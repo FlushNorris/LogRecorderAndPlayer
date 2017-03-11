@@ -575,6 +575,9 @@
                 
         $.each(logHandlerRequest.LogElements,function(idx, v) {
             v.UnixTimestamp = v.UnixClientTimestamp + clientTimeOffset;
+            v.CompareFn = undefined;
+            v.CombineFn = undefined;
+            v.CombinedElements = undefined;
         });        
 
         var clientTimeStart = unixTimestamp();        
@@ -632,11 +635,13 @@
             Element2: null,
             Value: value != null ? htmlEncode(value) : null,
             Times: 1,
-            UnixTimestampEnd: null
+            UnixTimestampEnd: null,
+            CompareFn: compareFn,
+            CombineFn: combineFn
         };
         logElements.push(request);
 
-        compactLogElementList(compareFn, combineFn);
+        compactLogElementList();
     }
 
     //function getCompareFnByLogType(logType) {
@@ -701,12 +706,21 @@
     //    }
     //}
 
-    function compactLogElementList(compareFn, combineFn) { //Denne kan kun compacte udfra de aktuelle compareFn og combineFn der er overført... de burde blive gemt for de enkelte logelements
+    function compactLogElementList() { 
         var requestIdx = logElements.length - 1;
 
         while (requestIdx > 0) {
             var secondLastRequest = logElements[requestIdx - 1];
             var lastRequest = logElements[requestIdx];
+
+            var compareFn = lastRequest.CompareFn;
+            var combineFn = lastRequest.CombineFn;
+
+            if (typeof (compareFn) == "undefined")
+                compareFn = compareLogElements;
+
+            if (typeof (combineFn) == "undefined")
+                combineFn = combineLogElements;
 
             var compareResult = compareFn(secondLastRequest, lastRequest);
             if (compareResult) {
@@ -716,22 +730,6 @@
                 requestIdx--;
             } else
                 return;
-        }
-    }
-
-    function combineLogElementsKeypress(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
-        le1.UnixTimestampEnd = le2.UnixTimestamp;
-        le1.Value = le2.Value;
-        le1.LogType = le2.LogType;
-        if (compareResult == 2) {
-            le1.Times += le2.Times;
-        }
-    }
-
-    function combineLogElementsKeyup(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
-        le1.UnixTimestampEnd = le2.UnixTimestamp;
-        if (compareResult == 2) {
-            le1.Times += le2.Times;
         }
     }
 
@@ -772,18 +770,30 @@
         return 0;
     }
 
-    function compareLogElementsKeyup(le1, le2/*, logElements, le2Idx*/) {
+    function combineLogElementsKeypress(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
+        le1.UnixTimestampEnd = le2.UnixTimestamp;
+        le1.Value = le2.Value;
+        le1.LogType = le2.LogType;
+        if (compareResult == 2) {
+            le1.Times += le2.Times;
+        }
+    }
+
+    function compareLogElementsKeyup(le1, le2) {
         if (le1.SessionGUID == le2.SessionGUID &&
             le1.PageGUID == le2.PageGUID &&
             le1.BundleGUID == le2.BundleGUID &&
             le1.ProgressGUID == le2.ProgressGUID &&
-            le1.Times == le2.Times &&
+            //le1.Times == le2.Times &&
             le1.LogType == LogType.OnKeyPress &&
             le2.LogType == LogType.OnKeyUp) {
 
-            var v1 = JSON.parse(htmlDecode(le1.Value)).value;
-            var v2 = JSON.parse(htmlDecode(le2.Value)).value;
+            var le1Value = JSON.parse(htmlDecode(le1.Value));
+            var le2Value = JSON.parse(htmlDecode(le2.Value));
 
+            var v1 = le1Value.value;
+            var v2 = le2Value.value;
+            
             if ((
                     v1.ch == getKeyUpDownKeypadChar(v2.charCode) ||
                     v1.ch.toUpperCase() == v2.ch.toUpperCase()
@@ -792,25 +802,39 @@
                 v1.altKey == v2.altKey &&
                 v1.ctrlKey == v2.ctrlKey) {
 
-                return 1;
-                ////Extended test
-                //if (le2Idx - 3 >= 0) {
-                //    var leM0 = logElements[le2Idx - 2];
-                //    var leM1 = logElements[le2Idx - 3];
+                var keyPressTimes = le1.Times;
+                var keyUpTimes = le1.CombinedElements ? le1.CombinedElements["KeyUp"] : 0;
+                if (!keyUpTimes) //0 or undefined
+                    keyUpTimes = 0;
 
-                //    if (leM0.LogType == LogType.OnKeyDown &&
-                //        leM1.LogType != LogType.OnKeyPress) {
-                //        return 1;
-                //    }
-                //}                
+                if (keyPressTimes - 1 == keyUpTimes) { //dvs der mangler en keyup til den pågældende KeyPress
+                    return 1;
+                }
             }
         }
 
-        if (le1.Times == le2.Times && compareLogElements(le1, le2)) {
-            return 2;
-        }
+        //Kan ikke opstå en situation hvor der er 2 stk keyup af den samme tast
+        //if (le1.Times == le2.Times && compareLogElements(le1, le2)) {
+        //    return 2;
+        //}
 
         return 0;
+    }
+
+    function combineLogElementsKeyup(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
+        le1.UnixTimestampEnd = le2.UnixTimestamp;
+        if (compareResult == 1) {
+            if (!le1.CombinedElements) 
+                le1.CombinedElements = {};
+            
+            if (!le1.CombinedElements["KeyUp"]) 
+                le1.CombinedElements["KeyUp"] = 1;
+            else 
+                le1.CombinedElements["KeyUp"]++;            
+        }
+        //if (compareResult == 2) {
+        //    le1.Times += le2.Times;
+        //}
     }
 
     function combineLogElements(le1, le2) { // le1 = le1 + le2 (non pure)
