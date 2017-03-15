@@ -1,0 +1,13 @@
+context: True
+context.Session: False
+page: True
+page.Session: True
+page.Session["HttpModuleTest"]: 21:24:41:381
+Setting page.Session["HttpModuleTest_Context_PreSendRequestContent21:24:41:425"] = "HttpModuleTest_Context_PreSendRequestContent21:24:41:425"
+Done setting page.Session["HttpModuleTest_Context_PreSendRequestContent21:24:41:425"] = "HttpModuleTest_Context_PreSendRequestContent21:24:41:425"
+currentPageViewState["HttpModuleTest"]: 21:24:41:381
+Setting currentPageViewState["HttpModuleTest_Context_PreSendRequestContent21:24:41:425"] = "HttpModuleTest_Context_PreSendRequestContent21:24:41:425"
+Done setting currentPageViewState["HttpModuleTest_Context_PreSendRequestContent21:24:41:425"] = "HttpModuleTest_Context_PreSendRequestContent21:24:41:425"
+SaveViewState call
+SaveViewState called
+watcher.response.length = 10520

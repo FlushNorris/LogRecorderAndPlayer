@@ -104,10 +104,14 @@
         OnScroll: 24,
         OnPageRequest: 25,
         OnPageResponse: 26,
-        OnWCFServiceRequest: 27,
-        OnWCFServiceResponse: 28,
-        OnDatabaseRequest: 29,
-        OnDatabaseResponse: 30
+        OnPageSessionBefore: 27,
+        OnPageSessionAfter: 28,
+        OnPageViewStateBefore: 29,
+        OnPageViewStateAfter: 30,
+        OnWCFServiceRequest: 31,
+        OnWCFServiceResponse: 32,
+        OnDatabaseRequest: 33,
+        OnDatabaseResponse: 34
     };
 
     function init(sessionGUID, pageGUID) {

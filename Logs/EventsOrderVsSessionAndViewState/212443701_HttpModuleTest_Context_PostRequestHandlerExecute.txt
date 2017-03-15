@@ -1,0 +1,16 @@
+context: True
+context.Session: True
+context.Session["HttpModuleTest"]: 21:24:43:686
+Setting context.Session["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"
+Done setting context.Session["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"
+page: True
+page.Session: True
+page.Session["HttpModuleTest"]: 21:24:43:686
+Setting page.Session["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"
+Done setting page.Session["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:701"
+currentPageViewState["HttpModuleTest"]: 21:24:43:686
+Setting currentPageViewState["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:702"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:702"
+Done setting currentPageViewState["HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:702"] = "HttpModuleTest_Context_PostRequestHandlerExecute21:24:43:702"
+SaveViewState call
+SaveViewState called
+watcher.response.length = 0

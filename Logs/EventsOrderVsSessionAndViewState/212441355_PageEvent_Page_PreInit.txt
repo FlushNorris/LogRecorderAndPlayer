@@ -1,0 +1,5 @@
+currentPageViewState["HttpModuleTest"]: null
+Setting currentPageViewState["Page_PreInit21:24:41:355"] = "Page_PreInit21:24:41:355"
+Done setting currentPageViewState["Page_PreInit21:24:41:355"] = "Page_PreInit21:24:41:355"
+SaveViewState call
+SaveViewState called

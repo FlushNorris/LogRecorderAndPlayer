@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -58,7 +59,7 @@ namespace LogRecorderAndPlayer
                 return new Guid(v);
             }
 
-            var viewState = GetViewState(page);
+            var viewState = WebHelper.GetViewState(page);
 
             var pageGUID = viewState[Consts.PageGUIDTag] as Guid?;
             if (pageGUID == null)
@@ -66,19 +67,9 @@ namespace LogRecorderAndPlayer
             return pageGUID;
         }
 
-        private static StateBag GetViewState(System.Web.UI.Page page)
-        {
-            var pageType = page.GetType();
-
-            var viewStatePropertyDescriptor = pageType.GetProperty("ViewState", BindingFlags.Instance | BindingFlags.NonPublic);
-            var viewState = (StateBag) viewStatePropertyDescriptor.GetValue(HttpContext.Current.CurrentHandler);
-
-            return viewState;
-        }
-
         private static void SetPageGUID(System.Web.UI.Page page, Guid pageGUID)
         {
-            var viewState = GetViewState(page);
+            var viewState = WebHelper.GetViewState(page);
 
             viewState[Consts.PageGUIDTag] = Guid.NewGuid();
         }
@@ -119,7 +110,7 @@ namespace LogRecorderAndPlayer
             if (page == null)
                 return defaultValue != null ? defaultValue() : null;
 
-            var viewState = GetViewState(page);
+            var viewState = WebHelper.GetViewState(page);
 
             var v = viewState[Consts.SessionGUIDTag] as Guid?;
             if (v != null)
@@ -143,7 +134,7 @@ namespace LogRecorderAndPlayer
 
         private static void SetSessionGUIDInViewState(System.Web.UI.Page page, Guid sessionGUID)
         {
-            var viewState = GetViewState(page);
+            var viewState = WebHelper.GetViewState(page);
             viewState[Consts.SessionGUIDTag] = sessionGUID;
         }
 
@@ -155,7 +146,7 @@ namespace LogRecorderAndPlayer
             {
                 ServerTimeStart = TimeHelper.UnixTimestamp()
             };
-            
+
             var logElementResponse = new LogElementResponse();
             foreach (var logElement in request.LogElements)
             {
@@ -201,7 +192,7 @@ namespace LogRecorderAndPlayer
         {
             url = url.Trim();
             var i = url.IndexOf('?');
-            if (i == -1 || i == url.Length-1)
+            if (i == -1 || i == url.Length - 1)
                 return url;
             var query = url.Substring(i + 1).Trim();
             url = url.Substring(0, i);
@@ -213,8 +204,8 @@ namespace LogRecorderAndPlayer
             queryBuilder.Remove(Consts.BundleGUIDTag);
 
             query = queryBuilder.ToString();
-           
-            return $"{url}{(String.IsNullOrWhiteSpace(query)?"":"?")}{query}";
+
+            return $"{url}{(String.IsNullOrWhiteSpace(query) ? "" : "?")}{query}";
         }
 
         public static int GetHtmlIndexForInsertingLRAPJS(string html)
@@ -249,6 +240,23 @@ namespace LogRecorderAndPlayer
             }
 
             return indexToInsertLRAP;
+        }
+
+        public static NameValueCollection GetSessionValues(Page page)
+        {
+            var nvc = WebHelper.GetSessionValues(page);
+            nvc.Remove(Consts.SessionGUIDTag);
+            return nvc;
+        }
+
+        public static NameValueCollection GetViewStateValues(Page page)
+        {
+            var nvc = WebHelper.GetViewStateValues(page);
+            nvc.Remove(Consts.SessionGUIDTag);
+            nvc.Remove(Consts.BundleGUIDTag);
+            nvc.Remove(Consts.GUIDTag);
+            nvc.Remove(Consts.PageGUIDTag);
+            return nvc;
         }
     }
 

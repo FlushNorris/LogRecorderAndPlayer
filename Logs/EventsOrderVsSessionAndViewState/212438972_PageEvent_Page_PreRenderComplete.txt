@@ -1,0 +1,5 @@
+currentPageViewState["HttpModuleTest"]: 21:24:38:965
+Setting currentPageViewState["Page_PreRenderComplete21:24:38:973"] = "Page_PreRenderComplete21:24:38:973"
+Done setting currentPageViewState["Page_PreRenderComplete21:24:38:973"] = "Page_PreRenderComplete21:24:38:973"
+SaveViewState call
+SaveViewState called

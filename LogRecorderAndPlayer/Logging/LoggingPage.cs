@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,26 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingPage
     {
+        public static void LogViewState(HttpContext context, Page page, bool before)
+        {
+            var postBackControlClientId = GetPostBackControlClientId(context, page);
+
+            LoggingHelper.LogElement(new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: before ? LogType.OnPageViewStateBefore : LogType.OnPageViewStateAfter,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: SerializationHelper.SerializeNameValueCollection(LoggingHelper.GetViewStateValues(page), SerializationType.Json),
+                times: 1,
+                unixTimestampEnd: null
+            ));
+        }
+
         public static void LogRequest(HttpContext context, Page page)
         {
             var postBackControlClientId = GetPostBackControlClientId(context, page);
@@ -27,6 +48,26 @@ namespace LogRecorderAndPlayer
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
                 value: SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json),
+                times: 1,
+                unixTimestampEnd: null
+            ));
+        }        
+
+        public static void LogSession(HttpContext context, Page page, bool before)
+        {
+            var postBackControlClientId = GetPostBackControlClientId(context, page);
+           
+            LoggingHelper.LogElement(new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: SerializationHelper.SerializeNameValueCollection(LoggingHelper.GetSessionValues(page), SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null
             ));

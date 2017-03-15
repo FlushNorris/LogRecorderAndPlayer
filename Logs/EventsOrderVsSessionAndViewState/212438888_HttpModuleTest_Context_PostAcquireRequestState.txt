@@ -1,0 +1,16 @@
+context: True
+context.Session: True
+context.Session["HttpModuleTest"]: null
+Setting context.Session["HttpModuleTest_Context_PostAcquireRequestState21:24:38:889"] = "HttpModuleTest_Context_PostAcquireRequestState21:24:38:889"
+Done setting context.Session["HttpModuleTest_Context_PostAcquireRequestState21:24:38:889"] = "HttpModuleTest_Context_PostAcquireRequestState21:24:38:889"
+page: True
+Page: Error
+Page.IsValid cannot be called before validation has taken place. It should be queried in the event handler for a control that has CausesValidation=True and initiated the postback, or after a call to Page.Validate.
+   at System.Web.UI.Page.get_IsValid()
+   at HttpModule.HttpModule.BuildLogText(String name, HttpContext context, Page page, StreamWatcher watcher) in C:\LogRecorderAndPlayer\HttpModule\HttpModule\HttpModule.cs:line 145
+currentPageViewState["HttpModuleTest"]: null
+Setting currentPageViewState["HttpModuleTest_Context_PostAcquireRequestState21:24:38:896"] = "HttpModuleTest_Context_PostAcquireRequestState21:24:38:896"
+Done setting currentPageViewState["HttpModuleTest_Context_PostAcquireRequestState21:24:38:896"] = "HttpModuleTest_Context_PostAcquireRequestState21:24:38:896"
+SaveViewState call
+SaveViewState called
+watcher.response.length = 0

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Web;
 using System.Web.SessionState;
+using System.Web.UI;
 using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
@@ -38,6 +39,11 @@ namespace LogRecorderAndPlayer
 
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            {
+                return;
+            }
+
             HttpApplication app = (HttpApplication) sender;
             HttpContext context = app.Context;
             string filePath = context.Request.FilePath;
@@ -47,14 +53,19 @@ namespace LogRecorderAndPlayer
             {
                 var page = ((System.Web.UI.Page) context.CurrentHandler);
                 LoggingHelper.SetupSession(context, page);
-                LoggingHelper.SetupPage(context, page);
+                LoggingHelper.SetupPage(context, page);                
 
+                LoggingPage.LogSession(context, page, before:true);
                 LoggingPage.LogRequest(context, page);
+                
             }
             if (fileExtension != null && fileExtension.Equals(".ashx"))
             {
                 LoggingHandler.LogRequest(context);
             }
+
+            //string response = watcher.ToString(); //Too early to get the response-html
+
 
             //if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
             //{
@@ -78,6 +89,11 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostRequestHandlerExecute(object sender, EventArgs e)
         {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            {
+                return;
+            }
+
             //SESSION KAN HENTES HER!!! :D
             //Og måske også sættes her... hmm
             //Skal være serializeable session value instanser, men det skal det jo alligevel for overhovedet at kunne være placeret i sessionen
@@ -120,6 +136,22 @@ namespace LogRecorderAndPlayer
             //    //((System.Web.UI.Page) context.CurrentHandler).ViewState["WHAT"] = "ALTERED";
 
             //}
+
+            //string response = watcher.ToString(); //Also too early for getting the response-html
+
+            HttpContext context = app.Context;
+            string filePath = context.Request.FilePath;
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            if (fileExtension != null && fileExtension.Equals(".aspx"))
+            {
+                var page = ((System.Web.UI.Page) context.CurrentHandler);
+                if (page != null)
+                {
+                    LoggingPage.LogViewState(context, page, before: false);
+                    LoggingPage.LogSession(context, page, before: false);
+                }
+            }            
         }
 
         private void Context_PostResolveRequestCache(object sender, EventArgs e)
@@ -245,6 +277,44 @@ namespace LogRecorderAndPlayer
             //{
             //    context.Session["WHATTHEFUCK"] = "WOOHOOO";
             //}
+
+            HttpContext context = app.Context;
+            string filePath = context.Request.FilePath;
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            if (fileExtension.ToLower().Equals(".aspx"))
+            {
+                var page = (Page) context.CurrentHandler;
+
+                if (page != null)
+                {
+                    SetupPageEvent(page, "PreLoad");
+                    SetupPageEvent(page, "InitComplete");
+                }
+            }
+        }
+
+        public void Page_InitComplete(object sender, EventArgs e)
+        {
+            //Alter Before-ViewState here
+        }
+
+        public void Page_PreLoad(object sender, EventArgs e)
+        {
+            LoggingPage.LogViewState(HttpContext.Current, (Page)sender, before: true);
+        }
+
+        public void SetupPageEvent(Page page, string eventName)
+        {
+            var pageType = page.GetType();
+
+            var eventInfo = pageType.GetEvent(eventName); 
+            var methodInfo = this.GetType().GetMethod($"Page_{eventName}");
+            
+            Delegate d = Delegate.CreateDelegate(eventInfo.EventHandlerType, this, methodInfo);
+
+            eventInfo.RemoveEventHandler(page, d);
+            eventInfo.AddEventHandler(page, d);
         }
 
         private void Context_PostAcquireRequestState(object sender, EventArgs e)
