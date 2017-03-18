@@ -102,6 +102,9 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
         {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+                return;
+
             HttpApplication app = (HttpApplication)sender;
             HttpContext context = app.Context;
             string filePath = context.Request.FilePath;
@@ -151,6 +154,9 @@ namespace LogRecorderAndPlayer
 
         private void Context_BeginRequest(object sender, EventArgs e)
         {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+                return;
+
             watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
             this.context.Response.Filter = watcher;            
         }
@@ -168,11 +174,11 @@ namespace LogRecorderAndPlayer
 
             //var ccc = ConfigurationHelper.GetConfigurationSection();
 
-            var streamWatcher = this.context.Response.Filter is StreamWatcher;
-            if (streamWatcher != null)
-            {
-                this.context.Response.Filter = watcher.Base;
-            }
+            //var streamWatcher = this.context.Response.Filter is StreamWatcher;
+            //if (streamWatcher != null)
+            //{
+            //    this.context.Response.Filter = watcher.Base;
+            //}
 
             string response = watcher.ToString();
 
