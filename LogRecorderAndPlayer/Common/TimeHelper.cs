@@ -23,4 +23,15 @@ namespace LogRecorderAndPlayer
             return dtDateTime;
         }
     }
+
+    public class DateTimeLRAP 
+    {
+        public DateTime Now
+        {
+            get
+            {
+                return DateTime.Now;
+            }
+        }
+    }
 }

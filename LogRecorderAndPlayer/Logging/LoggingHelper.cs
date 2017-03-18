@@ -69,8 +69,10 @@ namespace LogRecorderAndPlayer
 
         private static void SetPageGUID(System.Web.UI.Page page, Guid pageGUID)
         {
-            var viewState = WebHelper.GetViewState(page);
+            if (page == null)
+                return;
 
+            var viewState = WebHelper.GetViewState(page);
             viewState[Consts.PageGUIDTag] = Guid.NewGuid();
         }
 
@@ -107,12 +109,31 @@ namespace LogRecorderAndPlayer
             if (requestSessionGUID != null)
                 return new Guid(requestSessionGUID);
 
+            Guid? v = null;
+
+            //Var vist visse problemer med at kalde context.Session... internal exception, undersøg dette. Eller pludselig får jeg følelsen af det var noget med Page-objectet som skulle testes af Page.IsValid før man spurgte ind til mere.
+            //Dette er pga WebPageHttpHandler som bliver anvendt som en WebPage, men er en HttpHandler... og dvs har ikke et Session object selv, men må ty til page-objectet
             if (page == null)
+            {
+                try
+                {
+                    if (context.Session != null)
+                    {
+                        v = context.Session[Consts.SessionGUIDTag] as Guid?;
+                        if (v != null)
+                            return v;
+                    }
+                }
+                catch (Exception)
+                {
+
+                }
                 return defaultValue != null ? defaultValue() : null;
+            }
 
             var viewState = WebHelper.GetViewState(page);
 
-            var v = viewState[Consts.SessionGUIDTag] as Guid?;
+            v = viewState[Consts.SessionGUIDTag] as Guid?;
             if (v != null)
                 return v;
 
@@ -124,16 +145,22 @@ namespace LogRecorderAndPlayer
 
         public static void SetSessionGUID(HttpSessionState session, Guid sessionGUID)
         {
+            if (session == null)
+                return;
             session[Consts.SessionGUIDTag] = sessionGUID;
         }
 
         public static Guid? GetSessionGUID(HttpSessionState session)
         {
+            if (session == null)
+                return null;
             return session[Consts.SessionGUIDTag] as Guid?;
         }
 
         private static void SetSessionGUIDInViewState(System.Web.UI.Page page, Guid sessionGUID)
         {
+            if (page == null)
+                return;
             var viewState = WebHelper.GetViewState(page);
             viewState[Consts.SessionGUIDTag] = sessionGUID;
         }

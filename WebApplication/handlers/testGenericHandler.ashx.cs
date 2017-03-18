@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Web;
+using System.Web.SessionState;
 
 namespace WebApplication.handlers
 {
@@ -20,11 +22,34 @@ namespace WebApplication.handlers
     /// <summary>
     /// Summary description for testHandler
     /// </summary>
-    public class testGenericHandler : IHttpHandler
+    public class testGenericHandler : IHttpHandler //, IRequiresSessionState
     {
 
         public void ProcessRequest(HttpContext context)
         {
+            var sb = new StringBuilder();
+
+            if (HttpContext.Current != null && HttpContext.Current.Session != null)
+            {
+                foreach (string key in HttpContext.Current.Session.Keys)
+                {
+                    if (true) //key.IndexOf("HttpModuleTest_") == 0)
+                    {
+                        sb.AppendLine(key + " = " + HttpContext.Current.Session[key]);
+                    }
+                }
+
+                HttpContext.Current.Session["HttpModuleTestHandler"] = "HttpModuleTestHandler";
+            }
+            else
+            {
+                sb.AppendLine("No session");
+            }            
+
+            var f = System.IO.File.CreateText($"c:\\HttpModuleTest\\{DateTime.Now.ToString("HHmmssfff")}_GenericHandlerSessionCheck.txt");
+            f.Write(sb.ToString());
+            f.Close();
+
             var request = SerializationHelper.Deserialize<GenericHandlerRequest>(context.Request["request"], SerializationType.Json);
 
             var rand = new Random((int)DateTime.Now.Ticks);

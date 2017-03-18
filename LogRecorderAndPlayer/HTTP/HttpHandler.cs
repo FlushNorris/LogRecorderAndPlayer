@@ -25,7 +25,11 @@ namespace LogRecorderAndPlayer
         public void ProcessRequest(HttpContext context)
         {
             // do not worry, ProcessRequest() will not be called, but let's be safe
-            throw new InvalidOperationException("MyHttpHandler cannot process requests.");
+            if (context.Request.CurrentExecutionFilePathExtension.ToLower() == ".lrap")
+            {
+                return;
+            }
+            throw new InvalidOperationException("LRAPHttpHandler cannot process requests.");
         }
 
         public bool IsReusable

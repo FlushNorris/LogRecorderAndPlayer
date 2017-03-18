@@ -115,6 +115,10 @@
     };
 
     function init(sessionGUID, pageGUID) {
+        if (!window.jQuery) {
+            return;
+        }
+
         setSessionGUID(sessionGUID);
         setPageGUID(pageGUID); 
 
@@ -582,7 +586,7 @@
             v.CompareFn = undefined;
             v.CombineFn = undefined;
             v.CombinedElements = undefined;
-        });        
+        });
 
         var clientTimeStart = unixTimestamp();        
         $.ajax({
@@ -933,9 +937,14 @@
     }
 
     function setupAjaxEvents(type) {
-        var events = $._data(document, 'events')[type];
-        if (typeof (events) == "undefined")
+        var documentEvents = $._data(document, 'events');
+        if (typeof (documentEvents) == "undefined") {
             return;
+        }
+        var events = documentEvents[type];
+        if (typeof (events) == "undefined") {
+            return;
+        }
 
         $.each(events, function(idx, event) {
             var f = event.handler;
@@ -1013,6 +1022,11 @@
         return url + (url.indexOf("?") == -1 ? "?" : "&") + tag + "=" + value;
     }
 
+    //Replacement for "new Date()" in order to get the current time/date, but for the LogPlayer we need to simulate the same "current time/date" as when we recorded useractivity.
+    function now() {
+        return new Date();
+    }
+
     ///#endregion
 
     var publicMethods = {};
@@ -1020,6 +1034,7 @@
     publicMethods.init = init;
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
+    publicMethods.now = now;
     
     return publicMethods;
 }());

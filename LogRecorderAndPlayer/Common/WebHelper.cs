@@ -38,15 +38,18 @@ namespace LogRecorderAndPlayer
         public static NameValueCollection GetSessionValues(Page page)
         {
             var nvcSession = new NameValueCollection();
-            foreach (string sessionKey in page.Session)
+            if (page != null)
             {
-                try
+                foreach (string sessionKey in page.Session)
                 {
-                    nvcSession[sessionKey] = SerializationHelper.Serialize(page.Session[sessionKey], SerializationType.Json);
-                }
-                catch (Exception ex)
-                {
-                    nvcSession[sessionKey] = "Unable to serialize value";
+                    try
+                    {
+                        nvcSession[sessionKey] = SerializationHelper.Serialize(page.Session[sessionKey], SerializationType.Json);
+                    }
+                    catch (Exception ex)
+                    {
+                        nvcSession[sessionKey] = "Unable to serialize value";
+                    }
                 }
             }
             return nvcSession;

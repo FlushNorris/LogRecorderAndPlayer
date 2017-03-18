@@ -100,10 +100,10 @@ namespace HttpModule
         {
         }
 
-        private void Log(string name, HttpContext context, Page page, StreamWatcher watcher)
+        private void Log(string name, HttpContext context, Page page, IHttpHandler handler, StreamWatcher watcher)
         {
             var f = System.IO.File.CreateText($"c:\\HttpModuleTest\\{DateTime.Now.ToString("HHmmssfff")}_{name}.txt");
-            f.Write(BuildLogText(name, context, page, watcher));
+            f.Write(BuildLogText(name, context, page, handler, watcher));
             f.Close();
         }
 
@@ -114,7 +114,7 @@ namespace HttpModule
             f.Close();
         }
 
-        private string BuildLogText(string name, HttpContext context, Page page, StreamWatcher watcher)
+        private string BuildLogText(string name, HttpContext context, Page page, IHttpHandler handler, StreamWatcher watcher)
         {
             var sb = new StringBuilder();
             try
@@ -194,6 +194,8 @@ namespace HttpModule
             {
                 sb.Append(TestViewState(page, name));
             }
+
+            sb.AppendLine($"handler: {handler != null}");
 
             if (watcher != null)
             {
@@ -456,23 +458,30 @@ namespace HttpModule
         {
             try
             {
-                if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
+                if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".aspx")
                 {
-                    
                     HttpApplication app = (HttpApplication)sender;
                     HttpContext context = app.Context;
                     string filePath = context.Request.FilePath;
                     string fileExtension = VirtualPathUtility.GetExtension(filePath);
-                    Page page = null;
-                    if (fileExtension != null && fileExtension.Equals(".aspx"))
-                        page = ((System.Web.UI.Page)context.CurrentHandler);
-                    Log($"HttpModuleTest_{name}", context, page, watcher);
+                    var page = (Page) context.CurrentHandler;
+                    Log($"HttpModuleTest_{name}", context, page, null, watcher);
+                }
+
+                if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".ashx")
+                {
+                    HttpApplication app = (HttpApplication)sender;
+                    HttpContext context = app.Context;
+                    string filePath = context.Request.FilePath;
+                    string fileExtension = VirtualPathUtility.GetExtension(filePath);
+                    var handler = (IHttpHandler) context.CurrentHandler;
+                    Log($"HttpModuleTest_Handler_{name}", context, null, handler, watcher);
                 }
             }
             catch (Exception ex)
             {
-                
-                
+
+
             }
         }
 

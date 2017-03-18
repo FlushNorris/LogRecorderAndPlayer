@@ -40,14 +40,14 @@
                 SomeValue: value
             };
 
-            addStatus("Calling handler with value=" + value);
+            //addStatus("Calling handler with value=" + value);
 
-            if (confirm('someAlert')) {
-                addStatus("yeees!");
-            } else {
-                addStatus("nooo!");
-            }
-            addStatus("Skulle først ske efter confirm-valget");
+            //if (confirm('someAlert')) {
+            //    addStatus("yeees!");
+            //} else {
+            //    addStatus("nooo!");
+            //}
+            //addStatus("Skulle først ske efter confirm-valget");
 
             $.ajax({
                 type: "POST",

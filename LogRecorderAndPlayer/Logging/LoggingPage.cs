@@ -102,7 +102,7 @@ namespace LogRecorderAndPlayer
         /// <returns></returns>
         private static string GetPostBackControlClientId(HttpContext context, Page page)
         {
-            if (!page.IsPostBack)
+            if (page == null || !page.IsPostBack)
                 return string.Empty;
 
             Control control = null;
