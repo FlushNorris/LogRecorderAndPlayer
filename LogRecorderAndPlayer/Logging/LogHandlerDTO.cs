@@ -48,13 +48,13 @@ namespace LogRecorderAndPlayer
 
     public enum LogType
     {
-        OnAjaxRequestSend=0,
-        OnAjaxRequestReceived=1,
-        OnAjaxResponseSend=2,
-        OnAjaxResponseReceived=3,
-        OnBlur=4,
-        OnFocus=5,
-        OnChange=6,
+        OnHandlerRequestSend = 0,
+        OnHandlerRequestReceived = 1,
+        OnHandlerResponseSend = 2,
+        OnHandlerResponseReceived = 3,
+        OnBlur = 4,
+        OnFocus = 5,
+        OnChange = 6,
         OnSelect = 7,
         OnCopy = 8,
         OnCut = 9,
@@ -82,6 +82,13 @@ namespace LogRecorderAndPlayer
         OnWCFServiceRequest = 31,
         OnWCFServiceResponse = 32,
         OnDatabaseRequest = 33,
-        OnDatabaseResponse = 34
+        OnDatabaseResponse = 34,
+        OnHandlerSessionBefore = 35,
+        OnHandlerSessionAfter = 36
+    }
+
+    public static class ContentType //https://msdn.microsoft.com/en-us/library/ms775147.aspx
+    {
+        public const string TextHtml = "text/html";
     }
 }

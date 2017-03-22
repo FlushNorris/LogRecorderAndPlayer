@@ -55,6 +55,10 @@ namespace LogRecorderAndPlayer
 
         public static void LogSession(HttpContext context, Page page, bool before)
         {
+            var sessionValues = LoggingHelper.GetSessionValues(page);
+            if (sessionValues == null)
+                return;
+
             var postBackControlClientId = GetPostBackControlClientId(context, page);
            
             LoggingHelper.LogElement(new LogElementDTO(
@@ -67,7 +71,7 @@ namespace LogRecorderAndPlayer
                 logType: before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.SerializeNameValueCollection(LoggingHelper.GetSessionValues(page), SerializationType.Json),
+                value: SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null
             ));

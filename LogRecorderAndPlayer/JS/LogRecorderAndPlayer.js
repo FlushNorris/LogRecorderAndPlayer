@@ -77,10 +77,10 @@
 
     var LogType =
     {
-        OnAjaxRequestSend: 0,
-        OnAjaxRequestReceived: 1,
-        OnAjaxResponseSend: 2,
-        OnAjaxResponseReceived: 3,
+        OnHandlerRequestSend: 0,
+        OnHandlerRequestReceived: 1,
+        OnHandlerResponseSend: 2,
+        OnHandlerResponseReceived:3,
         OnBlur: 4,
         OnFocus: 5,
         OnChange: 6,
@@ -111,7 +111,9 @@
         OnWCFServiceRequest: 31,
         OnWCFServiceResponse: 32,
         OnDatabaseRequest: 33,
-        OnDatabaseResponse: 34
+        OnDatabaseResponse: 34,
+        OnHandlerSessionBefore: 35,
+        OnHandlerSessionAfter: 36
     };
 
     function init(sessionGUID, pageGUID) {
@@ -134,7 +136,7 @@
             options.lrapBundleGUID = generateGUID();
             options.lrapOrigURL = options.url;
 
-            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unixTimestamp(), LogType.OnAjaxRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
+            logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unixTimestamp(), LogType.OnHandlerRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
             options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID);
 
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
@@ -153,7 +155,7 @@
                 bundleGUID,
                 null,
                 unixTimestamp(),
-                LogType.OnAjaxResponseReceived,
+                LogType.OnHandlerResponseReceived,
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
 
@@ -262,7 +264,7 @@
         return result;
     }
 
-    function logEvent(that, value, eventType, logType) {
+    function logEvent(that, value, eventType, logType, event) {
         var v = {
             attributes: getAttributes(that),
             events: [],
@@ -306,7 +308,7 @@
                 ctrlKey: event.ctrlKey
             };
 
-            logEvent(this, v, 'mousedown', LogType.OnMouseDown);
+            logEvent(this, v, 'mousedown', LogType.OnMouseDown, event);
         });
 
         $document.on('mouseup', inputSelector, function (event) { //left click vs right click?
@@ -320,7 +322,7 @@
                 ctrlKey: event.ctrlKey
             };
 
-            logEvent(this, v, 'mouseup', LogType.OnMouseUp);
+            logEvent(this, v, 'mouseup', LogType.OnMouseUp, event);
         });        
 
         $document.on('click', inputSelector, function(event) { //Only elements with onclick/click event attached will be logged
@@ -329,7 +331,7 @@
 
             var v = {};
 
-            logEvent(this, v, 'click', LogType.OnClick);
+            logEvent(this, v, 'click', LogType.OnClick, event);
         });
 
         $document.on('dblclick', inputSelector, function (event) {
@@ -338,7 +340,7 @@
 
             var v = {};
 
-            logEvent(this, v, 'dblclick', LogType.OnDblClick);
+            logEvent(this, v, 'dblclick', LogType.OnDblClick, event);
         });
 
         $document.on('dragstart', inputSelector, function (event) {            

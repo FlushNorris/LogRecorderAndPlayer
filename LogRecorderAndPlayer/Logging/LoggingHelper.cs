@@ -18,9 +18,62 @@ namespace LogRecorderAndPlayer
             if (v == null)
             {
                 v = Guid.NewGuid();
-                SetSessionGUID(context.Session, v.Value);
+                if (!SetSessionGUID(context.Session, v.Value))
+                {
+                    SetSessionGUIDCookie(context, v.Value);
+                }
             }
             SetSessionGUIDInViewState(page, v.Value);
+        }
+
+        private static void SetSessionGUIDCookie(HttpContext context, Guid guid)
+        {
+            if (context == null)
+                return;
+
+            if (context.Request != null && context.Request.Cookies != null)
+            {
+                context.Request.Cookies.Remove(Consts.SessionGUIDTag);
+                context.Request.Cookies.Add(new HttpCookie(Consts.SessionGUIDTag, guid.ToString()));
+            }
+
+            if (context.Response != null && context.Response.Cookies != null)
+            {
+                context.Response.Cookies.Remove(Consts.SessionGUIDTag);
+                context.Response.Cookies.Add(new HttpCookie(Consts.SessionGUIDTag, guid.ToString()));
+            }
+        }
+
+        private static Guid? GetSessionGUIDCookie(HttpContext context)
+        {
+            if (context == null)
+                return null;
+
+            if (context.Request != null && context.Request.Cookies != null)
+            {
+                try
+                {
+                    var v = context.Request.Cookies[Consts.SessionGUIDTag];
+                    if (v == null)
+                        return null;
+                    return new Guid(v.Value);
+                }
+                catch{}
+            }
+
+            if (context.Response != null && context.Response.Cookies != null)
+            {
+                try
+                {
+                    var v = context.Response.Cookies[Consts.SessionGUIDTag];
+                    if (v == null)
+                        return null;
+                    return new Guid(v.Value);
+                }
+                catch { }
+            }
+
+            return null;
         }
 
         public static void SetupPage(HttpContext context, System.Web.UI.Page page)
@@ -107,7 +160,13 @@ namespace LogRecorderAndPlayer
 
             var requestSessionGUID = context.Request?.Params[Consts.SessionGUIDTag];
             if (requestSessionGUID != null)
-                return new Guid(requestSessionGUID);
+            {
+                try
+                {
+                    return new Guid(requestSessionGUID);
+                }
+                catch{}
+            }
 
             Guid? v = null;
 
@@ -124,10 +183,10 @@ namespace LogRecorderAndPlayer
                             return v;
                     }
                 }
-                catch (Exception)
-                {
-
-                }
+                catch{}
+                v = GetSessionGUIDCookie(context);
+                if (v != null)
+                    return v;
                 return defaultValue != null ? defaultValue() : null;
             }
 
@@ -143,11 +202,12 @@ namespace LogRecorderAndPlayer
             return sessionGUID;
         }
 
-        public static void SetSessionGUID(HttpSessionState session, Guid sessionGUID)
+        public static bool SetSessionGUID(HttpSessionState session, Guid sessionGUID)
         {
             if (session == null)
-                return;
+                return false;
             session[Consts.SessionGUIDTag] = sessionGUID;
+            return true;
         }
 
         public static Guid? GetSessionGUID(HttpSessionState session)
@@ -272,6 +332,17 @@ namespace LogRecorderAndPlayer
         public static NameValueCollection GetSessionValues(Page page)
         {
             var nvc = WebHelper.GetSessionValues(page);
+            if (nvc == null)
+                return null;
+            nvc.Remove(Consts.SessionGUIDTag);
+            return nvc;
+        }
+
+        public static NameValueCollection GetSessionValues(HttpContext context)
+        {
+            var nvc = WebHelper.GetSessionValues(context);
+            if (nvc == null)
+                return null;
             nvc.Remove(Consts.SessionGUIDTag);
             return nvc;
         }

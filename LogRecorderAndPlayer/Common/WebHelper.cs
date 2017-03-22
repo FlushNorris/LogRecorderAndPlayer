@@ -37,19 +37,39 @@ namespace LogRecorderAndPlayer
 
         public static NameValueCollection GetSessionValues(Page page)
         {
+            if (page == null || page.Session == null)
+                return null;
+
             var nvcSession = new NameValueCollection();
-            if (page != null)
+            foreach (string sessionKey in page.Session)
             {
-                foreach (string sessionKey in page.Session)
+                try
                 {
-                    try
-                    {
-                        nvcSession[sessionKey] = SerializationHelper.Serialize(page.Session[sessionKey], SerializationType.Json);
-                    }
-                    catch (Exception ex)
-                    {
-                        nvcSession[sessionKey] = "Unable to serialize value";
-                    }
+                    nvcSession[sessionKey] = SerializationHelper.Serialize(page.Session[sessionKey], SerializationType.Json);
+                }
+                catch (Exception ex)
+                {
+                    nvcSession[sessionKey] = "Unable to serialize value";
+                }
+            }
+            return nvcSession;
+        }
+
+        public static NameValueCollection GetSessionValues(HttpContext context)
+        {
+            if (context == null || context.Session == null)
+                return null;
+
+            var nvcSession = new NameValueCollection();
+            foreach (string sessionKey in context.Session)
+            {
+                try
+                {
+                    nvcSession[sessionKey] = SerializationHelper.Serialize(context.Session[sessionKey], SerializationType.Json);
+                }
+                catch (Exception ex)
+                {
+                    nvcSession[sessionKey] = "Unable to serialize value";
                 }
             }
             return nvcSession;
