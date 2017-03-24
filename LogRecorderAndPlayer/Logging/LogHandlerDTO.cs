@@ -46,6 +46,90 @@ namespace LogRecorderAndPlayer
         }
     }
 
+    public class LogElementInfo
+    {
+        public DateTime Timestamp { get; set; }
+        public Guid SessionGUID { get; set; }
+        public Guid PageGUID { get; set; }
+        public LogType LogType { get; set; }
+
+        public bool ClientsideLogType
+        {
+            get
+            {
+                switch (LogType)
+                {
+                    case LogType.OnHandlerRequestSend:
+                    case LogType.OnHandlerResponseReceived:
+                    case LogType.OnBlur:
+                    case LogType.OnFocus:
+                    case LogType.OnChange:
+                    case LogType.OnSelect:
+                    case LogType.OnCopy:
+                    case LogType.OnCut:
+                    case LogType.OnPaste:
+                    case LogType.OnKeyDown:
+                    case LogType.OnKeyUp:
+                    case LogType.OnKeyPress:
+                    case LogType.OnMouseDown:
+                    case LogType.OnMouseUp:
+                    case LogType.OnClick:
+                    case LogType.OnDblClick:
+                    case LogType.OnSearch:
+                    case LogType.OnResize:
+                    case LogType.OnDragStart:
+                    case LogType.OnDragEnd:
+                    case LogType.OnDragOver:
+                    case LogType.OnDrop:
+                    case LogType.OnScroll:
+                        return true;
+                    case LogType.OnHandlerRequestReceived:
+                    case LogType.OnHandlerResponseSend:
+                    case LogType.OnPageRequest:
+                    case LogType.OnPageResponse:
+                    case LogType.OnPageSessionBefore:
+                    case LogType.OnPageSessionAfter:
+                    case LogType.OnPageViewStateBefore:
+                    case LogType.OnPageViewStateAfter:
+                    case LogType.OnWCFServiceRequest:
+                    case LogType.OnWCFServiceResponse:
+                    case LogType.OnDatabaseRequest:
+                    case LogType.OnDatabaseResponse:
+                    case LogType.OnHandlerSessionBefore:
+                    case LogType.OnHandlerSessionAfter:
+                        return false;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+        }
+    }
+
+    public class LogElementsInfo
+    {
+        public List<LogElementInfo> LogElementInfos { get; set; } = new List<LogElementInfo>();
+
+        public DateTime? Start
+        {
+            get
+            {
+                if (LogElementInfos == null || !LogElementInfos.Any())
+                    return null;
+                return LogElementInfos.Min(x => x.Timestamp);
+            }
+        }
+        public DateTime? End
+        {
+            get
+            {
+                if (LogElementInfos == null || LogElementInfos.Any())
+                    return null;
+                return LogElementInfos.Max(x => x.Timestamp);
+            }
+        }
+
+    }
+
     public enum LogType
     {
         OnHandlerRequestSend = 0,

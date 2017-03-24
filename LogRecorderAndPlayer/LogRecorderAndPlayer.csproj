@@ -64,6 +64,7 @@
     <Compile Include="HTTP\HttpHandler.cs" />
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
+    <Compile Include="Interfaces\ILoggingPersister.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
     <Compile Include="Logging\LoggingDB.cs" />
     <Compile Include="Logging\LoggingHandler.cs" />

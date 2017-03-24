@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    public enum LRAPConfigurationSectionLogType
+    public enum LRAPLogType
     {
         CSV = 0,
         JSON = 1,
@@ -18,11 +18,11 @@ namespace LogRecorderAndPlayer
     public class LRAPConfigurationSection : ConfigurationSection
     {
         [ConfigurationProperty("logType", IsRequired = true)]
-        public LRAPConfigurationSectionLogType LogType
+        public LRAPLogType LogType
         {
             get
             {
-                return (LRAPConfigurationSectionLogType)this["logType"];
+                return (LRAPLogType)this["logType"];
             }
             set
             {                

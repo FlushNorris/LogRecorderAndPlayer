@@ -160,7 +160,8 @@ namespace LogRecorderAndPlayer
             //{
             //    this.context.Response.Filter = watcher.Base;
             //}
-
+            if (watcher == null)
+                return; //e.g. Invalid web.config setting
             string response = watcher.ToString();
 
             HttpApplication application = (HttpApplication) sender;

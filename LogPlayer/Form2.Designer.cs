@@ -43,7 +43,6 @@
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.eventsTable1.Sessions = null;
             this.eventsTable1.Size = new System.Drawing.Size(868, 588);
             this.eventsTable1.TabIndex = 0;
             // 
@@ -57,6 +56,7 @@
             this.Name = "Form2";
             this.Text = "Form2";
             this.Load += new System.EventHandler(this.Form2_Load);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form2_KeyDown);
             this.ResumeLayout(false);
 
         }

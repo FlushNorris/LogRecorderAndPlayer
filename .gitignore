@@ -272,7 +272,7 @@ Applications/Advice.Web.BudgetPlan/client/coverage/
 *.~gm
 budgetplan_app.*
 
-web.config
+
 /Standard/Advice.Solver.DK/GAMSModel/ManualRun.gms
 /Applications/Advice.Test.Utils.PensionsPlan/PenCalculatorTests/Stubs
 /_IntelliDebugger.Advice.PensionsPlan.FSS/ExpressionSnapshots

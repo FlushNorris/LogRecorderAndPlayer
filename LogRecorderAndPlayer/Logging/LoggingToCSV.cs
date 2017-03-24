@@ -6,11 +6,21 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    public static class LoggingToCSV
+    public class LoggingToCSV : ILoggingPersister
     {
-        public static void LogElement(string filePath, LogElementDTO logElement)
+        public void LogElement(string filePath, LogElementDTO logElement)
         {
             throw new NotImplementedException();
-        } 
+        }
+
+        public IEnumerable<LogElementDTO> LoadLogElements(string filePath, DateTime? @from, DateTime? to)
+        {
+            throw new NotImplementedException();
+        }
+
+        public LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? @from, DateTime? to)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

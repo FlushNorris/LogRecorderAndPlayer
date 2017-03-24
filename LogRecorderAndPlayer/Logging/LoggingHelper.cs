@@ -254,24 +254,49 @@ namespace LogRecorderAndPlayer
             try
             {
                 var config = ConfigurationHelper.GetConfigurationSection();
-                switch (config.LogType)
-                {
-                    case LRAPConfigurationSectionLogType.CSV:
-                        LoggingToCSV.LogElement(config.FilePath, logElement);
-                        break;
-                    case LRAPConfigurationSectionLogType.JSON:
-                        LoggingToJSON.LogElement(config.FilePath, logElement);
-                        break;
-                    case LRAPConfigurationSectionLogType.DB:
-                        break;
-                    default:
-                        throw new Exception("Unknown LogType");
-                }
+                GetLoggingPersister(config.LogType).LogElement(config.FilePath, logElement);
+
                 return new LogElementResponse() {Success = true};
             }
             catch (Exception ex)
             {
                 return new LogElementResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
+            }
+        }
+
+        private static string GetExtensionByLogType(LRAPLogType logType)
+        {
+            switch (logType)
+            {
+                case LRAPLogType.CSV:
+                    return "csv";
+                case LRAPLogType.JSON:
+                    return "json";
+                default:
+                    return null;
+            }
+        }
+
+        public static IEnumerable<LogElementDTO> LoadElements(string path, LRAPLogType logType, DateTime? from = null, DateTime? to = null)
+        {
+            return GetLoggingPersister(logType).LoadLogElements(path, from, to);
+        }
+
+        public static LogElementsInfo LoadElementsInfo(string path, LRAPLogType logType, DateTime? from = null, DateTime? to = null)
+        {
+            return GetLoggingPersister(logType).LoadLogElementsInfo(path, from, to);
+        }
+
+        private static ILoggingPersister GetLoggingPersister(LRAPLogType logType)
+        {
+            switch (logType)
+            {
+                case LRAPLogType.CSV:
+                    return new LoggingToCSV();
+                case LRAPLogType.JSON:
+                    return new LoggingToJSON();
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -355,6 +380,14 @@ namespace LogRecorderAndPlayer
             nvc.Remove(Consts.GUIDTag);
             nvc.Remove(Consts.PageGUIDTag);
             return nvc;
+        }
+
+        public static Guid? GetProgressGUID(HttpContext context)
+        {
+            var r = context.Request[Consts.ProgressGUIDTag];
+            if (String.IsNullOrWhiteSpace(r))
+                return null;
+            return new Guid(r);
         }
     }
 

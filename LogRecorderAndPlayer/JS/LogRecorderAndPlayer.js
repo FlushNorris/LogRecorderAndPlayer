@@ -975,7 +975,10 @@
     }
 
     function bindWindowUnloadFirst(fn) {
-        $(window).unload(fn);
+        var $window = $(window);
+        if (!$window.unload)
+            return;
+        $window.unload(fn);
         moveLastEventToFirst(window, "unload");
     }
 
@@ -1041,4 +1044,10 @@
     return publicMethods;
 }());
 
+$.fn.origSize = $.fn.size;
+$.fn.size = function () {
+    if ($.fn.origSize)
+        return $.fn.origSize();
+    return this.length;
+};
 

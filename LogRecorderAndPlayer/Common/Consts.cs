@@ -12,6 +12,7 @@ namespace LogRecorderAndPlayer
         public static readonly string SessionGUIDTag = "lrap-sessionguid";
         public static readonly string PageGUIDTag = "lrap-pageguid";
         public static readonly string BundleGUIDTag = "lrap-bundleguid";
+        public static readonly string ProgressGUIDTag = "lrap-progressguid";
 
         public static readonly string[] ForbiddenRequestParams = new string[] {
             "ASP.NET_SessionId",

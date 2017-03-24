@@ -55,6 +55,15 @@ namespace LogRecorderAndPlayer
 
         public static void LogSession(HttpContext context, Page page, bool before)
         {
+            var progressGUID = LoggingHelper.GetProgressGUID(context);
+            if (progressGUID != null)
+            {
+                //Locate logElement by GUID                
+                //Setup session
+                //Locate next
+                return;
+            }
+
             var sessionValues = LoggingHelper.GetSessionValues(page);
             if (sessionValues == null)
                 return;
