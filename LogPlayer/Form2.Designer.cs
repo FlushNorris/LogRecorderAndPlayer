@@ -39,6 +39,8 @@
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.eventsTable1.Location = new System.Drawing.Point(0, 0);
             this.eventsTable1.Name = "eventsTable1";
+            this.eventsTable1.PageElements = 100;
+            this.eventsTable1.PageIndex = 1;
             this.eventsTable1.RowCount = 3;
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -55,6 +57,7 @@
             this.Controls.Add(this.eventsTable1);
             this.Name = "Form2";
             this.Text = "Form2";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form2_FormClosing);
             this.Load += new System.EventHandler(this.Form2_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form2_KeyDown);
             this.ResumeLayout(false);

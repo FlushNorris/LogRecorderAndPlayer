@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogRecorderAndPlayer", "Log
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogPlayer", "..\LogPlayer\LogPlayer.csproj", "{B360E69A-2FA8-4C39-AF1D-AD014E87C94C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogBrowser", "..\LogBrowser\LogBrowser.csproj", "{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B360E69A-2FA8-4C39-AF1D-AD014E87C94C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B360E69A-2FA8-4C39-AF1D-AD014E87C94C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B360E69A-2FA8-4C39-AF1D-AD014E87C94C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

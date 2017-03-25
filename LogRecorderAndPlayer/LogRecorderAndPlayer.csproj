@@ -74,6 +74,12 @@
     <Compile Include="Logging\LoggingPage.cs" />
     <Compile Include="Logging\LoggingWCF.cs" />
     <Compile Include="Logging\LogHandlerDTO.cs" />
+    <Compile Include="NamedPipes\INamedPipeCallbackService.cs" />
+    <Compile Include="NamedPipes\INamedPipeService.cs" />
+    <Compile Include="NamedPipes\NamedPipeClient.cs" />
+    <Compile Include="NamedPipes\NamedPipeServer.cs" />
+    <Compile Include="NamedPipes\NamedPipeService.cs" />
+    <Compile Include="NamedPipes\Singleton.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />
     <Compile Include="WCF\WCFHook.cs" />

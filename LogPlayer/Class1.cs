@@ -234,6 +234,9 @@ namespace TestBrowser
 
         public void Refresh()
         {
+            if (this.Parent == null || Sessions == null)
+                return;
+
             //Skal anvende minimum distance til at tegne resten
 
             //this.Visible = false;

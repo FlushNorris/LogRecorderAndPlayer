@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.ServiceModel;
 using System.Web;
 using System.Web.SessionState;
 using System.Web.UI;
@@ -144,6 +145,9 @@ namespace LogRecorderAndPlayer
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
+            //var x = new NamedPipeClient();
+            //var x2 = x.TalkForServer();
+
             if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;

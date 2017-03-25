@@ -13,9 +13,21 @@ namespace TestBrowser
 {
     public partial class Form2 : Form
     {
+        private NamedPipeServer server = null;
+
         public Form2()
         {
             InitializeComponent();
+            server = new NamedPipeServer();
+        }
+
+        private void Form2_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (server != null)
+            {
+                server.Dispose();
+                server = null;
+            }
         }
 
         private void Form2_Load(object sender, EventArgs e)
