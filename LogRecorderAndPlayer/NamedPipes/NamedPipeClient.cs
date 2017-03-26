@@ -13,21 +13,31 @@ namespace LogRecorderAndPlayer
     {
         private INamedPipeService Proxy { get; set; }
 
-        public string TalkToServer(string someValue = "")
+        public string SendRequest(string value = "")
         {
-            return Proxy.ProcessData(someValue);
+            return Proxy.ProcessData(value);
         }
 
-        public static string TalkToServer_Threading(string someValue = "") 
+        public static string SendRequest_Threading(Guid serverId, string value, out string error)
         {
             string result = null;
+            string errorTmp = null;
             var t = new Thread(() =>
             {
-                var client = new NamedPipeClient();
-                result = client.TalkToServer(someValue);
+                try
+                {
+                    var client = new NamedPipeClient(serverId);
+                    result = client.SendRequest(value);
+                    client.Close();
+                }
+                catch (Exception ex)
+                {
+                    errorTmp = ex.Message;
+                }
             });
             t.Start();
             t.Join(60000); //wait 60sec for response
+            error = errorTmp;
             return result;
         }
         public void NotifyClient()
@@ -35,14 +45,19 @@ namespace LogRecorderAndPlayer
 
         }
 
-        public NamedPipeClient()
+        public NamedPipeClient(Guid serverId)
         {
-            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/LRAPService"));
+            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/LRAPService{serverId.ToString().Replace("-", "")}"));
             Proxy = factory.CreateChannel();
 
             ((IClientChannel)Proxy).Faulted += NamedPipeClient_Faulted;
             ((IClientChannel)Proxy).Opened += NamedPipeClient_Opened;
             ((IClientChannel)Proxy).Open();
+        }
+
+        public void Close()
+        {
+            ((IClientChannel)Proxy).Close();
         }
 
         private void NamedPipeClient_Opened(object sender, EventArgs e)
@@ -52,7 +67,7 @@ namespace LogRecorderAndPlayer
 
         private void NamedPipeClient_Faulted(object sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            throw new Exception("Connection faulted");
         }        
 
     }

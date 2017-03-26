@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -13,20 +15,36 @@ namespace TestBrowser
 {
     public partial class Form2 : Form
     {
-        private NamedPipeServer server = null;
+        private NamedPipeServer Server { get; set; } = null;
+        private Guid ServerGUID { get; set; }
+        private List<Browser> Browsers { get; set; } = new List<Browser>();
 
         public Form2()
         {
+            ServerGUID = Guid.NewGuid();
             InitializeComponent();
-            server = new NamedPipeServer();
+            Server = new NamedPipeServer(ServerGUID);
+            Server.ServiceInstanse.OnSyncBrowser += ServiceInstanse_OnSyncBrowser;
+        }
+
+        private NamedPipeServerResponse ServiceInstanse_OnSyncBrowser(NamedPipeBrowser namedPipeBrowser)
+        {
+            var browser = Browsers.First(x => x.ProcessGUID.Equals(namedPipeBrowser.ProcessGUID) && x.ProcessId == -1);
+            browser.ProcessId = namedPipeBrowser.ProcessId;
+            return new NamedPipeServerResponse() {Success = true};
         }
 
         private void Form2_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (server != null)
+            foreach (var browser in Browsers.Where(x => x.ProcessId != -1))
             {
-                server.Dispose();
-                server = null;
+                Process.GetProcessById(browser.ProcessId).Kill();
+            }
+
+            if (Server != null)
+            {
+                Server.Dispose();
+                Server = null;
             }
         }
 
@@ -51,8 +69,6 @@ namespace TestBrowser
                     eventsTable1.PrevPage();
                     break;
             }
-
-            //MessageBox.Show("asdads");
         }
 
         #region .. Double Buffered function ..
@@ -68,7 +84,6 @@ namespace TestBrowser
 
         #endregion
 
-
         #region .. code for Flucuring ..
 
         protected override CreateParams CreateParams
@@ -82,5 +97,32 @@ namespace TestBrowser
         }
 
         #endregion
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var browser = new Browser() {ProcessGUID = Guid.NewGuid(), ProcessId = -1};
+
+            Browsers.Add(browser);
+
+            var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
+
+            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {browser.ProcessGUID}");
+            Process.Start(psi);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            var browser = Browsers.FirstOrDefault(x => x.ProcessId != -1);
+            if (browser != null)
+            {
+                Browsers.Remove(browser);
+                Process.GetProcessById(browser.ProcessId).Kill();
+            }
+        }
+    }
+
+    public class Browser : NamedPipeBrowser
+    {
+        
     }
 }

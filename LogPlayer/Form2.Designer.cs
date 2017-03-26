@@ -28,8 +28,21 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.button1 = new System.Windows.Forms.Button();
             this.eventsTable1 = new TestBrowser.EventsTable();
+            this.button2 = new System.Windows.Forms.Button();
             this.SuspendLayout();
+            // 
+            // button1
+            // 
+            this.button1.AutoSize = true;
+            this.button1.Location = new System.Drawing.Point(12, 12);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(171, 35);
+            this.button1.TabIndex = 1;
+            this.button1.Text = "Spawn Browser";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // eventsTable1
             // 
@@ -37,7 +50,7 @@
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.eventsTable1.Location = new System.Drawing.Point(0, 0);
+            this.eventsTable1.Location = new System.Drawing.Point(12, 53);
             this.eventsTable1.Name = "eventsTable1";
             this.eventsTable1.PageElements = 100;
             this.eventsTable1.PageIndex = 1;
@@ -45,8 +58,19 @@
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.eventsTable1.Size = new System.Drawing.Size(868, 588);
+            this.eventsTable1.Size = new System.Drawing.Size(751, 483);
             this.eventsTable1.TabIndex = 0;
+            // 
+            // button2
+            // 
+            this.button2.AutoSize = true;
+            this.button2.Location = new System.Drawing.Point(189, 12);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(175, 35);
+            this.button2.TabIndex = 2;
+            this.button2.Text = "Kill last Browser";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // Form2
             // 
@@ -54,6 +78,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(868, 588);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.eventsTable1);
             this.Name = "Form2";
             this.Text = "Form2";
@@ -61,11 +87,14 @@
             this.Load += new System.EventHandler(this.Form2_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Form2_KeyDown);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
 
         private EventsTable eventsTable1;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }

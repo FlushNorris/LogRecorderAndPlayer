@@ -11,11 +11,15 @@ namespace LogRecorderAndPlayer
     {
         private ServiceHost ServiceHost { get; set; }
 
-        public NamedPipeServer()
+        public NamedPipeService ServiceInstanse { get; set; }
+
+        public NamedPipeServer(Guid serverGUID)
         {
-            var uri = "net.pipe://localhost";
-            ServiceHost = new ServiceHost(typeof(NamedPipeService), new Uri(uri));
-            ServiceHost.AddServiceEndpoint(typeof(INamedPipeService), new NetNamedPipeBinding(), "LRAPService");
+            ServiceInstanse = new NamedPipeService();
+
+            ServiceHost = new ServiceHost(ServiceInstanse, new Uri("net.pipe://localhost"));
+            //ServiceHost = new ServiceHost(typeof(NamedPipeService), new Uri("net.pipe://localhost"));
+            ServiceHost.AddServiceEndpoint(typeof(INamedPipeService), new NetNamedPipeBinding(), $"LRAPService{serverGUID.ToString().Replace("-", "")}");
             ServiceHost.Open();
         }
 

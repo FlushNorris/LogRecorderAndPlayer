@@ -37,6 +37,7 @@
             this.ClientSize = new System.Drawing.Size(697, 463);
             this.Name = "BrowserForm";
             this.Text = "LogBrowser";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
             this.Load += new System.EventHandler(this.BrowserForm_Load);
             this.ResumeLayout(false);
 
