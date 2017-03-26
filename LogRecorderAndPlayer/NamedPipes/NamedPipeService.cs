@@ -10,11 +10,11 @@ namespace LogRecorderAndPlayer
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)] 
     public class NamedPipeService : INamedPipeService
     {
-        public delegate NamedPipeServerResponse SyncBrowser(NamedPipeBrowser namedPipeBrowser);
-        public delegate NamedPipeServerResponse ClosingBrowser(NamedPipeBrowser namedPipeBrowser);
+        public delegate NamedPipeServerResponse SyncSession(NamedPipeSession namedPipeSession);
+        public delegate NamedPipeServerResponse ClosingSession(NamedPipeSession namedPipeSession);
 
-        public event SyncBrowser OnSyncBrowser = null;
-        public event ClosingBrowser OnClosingBrowser = null;
+        public event SyncSession OnSyncSession = null;
+        public event ClosingSession OnClosingSession = null;
 
         public string ProcessData(string value)
         {
@@ -29,16 +29,16 @@ namespace LogRecorderAndPlayer
             {
                 case NamedPipeServerRequestType.SyncBrowser:
                 {
-                    var browser = (NamedPipeBrowser) serverRequest.Data;
-                    if (OnSyncBrowser != null)
-                        serverResponse = OnSyncBrowser(browser);
+                    var browser = (NamedPipeSession) serverRequest.Data;
+                    if (OnSyncSession != null)
+                        serverResponse = OnSyncSession(browser);
                     break;
                 }
                 case NamedPipeServerRequestType.ClosingBrowser:
                 {
-                    var browser = (NamedPipeBrowser) serverRequest.Data;
-                    if (OnClosingBrowser != null)
-                        serverResponse = OnClosingBrowser(browser);
+                    var browser = (NamedPipeSession) serverRequest.Data;
+                    if (OnClosingSession != null)
+                        serverResponse = OnClosingSession(browser);
                     break;
                 }
                 default:

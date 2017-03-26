@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace LogRecorderAndPlayer
 {
     [DataContract]
-    public class NamedPipeBrowser
+    public class NamedPipeSession
     {
         [DataMember]
         public Guid ProcessGUID { get; set; }

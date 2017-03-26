@@ -14,22 +14,36 @@ using LogRecorderAndPlayer;
 
 namespace LogBrowser
 {
-    public partial class BrowserForm : Form
+    public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {
         private string[] Arguments { get; set; } = null;
         private Guid? ServerGUID { get; set; }
         private Guid? ProcessGUID { get; set; }
+        private List<BrowserForm> Browsers { get; set; }= null;
+        private bool IsPrimaryForm { get; set; } = false;
 
-        public BrowserForm(string[] args)
+        public BrowserForm(string[] args) //Primary CTOR
         {
+            IsPrimaryForm = true;
+            Browsers = new List<BrowserForm>();
             Arguments = args;
             InitializeComponent();
+
+            Browsers.Add(this);
+        }
+
+        public BrowserForm() //Secondary CTOR
+        {
+            IsPrimaryForm = false;
         }
 
         private void BrowserForm_Load(object sender, EventArgs e)
         {
-            if (Arguments.Length == 1 && Arguments[0] == "developer")
+            if (!IsPrimaryForm)
                 return;
+
+            //if (Arguments.Length == 1 && Arguments[0] == "developer")
+            //    return;
 
             if (Arguments.Length > 1)
             {
@@ -49,8 +63,8 @@ namespace LogBrowser
 
             //Send back process id related to guid
 
-            var browser = new NamedPipeBrowser() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.SyncBrowser, Data = browser };
+            var session = new NamedPipeSession() {ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id};
+            var serverRequest = new NamedPipeServerRequest() {Type = NamedPipeServerRequestType.SyncBrowser, Data = session};
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
@@ -64,9 +78,7 @@ namespace LogBrowser
                 Close();
             }
 
-            //var res = NamedPipeClient.TalkToServer_Threading("Lord Helmet1");
-            //res += NamedPipeClient.TalkToServer_Threading("Lord Helmet2");
-            //res += NamedPipeClient.TalkToServer_Threading("Lord Helmet3");
+            this.Text = $"Session: {ProcessGUID.Value} Page: {0}";
         }
 
         private void BrowserForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -74,15 +86,15 @@ namespace LogBrowser
             if (ProcessGUID == null || ServerGUID == null)
                 return;
 
-            var dialogResult = MessageBox.Show("Are you sure you want to close this browser?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
             if (dialogResult == DialogResult.No)
             {
                 e.Cancel = true;
                 return;
             }
 
-            var browser = new NamedPipeBrowser() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.ClosingBrowser, Data = browser };
+            var session = new NamedPipeSession() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
+            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.ClosingBrowser, Data = session };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);

@@ -81,7 +81,7 @@
     <Compile Include="NamedPipes\NamedPipeServerRequest.cs" />
     <Compile Include="NamedPipes\NamedPipeServerResponse.cs" />
     <Compile Include="NamedPipes\NamedPipeService.cs" />
-    <Compile Include="NamedPipes\NamedPipeBrowser.cs" />
+    <Compile Include="NamedPipes\NamedPipeSession.cs" />
     <Compile Include="NamedPipes\Singleton.cs" />
     <Compile Include="WCF\WCFClientMessageInspector.cs" />
     <Compile Include="WCF\WCFEndPointBehavior.cs" />

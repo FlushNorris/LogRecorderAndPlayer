@@ -14,7 +14,7 @@ namespace LogRecorderAndPlayer
     }
 
     [DataContract]
-    [KnownType(typeof(NamedPipeBrowser))]
+    [KnownType(typeof(NamedPipeSession))]
     public class NamedPipeServerRequest
     {
         [DataMember]

@@ -17,34 +17,34 @@ namespace TestBrowser
     {
         private NamedPipeServer Server { get; set; } = null;
         private Guid ServerGUID { get; set; }
-        private List<Browser> Browsers { get; set; } = new List<Browser>();
+        private List<Session> Sessions { get; set; } = new List<Session>();
 
         public Form2()
         {
             ServerGUID = Guid.NewGuid();
             InitializeComponent();
             Server = new NamedPipeServer(ServerGUID);
-            Server.ServiceInstanse.OnSyncBrowser += ServiceInstanse_OnSyncBrowser;
-            Server.ServiceInstanse.OnClosingBrowser += ServiceInstanse_OnClosingBrowser;
+            Server.ServiceInstanse.OnSyncSession += ServiceInstanse_OnSyncSession;
+            Server.ServiceInstanse.OnClosingSession += ServiceInstanse_OnClosingSession;
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnClosingBrowser(NamedPipeBrowser namedPipeBrowser)
+        private NamedPipeServerResponse ServiceInstanse_OnClosingSession(NamedPipeSession namedPipeSession)
         {
-            var browser = Browsers.First(x => x.ProcessGUID.Equals(namedPipeBrowser.ProcessGUID));
-            Browsers.Remove(browser);
+            var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID));
+            Sessions.Remove(browser);
             return new NamedPipeServerResponse() { Success = true };
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnSyncBrowser(NamedPipeBrowser namedPipeBrowser)
+        private NamedPipeServerResponse ServiceInstanse_OnSyncSession(NamedPipeSession namedPipeSession)
         {
-            var browser = Browsers.First(x => x.ProcessGUID.Equals(namedPipeBrowser.ProcessGUID) && x.ProcessId == -1);
-            browser.ProcessId = namedPipeBrowser.ProcessId;
+            var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID) && x.ProcessId == -1);
+            browser.ProcessId = namedPipeSession.ProcessId;            
             return new NamedPipeServerResponse() {Success = true};
         }
 
         private void Form2_FormClosing(object sender, FormClosingEventArgs e)
         {
-            foreach (var browser in Browsers.Where(x => x.ProcessId != -1))
+            foreach (var browser in Sessions.Where(x => x.ProcessId != -1))
             {
                 Process.GetProcessById(browser.ProcessId).Kill();
             }
@@ -72,21 +72,21 @@ namespace TestBrowser
 
         private void EventsTable1_OnPlayElement(LRAPSessionElement element)
         {
-            if (!Browsers.Any(x => x.ProcessGUID.Equals(element.LogElementInfo.SessionGUID)))
+            if (!Sessions.Any(x => x.ProcessGUID.Equals(element.LogElementInfo.SessionGUID)))
             {
-                SpawnBrowser(element.LogElementInfo.SessionGUID);
+                SpawnSession(element.LogElementInfo.SessionGUID);
             }
         }
 
-        private void SpawnBrowser(Guid processGUID)
+        private void SpawnSession(Guid processGUID)
         {
-            var browser = new Browser() { ProcessGUID = processGUID, ProcessId = -1 };
+            var session = new Session() { ProcessGUID = processGUID, ProcessId = -1 };
 
-            Browsers.Add(browser);
+            Sessions.Add(session);
 
             var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
 
-            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {browser.ProcessGUID}");
+            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID}");
             Process.Start(psi);
         }
 
@@ -129,23 +129,9 @@ namespace TestBrowser
         }
 
         #endregion
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            var browser = Browsers.FirstOrDefault(x => x.ProcessId != -1);
-            if (browser != null)
-            {
-                Browsers.Remove(browser);
-                Process.GetProcessById(browser.ProcessId).Kill();
-            }
-        }
     }
 
-    public class Browser : NamedPipeBrowser
+    public class Session : NamedPipeSession
     {
         
     }
