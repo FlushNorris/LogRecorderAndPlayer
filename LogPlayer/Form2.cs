@@ -25,6 +25,14 @@ namespace TestBrowser
             InitializeComponent();
             Server = new NamedPipeServer(ServerGUID);
             Server.ServiceInstanse.OnSyncBrowser += ServiceInstanse_OnSyncBrowser;
+            Server.ServiceInstanse.OnClosingBrowser += ServiceInstanse_OnClosingBrowser;
+        }
+
+        private NamedPipeServerResponse ServiceInstanse_OnClosingBrowser(NamedPipeBrowser namedPipeBrowser)
+        {
+            var browser = Browsers.First(x => x.ProcessGUID.Equals(namedPipeBrowser.ProcessGUID));
+            Browsers.Remove(browser);
+            return new NamedPipeServerResponse() { Success = true };
         }
 
         private NamedPipeServerResponse ServiceInstanse_OnSyncBrowser(NamedPipeBrowser namedPipeBrowser)
@@ -51,11 +59,35 @@ namespace TestBrowser
         private void Form2_Load(object sender, EventArgs e)
         {
 //            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\LogRecorderAndPlayerJSONBAK\02 Kundesøgningsside load", LRAPLogType.JSON);
-            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\LogRecorderAndPlayerJSONBAK\ALL", LRAPLogType.JSON);
+            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\WebApplicationJSON", LRAPLogType.JSON);            
 
+            //Burde kunne starte fra OnPageSesssionBefore-event
+
+            var xx = elementsInfo.LogElementInfos.Where(x => x.LogType == LogType.OnPageSessionBefore).ToList();
 
             DoubleBuffered = true;
             eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
+            eventsTable1.OnPlayElement += EventsTable1_OnPlayElement;
+        }
+
+        private void EventsTable1_OnPlayElement(LRAPSessionElement element)
+        {
+            if (!Browsers.Any(x => x.ProcessGUID.Equals(element.LogElementInfo.SessionGUID)))
+            {
+                SpawnBrowser(element.LogElementInfo.SessionGUID);
+            }
+        }
+
+        private void SpawnBrowser(Guid processGUID)
+        {
+            var browser = new Browser() { ProcessGUID = processGUID, ProcessId = -1 };
+
+            Browsers.Add(browser);
+
+            var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
+
+            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {browser.ProcessGUID}");
+            Process.Start(psi);
         }
 
         private void Form2_KeyDown(object sender, KeyEventArgs e)
@@ -100,14 +132,6 @@ namespace TestBrowser
 
         private void button1_Click(object sender, EventArgs e)
         {
-            var browser = new Browser() {ProcessGUID = Guid.NewGuid(), ProcessId = -1};
-
-            Browsers.Add(browser);
-
-            var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
-
-            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {browser.ProcessGUID}");
-            Process.Start(psi);
         }
 
         private void button2_Click(object sender, EventArgs e)

@@ -28,15 +28,27 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.webBrowser1 = new System.Windows.Forms.WebBrowser();
             this.SuspendLayout();
+            // 
+            // webBrowser1
+            // 
+            this.webBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.webBrowser1.Location = new System.Drawing.Point(0, 0);
+            this.webBrowser1.Margin = new System.Windows.Forms.Padding(6);
+            this.webBrowser1.MinimumSize = new System.Drawing.Size(40, 38);
+            this.webBrowser1.Name = "webBrowser1";
+            this.webBrowser1.Size = new System.Drawing.Size(911, 493);
+            this.webBrowser1.TabIndex = 3;
             // 
             // BrowserForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(697, 463);
+            this.ClientSize = new System.Drawing.Size(911, 493);
+            this.Controls.Add(this.webBrowser1);
             this.Name = "BrowserForm";
-            this.Text = "LogBrowser";
+            this.Text = "BrowserForm";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.BrowserForm_FormClosing);
             this.Load += new System.EventHandler(this.BrowserForm_Load);
             this.ResumeLayout(false);
@@ -44,6 +56,7 @@
         }
 
         #endregion
+
+        private System.Windows.Forms.WebBrowser webBrowser1;
     }
 }
-

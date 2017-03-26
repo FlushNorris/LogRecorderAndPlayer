@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,7 +16,7 @@ namespace LogBrowser
 {
     public partial class BrowserForm : Form
     {
-        private string[] Arguments { get; set; }= null;
+        private string[] Arguments { get; set; } = null;
         private Guid? ServerGUID { get; set; }
         private Guid? ProcessGUID { get; set; }
 
@@ -48,8 +49,8 @@ namespace LogBrowser
 
             //Send back process id related to guid
 
-            var browser = new NamedPipeBrowser() {ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id};
-            var serverRequest = new NamedPipeServerRequest() {Type = NamedPipeServerRequestType.SyncBrowser, Data = browser };
+            var browser = new NamedPipeBrowser() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
+            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.SyncBrowser, Data = browser };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
@@ -90,7 +91,7 @@ namespace LogBrowser
                 MessageBox.Show("Failed to communicate with server");
                 return;
             }
-            
+
             var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
             if (!serverResponse.Success)
             {
@@ -98,5 +99,6 @@ namespace LogBrowser
                 MessageBox.Show("Player does not allow closing the browser at this point");
             }
         }
-    }    
+    }
 }
+

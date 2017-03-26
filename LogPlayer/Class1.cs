@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
+using TestBrowser.Properties;
 
 namespace TestBrowser
 {
@@ -20,6 +21,15 @@ namespace TestBrowser
     {
         public LRAPSession Session { get; set; }
         public LogElementInfo LogElementInfo { get; set; }
+
+        public string GetToolTipMessage()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"Session: {Session.GUID}");
+            sb.AppendLine($"Clientside: {LogElementInfo.ClientsideLogType}");
+            sb.AppendLine($"LogType: {LogElementInfo.LogType}");
+            return sb.ToString();
+        }
         
         public LRAPSessionElement(LRAPSession session, LogElementInfo logElementInfo)
         {
@@ -44,8 +54,17 @@ namespace TestBrowser
         }
     }
 
+    public enum EventsState
+    {
+        Stopped,
+        Playing
+    }
+
     public class EventsTable : TableLayoutPanel
     {
+        public delegate void PlayElement(LRAPSessionElement element);
+        public event PlayElement OnPlayElement = null;
+
         private int pageIndex = 1;
         private int pageElements = 100;
 
@@ -104,6 +123,10 @@ namespace TestBrowser
         private List<LRAPSession> Sessions { get; set; } = null;
 
         private List<List<LRAPSessionElement>> SessionElementOrderedList { get; set; } = null;
+
+        private EventsState CurrentState { get; set; } = EventsState.Stopped;
+
+        private int CurrentIndex { get; set; } = -1;
 
         private void BuildSessions(List<LogElementInfo> logElementInfos)
         {
@@ -230,7 +253,12 @@ namespace TestBrowser
             //newTicks0>=newTicksNext && newTicks0>=newTicksPrev
             //should not happen in an ordered list
             throw new Exception("Are you sure this is an ordered list?");
-        }       
+        }
+
+        private bool IsValidStartingEvent(LRAPSessionElement sessionElement)
+        {
+            return sessionElement.LogElementInfo.LogType == LogType.OnPageSessionBefore;
+        }
 
         public void Refresh()
         {
@@ -252,14 +280,14 @@ namespace TestBrowser
             {
                 if (session.Flows.ContainsKey(LRAPSessionFlowType.Server))
                 {
-                    this.Controls.Add(new Label() {Text = $"{session.GUID} ({LRAPSessionFlowType.Server}):"}, 0, row);
+                    this.Controls.Add(new Label() {Text = $"{session.GUID} ({LRAPSessionFlowType.Server}):", AutoSize = true }, 0, row);
                     this.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
                     session.ServerRowIndex = row++;
                 }
 
                 if (session.Flows.ContainsKey(LRAPSessionFlowType.Client))
                 {
-                    this.Controls.Add(new Label() {Text = $"{session.GUID} ({LRAPSessionFlowType.Client}):"}, 0, row);
+                    this.Controls.Add(new Label() {Text = $"{session.GUID} ({LRAPSessionFlowType.Client}):", AutoSize = true}, 0, row);
                     this.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
                     session.ClientRowIndex = row++;
                 }
@@ -289,11 +317,31 @@ namespace TestBrowser
                 var sessionElementsAtPosition = SessionElementOrderedList[idx];
                 foreach (var sessionElement in sessionElementsAtPosition)
                 {
-                    var rowIndex = sessionElement.LogElementInfo.ClientsideLogType ? sessionElement.Session.ClientRowIndex : sessionElement.Session.ServerRowIndex;                    
-                    var panel = new Panel() { BackColor = GetColorByLogType(sessionElement.LogElementInfo.LogType), Margin = new Padding(0) };
-                    panel.Click += Panel_Click;
-                    panel.Tag = sessionElement;
-                    this.Controls.Add(panel, colIndex, rowIndex);
+                    var rowIndex = sessionElement.LogElementInfo.ClientsideLogType ? sessionElement.Session.ClientRowIndex : sessionElement.Session.ServerRowIndex;
+
+                    if (IsValidStartingEvent(sessionElement))
+                    {
+                        var btn = new Button();
+                        btn.FlatStyle = FlatStyle.Flat;
+                        btn.Margin = new Padding(0);
+                        btn.Size = new System.Drawing.Size(10, 20);
+                        btn.Text = "";
+                        btn.Image = Resources.start;
+                        btn.UseVisualStyleBackColor = true;
+                        btn.Tag = sessionElement;
+                        btn.MouseHover += Panel_MouseHover;
+                        btn.MouseLeave += Panel_MouseLeave;
+                        btn.Click += Btn_Click;
+                        this.Controls.Add(btn, colIndex, rowIndex);
+                    }
+                    else
+                    {
+                        var panel = new Panel() {BackColor = GetColorByLogType(sessionElement.LogElementInfo.LogType), Margin = new Padding(0)};
+                        panel.MouseHover += Panel_MouseHover;
+                        panel.MouseLeave += Panel_MouseLeave;
+                        panel.Tag = sessionElement;
+                        this.Controls.Add(panel, colIndex, rowIndex);
+                    }
                 }
                 colIndex++;
             }
@@ -305,6 +353,48 @@ namespace TestBrowser
             this.Parent.ResumeLayout();
             //this.ResumeLayout();
             //this.Visible = true;
+        }
+
+        private void Btn_Click(object sender, EventArgs e)
+        {
+            var ctrl = (Control)sender;
+            var sessionElement = (LRAPSessionElement)ctrl.Tag;
+
+            OnPlayElement?.Invoke(sessionElement);
+        }
+
+        private Panel HoverPanel = null;
+
+        private void Panel_MouseLeave(object sender, EventArgs e)
+        {
+            var ctrl = (Control)sender;
+            var sessionElement = (LRAPSessionElement)ctrl.Tag;
+
+            if (HoverPanel != null)
+            {
+                this.Parent.Controls.Remove(HoverPanel);
+                HoverPanel = null;
+            }
+        }
+
+        private void Panel_MouseHover(object sender, EventArgs e)
+        {
+            var ctrl = (Control)sender;
+            var sessionElement = (LRAPSessionElement)ctrl.Tag;
+
+            if (HoverPanel != null)
+            {
+                this.Parent.Controls.Remove(HoverPanel);
+                HoverPanel = null;
+            }            
+
+            HoverPanel = new Panel() { BackColor = Color.Beige, AutoSize = true };
+            var lbl = new Label() { Text = sessionElement.GetToolTipMessage(), AutoSize = true };
+            HoverPanel.Top = ctrl.Top + this.Top + 30;
+            HoverPanel.Left = ctrl.Left + this.Left + 0;
+            HoverPanel.Controls.Add(lbl);
+            this.Parent.Controls.Add(HoverPanel);
+            HoverPanel.BringToFront();
         }
 
         private bool CheckIfOrdered(List<LRAPSessionElement> lstOrderedByTimestamp)
@@ -321,13 +411,6 @@ namespace TestBrowser
             }
 
             return true;
-        }
-
-        private void Panel_Click(object sender, EventArgs e)
-        {
-            var panel = (Panel) sender;
-            var sessionElement = (LRAPSessionElement) panel.Tag;
-            Console.WriteLine($"{sessionElement.LogElementInfo.LogType} : {sessionElement.LogElementInfo.Timestamp.ToString("yyyyMMddHHmmssfff")}");
         }
 
         private Color GetColorByLogType(LogType logType)
