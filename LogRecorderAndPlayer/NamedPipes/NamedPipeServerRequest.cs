@@ -9,12 +9,16 @@ namespace LogRecorderAndPlayer
 {
     public enum NamedPipeServerRequestType
     {
-        SyncBrowser = 0,
-        ClosingBrowser = 1
+        SyncSession = 0,
+        ClosingSession = 1,
+        BrowserJob = 2,
+        BrowserJobComplete = 3
     }
 
     [DataContract]
     [KnownType(typeof(NamedPipeSession))]
+    [KnownType(typeof(LogElementDTO))]
+    [KnownType(typeof(NamedPipeBrowserJob))]
     public class NamedPipeServerRequest
     {
         [DataMember]

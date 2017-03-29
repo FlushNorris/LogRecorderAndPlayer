@@ -47,7 +47,8 @@ namespace LogRecorderAndPlayer
 
         public NamedPipeClient(Guid serverId)
         {
-            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/LRAPService{serverId.ToString().Replace("-", "")}"));
+            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService{serverId.ToString().Replace("-", "")}"));
+//            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService"));
             Proxy = factory.CreateChannel();
 
             ((IClientChannel)Proxy).Faulted += NamedPipeClient_Faulted;

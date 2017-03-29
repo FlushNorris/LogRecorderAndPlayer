@@ -17,8 +17,30 @@ namespace TestBrowser
         Client = 1
     }
 
+    public enum SessionElementState
+    {
+        Waiting = 0,
+        Playing = 1,
+        Played = 2
+    }
+
+    public enum SessionState
+    {
+        WaitingForStartingElement = 0,
+        Playing = 1
+        //Ready = 2 //Ready to receive another event, but only when all the other events at the same time is complete
+    }
+
+    public enum EventsState
+    {
+        Stopped,
+        Playing
+    }
+
     public class LRAPSessionElement
     {
+        public int Index { get; set; } //Index in SessionElementOrderedList (not unique)
+        public SessionElementState State { get; set; }
         public LRAPSession Session { get; set; }
         public LogElementInfo LogElementInfo { get; set; }
 
@@ -48,21 +70,17 @@ namespace TestBrowser
         public int ServerRowIndex { get; set; }
         public int ClientRowIndex { get; set; }
 
+        public SessionState State { get; set; }
+
         public LRAPSession()
         {
             Flows = new Dictionary<LRAPSessionFlowType, List<LRAPSessionElement>>();
         }
-    }
-
-    public enum EventsState
-    {
-        Stopped,
-        Playing
-    }
+    }   
 
     public class EventsTable : TableLayoutPanel
     {
-        public delegate void PlayElement(LRAPSessionElement element);
+        public delegate LogElementDTO PlayElement(LRAPSessionElement element);
         public event PlayElement OnPlayElement = null;
 
         private int pageIndex = 1;
@@ -125,7 +143,7 @@ namespace TestBrowser
         private List<List<LRAPSessionElement>> SessionElementOrderedList { get; set; } = null;
 
         private EventsState CurrentState { get; set; } = EventsState.Stopped;
-
+        private int StartIndex { get; set; } = -1;
         private int CurrentIndex { get; set; } = -1;
 
         private void BuildSessions(List<LogElementInfo> logElementInfos)
@@ -153,7 +171,7 @@ namespace TestBrowser
             }
 
             Sessions = dictSessions.Values.ToList();
-            SessionElementOrderedList = GetOrderedList(Sessions);
+            SessionElementOrderedList = GetOrderedList(Sessions);            
         }
 
         private List<List<LRAPSessionElement>> GetOrderedList(List<LRAPSession> sessions)
@@ -195,15 +213,19 @@ namespace TestBrowser
             
             List<List<LRAPSessionElement>> result = new List<List<LRAPSessionElement>>();
             List<LRAPSessionElement> curr = new List<LRAPSessionElement>();
+            int orderedListIndex = 0;
             foreach (var sessionElement in lstOrderedByTimestamp)
             {
                 if (lastTimestamp != null && (!lastTimestamp.Value.Equals(sessionElement.LogElementInfo.Timestamp) || lastIsClient.Value == sessionElement.LogElementInfo.ClientsideLogType))
                 {
                     result.Add(curr);
+                    orderedListIndex++;
                     curr = new List<LRAPSessionElement>();
                 }
                 lastTimestamp = sessionElement.LogElementInfo.Timestamp;
                 lastIsClient = sessionElement.LogElementInfo.ClientsideLogType;
+                sessionElement.Index = orderedListIndex;
+                sessionElement.State = SessionElementState.Waiting;
                 curr.Add(sessionElement);
             }
 
@@ -357,10 +379,75 @@ namespace TestBrowser
 
         private void Btn_Click(object sender, EventArgs e)
         {
-            var ctrl = (Control)sender;
-            var sessionElement = (LRAPSessionElement)ctrl.Tag;
+            if (CurrentState == EventsState.Playing)
+            {
+                MessageBox.Show("Already playing");
+                return;
+            }
 
-            OnPlayElement?.Invoke(sessionElement);
+            var ctrl = (Control)sender;
+            var sessionElement = (LRAPSessionElement)ctrl.Tag;         
+                        
+            StartPlayer(sessionElement.Index);
+        }
+
+        private void StartPlayer(int index)
+        {
+            StartIndex = index;
+            CurrentIndex = index;
+            CurrentState = EventsState.Playing;
+
+            var lst = SessionElementOrderedList[CurrentIndex];
+            Sessions.ForEach(x => x.State = SessionState.WaitingForStartingElement);
+            foreach (var sessionElement in lst.Where(x => IsValidStartingEvent(x))) //TODO: Check if sessionElements are able to start
+            {
+                sessionElement.Session.State = SessionState.Playing;
+                sessionElement.State = SessionElementState.Playing;
+                var logElementDTO = OnPlayElement?.Invoke(sessionElement);
+                if (logElementDTO != null)
+                {
+                    sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
+                }
+            }
+        }
+
+        private void StopPlayer()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetSessionElementAsDone(Guid sessionGUID, Guid elementGUID)
+        {
+            var lst = SessionElementOrderedList[CurrentIndex];
+            var logElementInfo = lst.First(x => x.LogElementInfo.SessionGUID.Equals(sessionGUID) && x.LogElementInfo.GUID.Equals(elementGUID)); //elementGUID burde være unik nok
+            logElementInfo.State = SessionElementState.Played;
+
+            //GetOrderedList styrer at vi kan have 2 events kørende samtidigt på en session, men kun hvis den ene er server og den anden klient. Dette lyder ikke specielt holdbart i forbindelse med threading på serversiden. (Beskriv dette i rapporten)
+
+            //Hvordan fanden skal jeg fortælle LogPlayeren-UI'et at serverside-httpmodule/sqlcommandlrap/osv var færdig .... hov, via namedpipes selvfølgelig, jeg er vist træt
+
+            StartNewEventsIfPossible();
+        }
+
+        private void StartNewEventsIfPossible() //REMEMBER ONLY START CLIENTSIDE EVENTS!!! Serverside-events should have time to be executed before doing anything else...
+        {
+            var lst = SessionElementOrderedList[CurrentIndex];
+            if (lst.Where(x => x.State == SessionElementState.Playing).Any())
+                return; //Still waiting for at least one element to complete
+
+            CurrentIndex++;
+            if (SessionElementOrderedList.Count <= CurrentIndex)
+                return; //Completed everything!
+
+            lst = SessionElementOrderedList[CurrentIndex];
+            foreach (var sessionElement in lst.Where(x => x.Session.State == SessionState.Playing || x.Session.State == SessionState.WaitingForStartingElement && IsValidStartingEvent(x)))
+            {
+                sessionElement.Session.State = SessionState.Playing;
+                sessionElement.State = SessionElementState.Playing;
+                var logElementDTO = OnPlayElement?.Invoke(sessionElement);
+                if (logElementDTO != null)
+                    sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
+            }
         }
 
         private Panel HoverPanel = null;

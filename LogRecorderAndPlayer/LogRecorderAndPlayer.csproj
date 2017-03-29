@@ -76,6 +76,7 @@
     <Compile Include="Logging\LogHandlerDTO.cs" />
     <Compile Include="NamedPipes\INamedPipeCallbackService.cs" />
     <Compile Include="NamedPipes\INamedPipeService.cs" />
+    <Compile Include="NamedPipes\NamedPipeBrowserJob.cs" />
     <Compile Include="NamedPipes\NamedPipeClient.cs" />
     <Compile Include="NamedPipes\NamedPipeServer.cs" />
     <Compile Include="NamedPipes\NamedPipeServerRequest.cs" />

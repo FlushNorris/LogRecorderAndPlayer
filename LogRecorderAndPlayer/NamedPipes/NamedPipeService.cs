@@ -10,11 +10,18 @@ namespace LogRecorderAndPlayer
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.Single)] 
     public class NamedPipeService : INamedPipeService
     {
-        public delegate NamedPipeServerResponse SyncSession(NamedPipeSession namedPipeSession);
+        //Session/Browser to Server/Player
+        public delegate NamedPipeServerResponse SyncSession(NamedPipeSession namedPipeSession); 
         public delegate NamedPipeServerResponse ClosingSession(NamedPipeSession namedPipeSession);
+        public delegate NamedPipeServerResponse BrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob);
+
+        //Server/Player to Session/Browser
+        public delegate NamedPipeServerResponse BrowserJob(LogElementDTO logElement); 
 
         public event SyncSession OnSyncSession = null;
         public event ClosingSession OnClosingSession = null;
+        public event BrowserJob OnBrowserJob = null;
+        public event BrowserJobComplete OnBrowserJobComplete = null;
 
         public string ProcessData(string value)
         {
@@ -27,20 +34,34 @@ namespace LogRecorderAndPlayer
             NamedPipeServerResponse serverResponse = new NamedPipeServerResponse() {Success = true};
             switch (serverRequest.Type)
             {
-                case NamedPipeServerRequestType.SyncBrowser:
+                case NamedPipeServerRequestType.SyncSession:
                 {
-                    var browser = (NamedPipeSession) serverRequest.Data;
+                    var session = (NamedPipeSession) serverRequest.Data;
                     if (OnSyncSession != null)
-                        serverResponse = OnSyncSession(browser);
+                        serverResponse = OnSyncSession(session);
                     break;
                 }
-                case NamedPipeServerRequestType.ClosingBrowser:
+                case NamedPipeServerRequestType.ClosingSession:
                 {
-                    var browser = (NamedPipeSession) serverRequest.Data;
+                    var session = (NamedPipeSession) serverRequest.Data;
                     if (OnClosingSession != null)
-                        serverResponse = OnClosingSession(browser);
+                        serverResponse = OnClosingSession(session);
                     break;
                 }
+                case NamedPipeServerRequestType.BrowserJobComplete:
+                {
+                    var browserJob = (NamedPipeBrowserJob)serverRequest.Data;
+                    if (OnBrowserJobComplete != null)
+                        serverResponse = OnBrowserJobComplete(browserJob);
+                    break;
+                }
+                case NamedPipeServerRequestType.BrowserJob:
+                {
+                    var logElement = (LogElementDTO) serverRequest.Data;
+                    if (OnBrowserJob != null)
+                        serverResponse = OnBrowserJob(logElement);
+                    break;
+                }       
                 default:
                 {
                     serverResponse.Success = false;

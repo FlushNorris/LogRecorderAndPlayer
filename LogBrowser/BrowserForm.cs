@@ -6,111 +6,162 @@ using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
+using Microsoft.Win32;
 
 namespace LogBrowser
 {
     public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {
-        private string[] Arguments { get; set; } = null;
-        private Guid? ServerGUID { get; set; }
-        private Guid? ProcessGUID { get; set; }
-        private List<BrowserForm> Browsers { get; set; }= null;
-        private bool IsPrimaryForm { get; set; } = false;
+        public delegate void PageLoaded(BrowserForm browser, Guid logElementGUID);
 
-        public BrowserForm(string[] args) //Primary CTOR
+        public event PageLoaded OnPageLoaded = null;
+
+        public Guid PageGUID { get; set; }
+        private string StartingURL { get; set; }
+        private Guid CurrentLogElementGUID { get; set; }
+
+        public BrowserForm(Guid pageGUID, Guid logElementGUID, string url)
         {
-            IsPrimaryForm = true;
-            Browsers = new List<BrowserForm>();
-            Arguments = args;
+            PageGUID = pageGUID;
+            CurrentLogElementGUID = logElementGUID;
+            StartingURL = url;
             InitializeComponent();
-
-            Browsers.Add(this);
         }
 
-        public BrowserForm() //Secondary CTOR
+        public string URL
         {
-            IsPrimaryForm = false;
+            get
+            {
+                var url = webBrowser?.Url;
+                if (url == null)
+                    return "NULL";
+                return url.ToString();
+            }
         }
+
+        private void RefreshUI()
+        {
+            Text = $"URL: {webBrowser.Url}";
+        }  
 
         private void BrowserForm_Load(object sender, EventArgs e)
-        {
-            if (!IsPrimaryForm)
-                return;
-
-            //if (Arguments.Length == 1 && Arguments[0] == "developer")
-            //    return;
-
-            if (Arguments.Length > 1)
-            {
-                Guid tmp;
-                if (Guid.TryParse(Arguments[0], out tmp))
-                    ServerGUID = tmp;
-                if (Guid.TryParse(Arguments[1], out tmp))
-                    ProcessGUID = tmp;
-
-            }
-
-            if (ServerGUID == null || ProcessGUID == null)
-            {
-                MessageBox.Show("Invalid arguments");
-                Close();
-            }
-
-            //Send back process id related to guid
-
-            var session = new NamedPipeSession() {ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id};
-            var serverRequest = new NamedPipeServerRequest() {Type = NamedPipeServerRequestType.SyncBrowser, Data = session};
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
-            string error;
-            var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
-            NamedPipeServerResponse serverResponse = null;
-            if (error == null)
-                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-
-            if (error != null || !serverResponse.Success)
-            {
-                MessageBox.Show($"Error occured while syncing with player ({error ?? serverResponse.Message})");
-                Close();
-            }
-
-            this.Text = $"Session: {ProcessGUID.Value} Page: {0}";
+        {            
+            webBrowser.Url = new Uri(StartingURL);
+            webBrowser.ObjectForScripting = new ScriptManager(this);
         }
 
-        private void BrowserForm_FormClosing(object sender, FormClosingEventArgs e)
+        private void webBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e)
         {
-            if (ProcessGUID == null || ServerGUID == null)
-                return;
+            RefreshUI();
+        }
 
-            var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-            if (dialogResult == DialogResult.No)
+        private void Browser_ProgressChanged(object sender, WebBrowserProgressChangedEventArgs e)
+        {
+            var webBrowser = (WebBrowser)sender;
+            if (webBrowser.Document != null)
             {
-                e.Cancel = true;
-                return;
-            }
+                foreach (HtmlElement tag in webBrowser.Document.All)
+                {
+                    if (tag.Id == null)
+                    {
+                        tag.Id = String.Empty;
+                        switch (tag.TagName.ToUpper())
+                        {
+                            case "A":
+                            {
+                                var regExTargetBlank = new Regex("\\s+target\\s*=\\s*[\\\"\\']*_blank[\\\"\\']*([\\s>/])");
+                                var mTargetBlank = regExTargetBlank.Match(tag.OuterHtml);
 
-            var session = new NamedPipeSession() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.ClosingBrowser, Data = session };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
-            string error;
-            var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
-            if (error != null)
-            {
-                MessageBox.Show("Failed to communicate with server");
-                return;
-            }
+                                if (mTargetBlank.Success)
+                                {
+                                    var newOuterHtml = tag.OuterHtml.Substring(0, mTargetBlank.Index) + tag.OuterHtml.Substring(mTargetBlank.Index + mTargetBlank.Length - (mTargetBlank.Groups[1].Value != " " ? 1 : 0));
+                                    var regExHREF = new Regex("\\s+href\\s*=\\s*[\\\"\\']*([^\\\"\\']+)[\\\"\\']*([\\s>/])");
+                                    var mHREF = regExHREF.Match(newOuterHtml);
+                                    if (mHREF.Success)
+                                    {
+                                        tag.OuterHtml = newOuterHtml.Substring(0, mHREF.Groups[1].Index) + $"javascript:window.external.OpenNewTab(&quot;{mHREF.Groups[1]}&quot;)" + newOuterHtml.Substring(mHREF.Groups[1].Index + mHREF.Groups[1].Length);
+                                    }
+                                }
 
-            var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-            if (!serverResponse.Success)
-            {
-                e.Cancel = true;
-                MessageBox.Show("Player does not allow closing the browser at this point");
+                                //tag.MouseUp += new HtmlElementEventHandler(link_MouseUp);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        private void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
+        {
+            OnPageLoaded?.Invoke(this, CurrentLogElementGUID);
+        }
+
+        //private void link_MouseUp(object sender, HtmlElementEventArgs e)
+        //{
+        //    var link = (HtmlElement)sender;
+        //    mshtml.HTMLAnchorElementClass a = (mshtml.HTMLAnchorElementClass)link.DomElement;
+        //    switch (e.MouseButtonsPressed)
+        //    {
+        //        case MouseButtons.Left:
+        //            {
+        //                if ((a.target != null && a.target.ToLower() == "_blank") || e.ShiftKeyPressed || e.MouseButtonsPressed == MouseButtons.Middle)
+        //                {
+        //                    AddTab(a.href);
+        //                }
+        //                else
+        //                {
+        //                    CurrentBrowser.TryNavigate(a.href);
+        //                }
+        //                break;
+        //            }
+        //        case MouseButtons.Right:
+        //            {
+        //                CurrentBrowser.ContextMenuStrip = null;
+        //                var contextTag = new ContextTag();
+        //                contextTag.Element = a;
+        //                contextHtmlLink.Tag = contextTag;
+        //                contextHtmlLink.Show(Cursor.Position);
+        //                break;
+        //            }
+        //    }
+        //}
+
+        //private void button1_Click(object sender, EventArgs e)
+        //{
+        //    webBrowser.Url = new Uri("javascript:$('input').val('hest');alert('1');");
+        //    //webBrowser.Url = new Uri("javascript:window.external.ShowMessage($('input').length+\"\");");
+        //    //webBrowser.Url = new Uri("javascript:setTimeout(\"window.external.ShowMessage('server 3s');\", 3000);");
+
+        //    //webBrowser.Url = new Uri();
+        //}
+    }
+
+    [ComVisible(true)]
+    public class ScriptManager
+    {
+        BrowserForm _form;
+        public ScriptManager(BrowserForm form)
+        {
+            _form = form;
+        }
+        public void ShowMessage(object obj)
+        {
+            MessageBox.Show(obj.ToString());
+        }
+
+        public void OpenNewTab(object obj)
+        {
+            MessageBox.Show($"OpenNewTab: {obj.ToString()}");
         }
     }
+
 }
 

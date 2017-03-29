@@ -8,4 +8,12 @@
     <br/>
     Client textbox with no id: <input class="clientTextboxWithNoID"/><br/>
     Client textbox with id: <input id="clientTextboxWithID"/><br/>
+    <br/>
+    <br/>
+    <a href="http://www.google.dk">Google default</a><br/>
+    <a href="http://www.google.dk" target="_blank">Google _blank</a><br/>
+    <a href="http://www.google.dk" target="_self">Google _self</a><br/>
+    <a href="http://www.google.dk" target="_parent">Google _parent</a><br/>
+    <a href="http://www.google.dk" target="_top">Google _top</a><br/>
+
 </asp:Content>

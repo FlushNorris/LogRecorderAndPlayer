@@ -48,6 +48,8 @@ namespace LogRecorderAndPlayer
 
     public class LogElementInfo
     {
+        public string FilePath { get; set; }
+        public Guid? GUID { get; set; } = null; //Bliver først sat så snart det bliver udført
         public DateTime Timestamp { get; set; }
         public Guid SessionGUID { get; set; }
         public Guid PageGUID { get; set; }

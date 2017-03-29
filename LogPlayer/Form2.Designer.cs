@@ -30,6 +30,7 @@
         {
             this.eventsTable1 = new TestBrowser.EventsTable();
             this.txtBaseUrl = new System.Windows.Forms.TextBox();
+            this.txtPath = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // eventsTable1
@@ -51,11 +52,19 @@
             // 
             // txtBaseUrl
             // 
-            this.txtBaseUrl.Location = new System.Drawing.Point(12, 12);
+            this.txtBaseUrl.Location = new System.Drawing.Point(429, 12);
             this.txtBaseUrl.Name = "txtBaseUrl";
             this.txtBaseUrl.Size = new System.Drawing.Size(334, 31);
             this.txtBaseUrl.TabIndex = 3;
             this.txtBaseUrl.Text = "http://localhost:61027";
+            // 
+            // txtPath
+            // 
+            this.txtPath.Location = new System.Drawing.Point(12, 12);
+            this.txtPath.Name = "txtPath";
+            this.txtPath.Size = new System.Drawing.Size(381, 31);
+            this.txtPath.TabIndex = 4;
+            this.txtPath.Text = "c:\\WebApplicationJSON";
             // 
             // Form2
             // 
@@ -64,6 +73,7 @@
             this.AutoScroll = true;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(841, 598);
+            this.Controls.Add(this.txtPath);
             this.Controls.Add(this.txtBaseUrl);
             this.Controls.Add(this.eventsTable1);
             this.Name = "Form2";
@@ -80,5 +90,6 @@
 
         private EventsTable eventsTable1;
         private System.Windows.Forms.TextBox txtBaseUrl;
+        private System.Windows.Forms.TextBox txtPath;
     }
 }

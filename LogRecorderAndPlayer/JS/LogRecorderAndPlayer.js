@@ -432,7 +432,8 @@
                     ch: ch,
                     shiftKey: event.shiftKey,
                     altKey: event.altKey,
-                    ctrlKey: event.ctrlKey
+                    ctrlKey: event.ctrlKey,
+                    caretPos: getCaretPositionRelativeToEnd(this)
                 };
 
                 logInputClientsideControlEvent(this, LogType.OnKeyDown, v);
@@ -449,7 +450,8 @@
                 ch: ch,
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey
+                ctrlKey: event.ctrlKey,
+                caretPos: getCaretPositionRelativeToEnd(this)
             };
 
             logInputClientsideControlEvent(this, LogType.OnKeyUp, v, compareLogElementsKeyup, combineLogElementsKeyup);
@@ -466,7 +468,8 @@
                 ch: ch,
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey
+                ctrlKey: event.ctrlKey,
+                caretPos: getCaretPositionRelativeToEnd(this)
             };
             
             logInputClientsideControlEvent(this, LogType.OnKeyPress, v, compareLogElementsKeypress, combineLogElementsKeypress);
@@ -768,7 +771,8 @@
                 ) &&
                 v1.shiftKey == v2.shiftKey &&
                 v1.altKey == v2.altKey &&
-                v1.ctrlKey == v2.ctrlKey) {
+                v1.ctrlKey == v2.ctrlKey &&
+                v1.caretPos == v2.caretPos) {
                 return 1;
             }
         }
@@ -1030,6 +1034,49 @@
     //Replacement for "new Date()" in order to get the current time/date, but for the LogPlayer we need to simulate the same "current time/date" as when we recorded useractivity.
     function now() {
         return new Date();
+    }
+
+    // Return value relative to end of value (0-oField.value.length)
+    function getCaretPositionRelativeToEnd(elem) {
+
+        var pos = 0;
+
+        // IE Support
+        if (document.selection) {
+            elem.focus();
+
+            // To get cursor position, get empty selection range
+            var oSel = document.selection.createRange();
+
+            // Move selection start to 0 position
+            oSel.moveStart('character', -elem.value.length);
+
+            // The caret position is selection length
+            pos = oSel.text.length;
+        }            
+        else // Firefox support
+            if (elem.selectionStart || elem.selectionStart == '0')
+                pos = elem.selectionStart;
+        
+        return elem.value.length - pos;
+    }
+
+    function setCaretPositionRelativeToEnd(elem, caretPos) {
+        caretPos = elem.value.length - caretPos;
+
+        if (elem.createTextRange) {
+            var range = elem.createTextRange();
+            range.move('character', caretPos);
+            range.select();
+        }
+        else {
+            if (elem.selectionStart) {
+                elem.focus();
+                elem.setSelectionRange(caretPos, caretPos);
+            }
+            else
+                elem.focus();
+        }
     }
 
     ///#endregion

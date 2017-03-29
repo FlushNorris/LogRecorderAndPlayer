@@ -50,7 +50,7 @@ namespace TestBrowser
 
             //MessageBox.Show(this, "asdasd");
             //webBrowser1.Url = new Uri("javascript:alert('client '+$(\"input\").size());window.external.ShowMessage('server');"); //"setTimeout(function(){window.external.ShowMessage('server 3s');}, 3000);");
-            webBrowser1.Url = new Uri("javascript:alert(setTimeout(\"window.external.ShowMessage('server 3s');\", 3000);");
+            webBrowser1.Url = new Uri("javascript:alert(setTimeout(\"window.external.ShowMessage('server 3s');\", 3000));");
             //System.Windows.Controls.WebBrowser x = null;            
             //System.Windows.Controls.WebBrowser
             //webBrowser1.we

@@ -18,6 +18,11 @@ namespace LogRecorderAndPlayer
             throw new NotImplementedException();
         }
 
+        public LogElementDTO LoadLogElement(LogElementInfo logElementInfo)
+        {
+            throw new NotImplementedException();
+        }
+
         public LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? @from, DateTime? to)
         {
             throw new NotImplementedException();

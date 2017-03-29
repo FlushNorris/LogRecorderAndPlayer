@@ -26,6 +26,13 @@ namespace TestBrowser
             Server = new NamedPipeServer(ServerGUID);
             Server.ServiceInstanse.OnSyncSession += ServiceInstanse_OnSyncSession;
             Server.ServiceInstanse.OnClosingSession += ServiceInstanse_OnClosingSession;
+            Server.ServiceInstanse.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
+        }
+
+        private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob)
+        {
+            eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.SessionGUID, namedPipeBrowserJob.LogElementGUID);
+            return new NamedPipeServerResponse() { Success = true };
         }
 
         private NamedPipeServerResponse ServiceInstanse_OnClosingSession(NamedPipeSession namedPipeSession)
@@ -38,8 +45,14 @@ namespace TestBrowser
         private NamedPipeServerResponse ServiceInstanse_OnSyncSession(NamedPipeSession namedPipeSession)
         {
             var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID) && x.ProcessId == -1);
-            browser.ProcessId = namedPipeSession.ProcessId;            
+            browser.ProcessId = namedPipeSession.ProcessId;                        
+
             return new NamedPipeServerResponse() {Success = true};
+        }
+
+        private void SendSessionJob(Guid processGUID)
+        {
+            //NamedPipeClient.SendRequest_Threading(namedPipeSession.ProcessGUID, ) //Problemet er jo lidt at spawnsession sker pga en url... 
         }
 
         private void Form2_FormClosing(object sender, FormClosingEventArgs e)
@@ -59,26 +72,34 @@ namespace TestBrowser
         private void Form2_Load(object sender, EventArgs e)
         {
 //            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\LogRecorderAndPlayerJSONBAK\02 Kundesøgningsside load", LRAPLogType.JSON);
-            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\WebApplicationJSON", LRAPLogType.JSON);            
+            var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
 
             //Burde kunne starte fra OnPageSesssionBefore-event
 
-            var xx = elementsInfo.LogElementInfos.Where(x => x.LogType == LogType.OnPageSessionBefore).ToList();
+            //var xx = elementsInfo.LogElementInfos.Where(x => x.LogType == LogType.OnPageSessionBefore).ToList();
 
             DoubleBuffered = true;
             eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
             eventsTable1.OnPlayElement += EventsTable1_OnPlayElement;
         }
 
-        private void EventsTable1_OnPlayElement(LRAPSessionElement element)
-        {
+        private LogElementDTO EventsTable1_OnPlayElement(LRAPSessionElement element)
+        {                       
             if (!Sessions.Any(x => x.ProcessGUID.Equals(element.LogElementInfo.SessionGUID)))
             {
-                SpawnSession(element.LogElementInfo.SessionGUID);
+                var logElementDTO = LoggingHelper.LoadElement(LRAPLogType.JSON, element.LogElementInfo);
+
+                SpawnSession(element.LogElementInfo.SessionGUID, logElementDTO.PageGUID, logElementDTO.GUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElementDTO.Element.TrimStart('/'));
+                return logElementDTO;
+            }
+            else
+            {
+                MessageBox.Show("Error: Session is already open?");
+                return null;
             }
         }
 
-        private void SpawnSession(Guid processGUID)
+        private void SpawnSession(Guid processGUID, Guid pageGUID, Guid logElementGUID, string url)
         {
             var session = new Session() { ProcessGUID = processGUID, ProcessId = -1 };
 
@@ -86,7 +107,7 @@ namespace TestBrowser
 
             var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
 
-            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID}");
+            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} {logElementGUID} \"{url}\"");
             Process.Start(psi);
         }
 

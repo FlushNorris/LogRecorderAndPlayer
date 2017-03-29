@@ -287,6 +287,11 @@ namespace LogRecorderAndPlayer
             return GetLoggingPersister(logType).LoadLogElementsInfo(path, from, to);
         }
 
+        public static LogElementDTO LoadElement(LRAPLogType logType, LogElementInfo logElementInfo)
+        {
+            return GetLoggingPersister(logType).LoadLogElement(logElementInfo);
+        }
+
         private static ILoggingPersister GetLoggingPersister(LRAPLogType logType)
         {
             switch (logType)

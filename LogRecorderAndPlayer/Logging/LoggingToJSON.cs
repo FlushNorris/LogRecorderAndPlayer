@@ -58,6 +58,7 @@ namespace LogRecorderAndPlayer
 
                 return new LogElementInfo()
                 {
+                    FilePath = filePath,
                     Timestamp = timestamp,
                     SessionGUID = sessionGUID,
                     PageGUID = pageGUID,
@@ -93,6 +94,12 @@ namespace LogRecorderAndPlayer
                 if ((from == null || from.Value <= logElementInfo.Timestamp) && (to == null || to >= logElementInfo.Timestamp))
                     yield return new JavaScriptSerializer().Deserialize<LogElementDTO>(System.IO.File.ReadAllText(file));
             }
+        }
+
+        public LogElementDTO LoadLogElement(LogElementInfo logElementInfo)
+        {
+            var json = File.ReadAllText(logElementInfo.FilePath);
+            return new JavaScriptSerializer().Deserialize<LogElementDTO>(json);
         }
 
         public LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? from, DateTime? to)

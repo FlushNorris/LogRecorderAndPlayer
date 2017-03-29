@@ -10,6 +10,7 @@ namespace LogRecorderAndPlayer
     {
         void LogElement(string filePath, LogElementDTO logElement);
         IEnumerable<LogElementDTO> LoadLogElements(string filePath, DateTime? from, DateTime? to);
+        LogElementDTO LoadLogElement(LogElementInfo logElementInfo);
         LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? from, DateTime? to);
     }
 }
