@@ -12,13 +12,15 @@ namespace LogRecorderAndPlayer
         SyncSession = 0,
         ClosingSession = 1,
         BrowserJob = 2,
-        BrowserJobComplete = 3
+        BrowserJobComplete = 3,
+        FetchLogElement = 4
     }
 
     [DataContract]
     [KnownType(typeof(NamedPipeSession))]
     [KnownType(typeof(LogElementDTO))]
     [KnownType(typeof(NamedPipeBrowserJob))]
+    [KnownType(typeof(NamedPipeFetchLogElement))]
     public class NamedPipeServerRequest
     {
         [DataMember]

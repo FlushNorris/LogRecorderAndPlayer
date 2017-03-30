@@ -27,11 +27,21 @@ namespace TestBrowser
             Server.ServiceInstanse.OnSyncSession += ServiceInstanse_OnSyncSession;
             Server.ServiceInstanse.OnClosingSession += ServiceInstanse_OnClosingSession;
             Server.ServiceInstanse.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
+            Server.ServiceInstanse.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
+        }
+
+        private NamedPipeServerResponse ServiceInstanse_OnFetchLogElement(NamedPipeFetchLogElement fetchLogElement)
+        {
+            var logElementDTO = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
+            return new NamedPipeServerResponse() {Success = true, Data = logElementDTO};
         }
 
         private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob)
         {
-            eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.SessionGUID, namedPipeBrowserJob.LogElementGUID);
+            if (namedPipeBrowserJob.LogElementGUID.HasValue) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
+            {
+                eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.LogElementGUID.Value);
+            }
             return new NamedPipeServerResponse() { Success = true };
         }
 
@@ -80,26 +90,28 @@ namespace TestBrowser
 
             DoubleBuffered = true;
             eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
+            eventsTable1.OnLoadLogElement += EventsTable1_OnLoadLogElement;
             eventsTable1.OnPlayElement += EventsTable1_OnPlayElement;
         }
 
-        private LogElementDTO EventsTable1_OnPlayElement(LRAPSessionElement element)
-        {                       
-            if (!Sessions.Any(x => x.ProcessGUID.Equals(element.LogElementInfo.SessionGUID)))
-            {
-                var logElementDTO = LoggingHelper.LoadElement(LRAPLogType.JSON, element.LogElementInfo);
+        private LogElementDTO EventsTable1_OnLoadLogElement(LRAPSessionElement element)
+        {
+            return LoggingHelper.LoadElement(LRAPLogType.JSON, element.LogElementInfo);            
+        }
 
-                SpawnSession(element.LogElementInfo.SessionGUID, logElementDTO.PageGUID, logElementDTO.GUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElementDTO.Element.TrimStart('/'));
-                return logElementDTO;
+        private void EventsTable1_OnPlayElement(LogElementDTO logElement)
+        {            
+            if (!Sessions.Any(x => x.ProcessGUID.Equals(logElement.SessionGUID)))
+            {
+                SpawnSession(logElement.SessionGUID, logElement.PageGUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/'));
             }
             else
             {
                 MessageBox.Show("Error: Session is already open?");
-                return null;
             }
         }
 
-        private void SpawnSession(Guid processGUID, Guid pageGUID, Guid logElementGUID, string url)
+        private void SpawnSession(Guid processGUID, Guid pageGUID, string url)
         {
             var session = new Session() { ProcessGUID = processGUID, ProcessId = -1 };
 
@@ -107,7 +119,7 @@ namespace TestBrowser
 
             var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
 
-            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} {logElementGUID} \"{url}\"");
+            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} \"{url}\"");
             Process.Start(psi);
         }
 

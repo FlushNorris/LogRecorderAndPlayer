@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Script.Serialization;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using Page = System.Web.UI.Page;
@@ -55,16 +57,30 @@ namespace LogRecorderAndPlayer
 
         public static void LogSession(HttpContext context, Page page, bool before)
         {
-            var progressGUID = LoggingHelper.GetProgressGUID(context);
-            if (progressGUID != null)
+            var logType = before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter;
+            NameValueCollection sessionValues;
+
+            if (LoggingHelper.IsPlaying(context))
             {
-                //Locate logElement by GUID                
-                //Setup session
-                //Locate next
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+
+                //Get LogElementDTO by PageGUID and LogType
+                var fetchLogElement = new NamedPipeFetchLogElement() {PageGUID = pageGUID, LogType = logType};
+                var serverRequest = new NamedPipeServerRequest() {Type = NamedPipeServerRequestType.FetchLogElement, Data = fetchLogElement};
+                var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+                string error;
+                string serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
+                if (!String.IsNullOrWhiteSpace(error))
+                    throw new Exception(error);
+                var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+                var logElementDTO = (LogElementDTO) serverResponse.Data;
+                sessionValues = SerializationHelper.DeserializeNameValueCollection(logElementDTO.Value, SerializationType.Json);
+                LoggingHelper.SetSessionValues(page, sessionValues);
                 return;
             }
 
-            var sessionValues = LoggingHelper.GetSessionValues(page);
+            sessionValues = LoggingHelper.GetSessionValues(page);
             if (sessionValues == null)
                 return;
 
@@ -77,7 +93,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
                 value: SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json),

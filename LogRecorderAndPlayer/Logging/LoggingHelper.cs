@@ -85,6 +85,14 @@ namespace LogRecorderAndPlayer
             }
         }
 
+        public static Guid? GetServerGUID(HttpContext context, Func<Guid?> defaultValue = null)
+        {
+            var requestServerGUID = context.Request?.Params[Consts.ServerGUIDTag];
+            if (requestServerGUID != null)
+                return new Guid(requestServerGUID);
+            return defaultValue != null ? defaultValue() : null;
+        }
+
         public static Guid? GetPageGUID(HttpContext context, System.Web.UI.Page page, Func<Guid?> defaultValue = null)
         {
             if (context == null || context.Handler == null)
@@ -305,6 +313,15 @@ namespace LogRecorderAndPlayer
             }
         }
 
+        public static string PrepareUrlForLogPlayer(string url, Guid serverGUID, Guid pageGUID)
+        {
+            var result = url;
+            result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.ServerGUIDTag), Consts.ServerGUIDTag, serverGUID.ToString());
+            result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.PageGUIDTag), Consts.PageGUIDTag, pageGUID.ToString());
+            result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.PlayingTag), Consts.PlayingTag, "1");
+            return result;
+        }
+
         public static string StripUrlForLRAP(string url)
         {
             url = url.Trim();
@@ -319,6 +336,8 @@ namespace LogRecorderAndPlayer
             queryBuilder.Remove(Consts.SessionGUIDTag);
             queryBuilder.Remove(Consts.PageGUIDTag);
             queryBuilder.Remove(Consts.BundleGUIDTag);
+            queryBuilder.Remove(Consts.ServerGUIDTag);
+            queryBuilder.Remove(Consts.PlayingTag);
 
             query = queryBuilder.ToString();
 
@@ -368,6 +387,12 @@ namespace LogRecorderAndPlayer
             return nvc;
         }
 
+        public static void SetSessionValues(Page page, NameValueCollection nvc)
+        {
+            WebHelper.SetSessionValues(page, nvc);
+        }
+
+
         public static NameValueCollection GetSessionValues(HttpContext context)
         {
             var nvc = WebHelper.GetSessionValues(context);
@@ -387,12 +412,12 @@ namespace LogRecorderAndPlayer
             return nvc;
         }
 
-        public static Guid? GetProgressGUID(HttpContext context)
+        public static bool IsPlaying(HttpContext context)
         {
-            var r = context.Request[Consts.ProgressGUIDTag];
+            var r = context.Request[Consts.PlayingTag];
             if (String.IsNullOrWhiteSpace(r))
-                return null;
-            return new Guid(r);
+                return false;
+            return r == "1";
         }
     }
 

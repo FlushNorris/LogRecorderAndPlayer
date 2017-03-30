@@ -18,10 +18,14 @@ namespace LogRecorderAndPlayer
         //Server/Player to Session/Browser
         public delegate NamedPipeServerResponse BrowserJob(LogElementDTO logElement); 
 
+        //Webservice to Player
+        public delegate NamedPipeServerResponse FetchLogElement(NamedPipeFetchLogElement fetchLogElement);
+
         public event SyncSession OnSyncSession = null;
         public event ClosingSession OnClosingSession = null;
         public event BrowserJob OnBrowserJob = null;
         public event BrowserJobComplete OnBrowserJobComplete = null;
+        public event FetchLogElement OnFetchLogElement = null;
 
         public string ProcessData(string value)
         {
@@ -46,6 +50,13 @@ namespace LogRecorderAndPlayer
                     var session = (NamedPipeSession) serverRequest.Data;
                     if (OnClosingSession != null)
                         serverResponse = OnClosingSession(session);
+                    break;
+                }
+                case NamedPipeServerRequestType.FetchLogElement:
+                {
+                    var fetchLogElement = (NamedPipeFetchLogElement)serverRequest.Data;
+                    if (OnFetchLogElement != null)
+                        serverResponse = OnFetchLogElement(fetchLogElement);
                     break;
                 }
                 case NamedPipeServerRequestType.BrowserJobComplete:

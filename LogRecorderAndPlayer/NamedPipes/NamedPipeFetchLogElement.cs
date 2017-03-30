@@ -8,16 +8,12 @@ using System.Threading.Tasks;
 namespace LogRecorderAndPlayer
 {
     [DataContract]
-    [KnownType(typeof(LogElementDTO))]
-    public class NamedPipeServerResponse
+    public class NamedPipeFetchLogElement
     {
         [DataMember]
-        public bool Success { get; set; }
+        public Guid PageGUID { get; set; }
 
         [DataMember]
-        public string Message { get; set; }
-
-        [DataMember]
-        public object Data { get; set; }
+        public LogType LogType { get; set; }
     }
 }

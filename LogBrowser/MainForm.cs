@@ -31,9 +31,8 @@ namespace LogBrowser
         private void MainForm_Load(object sender, EventArgs e)
         {
             Guid? startingPageGUID = null;
-            Guid? logElementGUID = null;
             string startingUrl = null;
-            if (Arguments.Length > 2)
+            if (Arguments.Length > 3)
             {
                 Guid tmp;
                 if (Guid.TryParse(Arguments[0], out tmp))
@@ -42,13 +41,10 @@ namespace LogBrowser
                     ProcessGUID = tmp;
                 if (Guid.TryParse(Arguments[2], out tmp))
                     startingPageGUID = tmp;
-                if (Guid.TryParse(Arguments[3], out tmp))
-                    logElementGUID = tmp;
-                startingUrl = Arguments[4];
-
+                startingUrl = Arguments[3];
             }
 
-            if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || startingUrl == null || logElementGUID == null)
+            if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || startingUrl == null)
             {
                 MessageBox.Show("Invalid arguments");
                 Close();
@@ -63,7 +59,7 @@ namespace LogBrowser
             Server = new NamedPipeServer(ProcessGUID.Value);
             Server.ServiceInstanse.OnBrowserJob += ServiceInstanse_OnBrowserJob;
 
-            JumpToURL(startingPageGUID.Value, logElementGUID.Value, startingUrl);
+            JumpToURL(startingPageGUID.Value, startingUrl);
 
             RefreshUI();
         }
@@ -87,18 +83,18 @@ namespace LogBrowser
             switch (logElement.LogType)
             {
                 case LogType.OnPageSessionBefore: //Burde jeg slå alle disse page pagerequest-events sammen?
-                    JumpToURL(logElement.PageGUID, logElement.GUID, logElement.Element);
+                    JumpToURL(logElement.PageGUID, logElement.Element);
                     break;
             }
             return new NamedPipeServerResponse() {Success = true};
         }
 
-        private void JumpToURL(Guid pageGUID, Guid logElementGUID, string url)
+        private void JumpToURL(Guid pageGUID, string url)
         {
             var browser = Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
             if (browser == null)
             {
-                browser = new BrowserForm(pageGUID, logElementGUID, url);
+                browser = new BrowserForm(ServerGUID.Value, pageGUID, url);
                 browser.FormClosing += Browser_FormClosing;
                 browser.OnPageLoaded += Browser_OnPageLoaded;          
                 Browsers.Add(browser);
@@ -106,9 +102,9 @@ namespace LogBrowser
             }
         }
 
-        private void Browser_OnPageLoaded(BrowserForm browser, Guid logElementGUID)
+        private void Browser_OnPageLoaded(BrowserForm browser)
         {
-            SendToPlayer(NamedPipeServerRequestType.BrowserJobComplete, new NamedPipeBrowserJob() {SessionGUID = ProcessGUID.Value, LogElementGUID = logElementGUID});
+            SendToPlayer(NamedPipeServerRequestType.BrowserJobComplete, new NamedPipeBrowserJob() {PageGUID = browser.PageGUID, LogElementGUID = null});
         }
 
         private void SendToPlayer(NamedPipeServerRequestType requestType, object data = null)

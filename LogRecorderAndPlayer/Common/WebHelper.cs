@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Specialized;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
 
@@ -9,6 +11,12 @@ namespace LogRecorderAndPlayer
     public class WebContext
     {
         public HttpContext HttpContext { get; set; }
+    }
+
+    public class TypeAndValue
+    {
+        public string TypeName { get; set; }
+        public string ValueJSON { get; set; }
     }
 
     public static class WebHelper
@@ -45,7 +53,10 @@ namespace LogRecorderAndPlayer
             {
                 try
                 {
-                    nvcSession[sessionKey] = SerializationHelper.Serialize(page.Session[sessionKey], SerializationType.Json);
+                    var v = page.Session[sessionKey];
+                    var typeAndValue = new TypeAndValue() {TypeName = v.GetType().ToString(), ValueJSON = SerializationHelper.Serialize(v, SerializationType.Json)};
+
+                    nvcSession[sessionKey] = SerializationHelper.Serialize(typeAndValue, SerializationType.Json);
                 }
                 catch (Exception ex)
                 {
@@ -53,6 +64,20 @@ namespace LogRecorderAndPlayer
                 }
             }
             return nvcSession;
+        }
+
+        public static void SetSessionValues(Page page, NameValueCollection nvcSession)
+        {
+            if (page == null || page.Session == null)
+                return;
+
+            foreach (var key in nvcSession.AllKeys)
+            {
+                var jsonSerialized = nvcSession[key]; // Got dammit... need type of cause to deserialize... yawn!
+                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
+                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                page.Session[key] = v;
+            }
         }
 
         public static NameValueCollection GetSessionValues(HttpContext context)
@@ -83,7 +108,10 @@ namespace LogRecorderAndPlayer
             {
                 try
                 {
-                    nvcViewState[viewStateKey] = SerializationHelper.Serialize<object>(viewstate[viewStateKey], SerializationType.Json);
+                    var v = viewstate[viewStateKey];
+                    var typeAndValue = new TypeAndValue() { TypeName = v.GetType().ToString(), ValueJSON = SerializationHelper.Serialize(v, SerializationType.Json) };
+
+                    nvcViewState[viewStateKey] = SerializationHelper.Serialize(typeAndValue, SerializationType.Json);
                 }
                 catch (Exception ex)
                 {
@@ -92,5 +120,25 @@ namespace LogRecorderAndPlayer
             }
             return nvcViewState;
         }
+
+        public static string RemoveQryStrElement(string url, string tag)
+        {
+            var regEx = new Regex("[?&]" + tag + "=[^$?&]*[$?&]*");
+            var m = regEx.Match(url);
+            if (m.Success)
+            {
+                var m1 = m.Groups[1];
+                var s = m1.Value;
+                var sep = s[s.Length - 1];
+                return url.Substring(0, m1.Index) + (sep == '&' ? s[0] + url.Substring(m1.Index + s.Length) : "");
+            }
+            return url;
+        }
+
+        public static string AddQryStrElement(string url, string tag, string value)
+        {
+            return url + (url.IndexOf('?') == -1 ? "?" : "&") + tag + "=" + value;
+        }
+
     }
 }

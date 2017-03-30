@@ -20,6 +20,15 @@ namespace LogRecorderAndPlayer
 
     public static class SerializationHelper
     {
+        public static object DeserializeByType(Type type, string content, SerializationType serializationType = SerializationType.Xml)
+        {
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+            {
+                var serializer = GetSerializer(type, serializationType);
+                return serializer.ReadObject(ms);
+            }
+        }
+
         public static T Deserialize<T>(string content, SerializationType serializationType = SerializationType.Xml)
         {
 //            var obj = Activator.CreateInstance<T>();
@@ -71,6 +80,17 @@ namespace LogRecorderAndPlayer
             }
 
             return serializer;
+        }
+
+        public static NameValueCollection DeserializeNameValueCollection(string data, SerializationType serializationType)
+        {
+            var dict = Deserialize<Dictionary<string, object>>(data, serializationType);
+            var nvc = new NameValueCollection();
+            foreach (var key in dict.Keys)
+            {
+                nvc.Add(key, (string)dict[key]);
+            }
+            return nvc;
         }
 
         public static string SerializeNameValueCollection(NameValueCollection nvc, SerializationType serializationType)

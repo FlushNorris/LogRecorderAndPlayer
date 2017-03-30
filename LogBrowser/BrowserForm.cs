@@ -19,19 +19,21 @@ namespace LogBrowser
 {
     public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {
-        public delegate void PageLoaded(BrowserForm browser, Guid logElementGUID);
+        public delegate void PageLoaded(BrowserForm browser);
 
         public event PageLoaded OnPageLoaded = null;
 
+        public Guid ServerGUID { get; set; }
         public Guid PageGUID { get; set; }
         private string StartingURL { get; set; }
-        private Guid CurrentLogElementGUID { get; set; }
 
-        public BrowserForm(Guid pageGUID, Guid logElementGUID, string url)
+        public BrowserForm(Guid serverGUID, Guid pageGUID, string url)
         {
+            ServerGUID = serverGUID;
             PageGUID = pageGUID;
-            CurrentLogElementGUID = logElementGUID;
-            StartingURL = url;
+            StartingURL = LoggingHelper.PrepareUrlForLogPlayer(url, serverGUID, pageGUID);
+            MessageBox.Show(StartingURL);
+
             InitializeComponent();
         }
 
@@ -42,13 +44,13 @@ namespace LogBrowser
                 var url = webBrowser?.Url;
                 if (url == null)
                     return "NULL";
-                return url.ToString();
+                return LoggingHelper.StripUrlForLRAP(url.ToString());
             }
         }
 
         private void RefreshUI()
         {
-            Text = $"URL: {webBrowser.Url}";
+            Text = $"URL: {this.URL}";
         }  
 
         private void BrowserForm_Load(object sender, EventArgs e)
@@ -101,7 +103,7 @@ namespace LogBrowser
 
         private void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            OnPageLoaded?.Invoke(this, CurrentLogElementGUID);
+            OnPageLoaded?.Invoke(this);
         }
 
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)

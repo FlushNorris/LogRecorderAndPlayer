@@ -11,9 +11,9 @@ namespace LogRecorderAndPlayer
     public class NamedPipeBrowserJob
     {       
         [DataMember]
-        public Guid SessionGUID { get; set; }
+        public Guid PageGUID { get; set; }
 
         [DataMember]
-        public Guid LogElementGUID { get; set; }
+        public Guid? LogElementGUID { get; set; } 
     }
 }

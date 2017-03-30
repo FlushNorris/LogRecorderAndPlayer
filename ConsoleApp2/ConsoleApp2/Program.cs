@@ -26,17 +26,24 @@ namespace ConsoleApp2
 
         static void Main(string[] args)
         {
-            var lst1 = BuildEnu(5);
+            //var lst1 = BuildEnu(5);
 
-            foreach (var s in lst1)
-            {
-                Console.WriteLine($"Read1 {s}");
-            }
-            System.Threading.Thread.Sleep(2000);
-            foreach (var s in lst1)
-            {
-                Console.WriteLine($"Read2 {s}");
-            }
+            //foreach (var s in lst1)
+            //{
+            //    Console.WriteLine($"Read1 {s}");
+            //}
+            //System.Threading.Thread.Sleep(2000);
+            //foreach (var s in lst1)
+            //{
+            //    Console.WriteLine($"Read2 {s}");
+            //}
+
+            var p = new Program();
+            var typeName = p.GetType().ToString();
+            Console.WriteLine(typeName);
+
+            var t2 = Type.GetType(typeName);
+            Console.WriteLine(t2.ToString());
 
             Console.ReadKey(true);
 
