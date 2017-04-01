@@ -392,6 +392,13 @@ namespace LogRecorderAndPlayer
             WebHelper.SetSessionValues(page, nvc);
         }
 
+//        context.Request.Form.Add("asdas", "asdas");
+
+        public static void SetRequestValues(HttpContext context, NameValueCollection requestFormValues)
+        {
+            foreach (var key in requestFormValues.AllKeys)
+                context.Request.Form[key] = requestFormValues[key];
+        }
 
         public static NameValueCollection GetSessionValues(HttpContext context)
         {
@@ -400,6 +407,11 @@ namespace LogRecorderAndPlayer
                 return null;
             nvc.Remove(Consts.SessionGUIDTag);
             return nvc;
+        }
+
+        public static void SetViewStateValues(Page page, NameValueCollection nvc)
+        {
+            WebHelper.SetViewStateValues(page, nvc);
         }
 
         public static NameValueCollection GetViewStateValues(Page page)

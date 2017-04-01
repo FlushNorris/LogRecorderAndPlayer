@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
+using mshtml;
 
 namespace LogRecorderAndPlayer
 {
@@ -73,7 +74,7 @@ namespace LogRecorderAndPlayer
 
             foreach (var key in nvcSession.AllKeys)
             {
-                var jsonSerialized = nvcSession[key]; // Got dammit... need type of cause to deserialize... yawn!
+                var jsonSerialized = nvcSession[key]; 
                 var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
                 var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
                 page.Session[key] = v;
@@ -98,6 +99,22 @@ namespace LogRecorderAndPlayer
                 }
             }
             return nvcSession;
+        }
+
+        public static void SetViewStateValues(Page page, NameValueCollection nvcViewState)
+        {
+            if (page == null || page.Session == null)
+                return;
+
+            var viewstate = GetViewState(page);
+
+            foreach (var key in nvcViewState.AllKeys)
+            {
+                var jsonSerialized = nvcViewState[key];
+                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
+                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                viewstate[key] = v;
+            }
         }
 
         public static NameValueCollection GetViewStateValues(Page page)
@@ -140,5 +157,52 @@ namespace LogRecorderAndPlayer
             return url + (url.IndexOf('?') == -1 ? "?" : "&") + tag + "=" + value;
         }
 
+        public static NameValueCollection GetResponseViewState(string html)
+        {
+            var doc1 = new HTMLDocument();
+            var doc2 = (IHTMLDocument2)doc1;
+            doc2.write(new object[] { html });
+
+            var nvc = new NameValueCollection();
+
+            var enu = doc2.all.GetEnumerator();
+            while (enu.MoveNext())
+            {
+                var elm = enu.Current;
+                if (elm is mshtml.HTMLInputElement)
+                {
+                    var input = (mshtml.HTMLInputElement)elm;
+                    if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+                    {
+                        nvc[input.name] = input.value;
+                    }
+                }
+            }
+
+            return nvc;
+        }
+
+        public static string SetResponseViewState(string html, NameValueCollection nvc)
+        {
+            var doc1 = new HTMLDocument();
+            var doc2 = (IHTMLDocument2)doc1;
+            doc2.write(new object[] { html });
+
+            var enu = doc2.all.GetEnumerator();
+            while (enu.MoveNext())
+            {
+                var elm = enu.Current;
+                if (elm is mshtml.HTMLInputElement)
+                {
+                    var input = (mshtml.HTMLInputElement)elm;
+                    if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+                    {
+                        input.value = nvc[input.name];
+                    }
+                }
+            }
+
+            return doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
+        }
     }
 }

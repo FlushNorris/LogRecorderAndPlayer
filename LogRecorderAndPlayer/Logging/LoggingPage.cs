@@ -17,6 +17,28 @@ namespace LogRecorderAndPlayer
     {
         public static void LogViewState(HttpContext context, Page page, bool before)
         {
+            var logType = before ? LogType.OnPageViewStateBefore : LogType.OnPageViewStateAfter;
+            NameValueCollection viewStateValues;
+
+            if (LoggingHelper.IsPlaying(context))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+
+                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+
+                viewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                LoggingHelper.SetViewStateValues(page, viewStateValues);
+
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+
+                return;
+            }
+
+            viewStateValues = LoggingHelper.GetViewStateValues(page);
+            if (viewStateValues == null)
+                return;
+
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
             LoggingHelper.LogElement(new LogElementDTO(
@@ -26,10 +48,10 @@ namespace LogRecorderAndPlayer
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: before ? LogType.OnPageViewStateBefore : LogType.OnPageViewStateAfter,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.SerializeNameValueCollection(LoggingHelper.GetViewStateValues(page), SerializationType.Json),
+                value: SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null
             ));
@@ -37,6 +59,22 @@ namespace LogRecorderAndPlayer
 
         public static void LogRequest(HttpContext context, Page page)
         {
+            if (LoggingHelper.IsPlaying(context))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+
+                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, LogType.OnPageRequest);
+
+                var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+
+                LoggingHelper.SetRequestValues(context, requestFormValues);
+
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+
+                return;
+            }
+
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
             LoggingHelper.LogElement(new LogElementDTO(
@@ -65,18 +103,13 @@ namespace LogRecorderAndPlayer
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
 
-                //Get LogElementDTO by PageGUID and LogType
-                var fetchLogElement = new NamedPipeFetchLogElement() {PageGUID = pageGUID, LogType = logType};
-                var serverRequest = new NamedPipeServerRequest() {Type = NamedPipeServerRequestType.FetchLogElement, Data = fetchLogElement};
-                var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
-                string error;
-                string serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
-                if (!String.IsNullOrWhiteSpace(error))
-                    throw new Exception(error);
-                var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-                var logElementDTO = (LogElementDTO) serverResponse.Data;
-                sessionValues = SerializationHelper.DeserializeNameValueCollection(logElementDTO.Value, SerializationType.Json);
+                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+
+                sessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                 LoggingHelper.SetSessionValues(page, sessionValues);
+
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+
                 return;
             }
 
@@ -104,6 +137,25 @@ namespace LogRecorderAndPlayer
 
         public static void LogResponse(HttpContext context, Page page, string response)
         {
+            if (LoggingHelper.IsPlaying(context))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+
+                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, LogType.OnPageResponse);
+
+                //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
+                var responseViewState = WebHelper.GetResponseViewState(response);
+                var newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
+
+                context.Response.Clear();
+                context.Response.Write(newResponse);
+
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+
+                return;
+            }
+
             var postBackControlClientId = GetPostBackControlClientId(context, page);
 
             LoggingHelper.LogElement(new LogElementDTO(

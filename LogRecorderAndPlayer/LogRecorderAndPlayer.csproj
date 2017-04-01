@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.mshtml, Version=7.0.3300.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
@@ -79,6 +82,7 @@
     <Compile Include="NamedPipes\NamedPipeBrowserJob.cs" />
     <Compile Include="NamedPipes\NamedPipeClient.cs" />
     <Compile Include="NamedPipes\NamedPipeFetchLogElement.cs" />
+    <Compile Include="NamedPipes\NamedPipeHelper.cs" />
     <Compile Include="NamedPipes\NamedPipeServer.cs" />
     <Compile Include="NamedPipes\NamedPipeServerRequest.cs" />
     <Compile Include="NamedPipes\NamedPipeServerResponse.cs" />

@@ -230,8 +230,8 @@ namespace LogRecorderAndPlayer
                     LoggingPage.LogResponse(context, page, response);
                 else
                     LoggingHandler.LogResponse(context, response);
-
-                if (context.Response.ContentType == ContentType.TextHtml)
+                
+                if (context.Response.ContentType == ContentType.TextHtml && !LoggingHelper.IsPlaying(context))
                 {
                     string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>";
                     var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapScript);

@@ -32,8 +32,7 @@ namespace LogBrowser
             ServerGUID = serverGUID;
             PageGUID = pageGUID;
             StartingURL = LoggingHelper.PrepareUrlForLogPlayer(url, serverGUID, pageGUID);
-            MessageBox.Show(StartingURL);
-
+            
             InitializeComponent();
         }
 

@@ -48,7 +48,7 @@ namespace TestBrowser
         {
             var sb = new StringBuilder();
             sb.AppendLine($"Session: {Session.GUID}");
-            sb.AppendLine($"Clientside: {LogElementInfo.ClientsideLogType}");
+            sb.AppendLine($"Clientside: {LogTypeHelper.IsClientsideEvent(LogElementInfo.LogType)}");
             sb.AppendLine($"LogType: {LogElementInfo.LogType}");
             return sb.ToString();
         }
@@ -162,7 +162,7 @@ namespace TestBrowser
                 }
                 List<LRAPSessionElement> flows = null;
 
-                var flowKey = logElementInfo.ClientsideLogType ? LRAPSessionFlowType.Client : LRAPSessionFlowType.Server;
+                var flowKey = LogTypeHelper.IsClientsideEvent(logElementInfo.LogType) ? LRAPSessionFlowType.Client : LRAPSessionFlowType.Server;
                 if (!session.Flows.TryGetValue(flowKey, out flows))
                 {
                     flows = new List<LRAPSessionElement>();
@@ -218,14 +218,14 @@ namespace TestBrowser
             int orderedListIndex = 0;
             foreach (var sessionElement in lstOrderedByTimestamp)
             {
-                if (lastTimestamp != null && (!lastTimestamp.Value.Equals(sessionElement.LogElementInfo.Timestamp) || lastIsClient.Value == sessionElement.LogElementInfo.ClientsideLogType))
+                if (lastTimestamp != null && (!lastTimestamp.Value.Equals(sessionElement.LogElementInfo.Timestamp) || lastIsClient.Value == LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType)))
                 {
                     result.Add(curr);
                     orderedListIndex++;
                     curr = new List<LRAPSessionElement>();
                 }
                 lastTimestamp = sessionElement.LogElementInfo.Timestamp;
-                lastIsClient = sessionElement.LogElementInfo.ClientsideLogType;
+                lastIsClient = LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType);
                 sessionElement.Index = orderedListIndex;
                 sessionElement.State = SessionElementState.Waiting;
                 curr.Add(sessionElement);
@@ -341,7 +341,7 @@ namespace TestBrowser
                 var sessionElementsAtPosition = SessionElementOrderedList[idx];
                 foreach (var sessionElement in sessionElementsAtPosition)
                 {
-                    var rowIndex = sessionElement.LogElementInfo.ClientsideLogType ? sessionElement.Session.ClientRowIndex : sessionElement.Session.ServerRowIndex;
+                    var rowIndex = LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType) ? sessionElement.Session.ClientRowIndex : sessionElement.Session.ServerRowIndex;
 
                     if (IsValidStartingEvent(sessionElement))
                     {
@@ -424,16 +424,16 @@ namespace TestBrowser
         {
             currentIndex = currentIndex ?? CurrentIndex;
 
-            if (SessionElementOrderedList.Count <= currentIndex)
+            if (SessionElementOrderedList.Count <= currentIndex.Value)
                 return null;
 
-            var lst = SessionElementOrderedList[CurrentIndex];
+            var lst = SessionElementOrderedList[currentIndex.Value];
             var sessionElement = lst.First(x => x.LogElementInfo.PageGUID.Equals(pageGUID)); //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
             switch (sessionElement.State)
             {
                 case SessionElementState.Played:
                     //Look at the next event if it matches the LogType for the current PageGUID
-                    return FetchLogElement(pageGUID, logType, currentIndex + 1);
+                    return FetchLogElement(pageGUID, logType, currentIndex.Value + 1);
                 case SessionElementState.Playing:
                     if (sessionElement.LogElementInfo.LogType == logType)
                     {
@@ -449,17 +449,31 @@ namespace TestBrowser
             }
         }
 
+        private LRAPSessionElement GetPlayingSessionElement(Guid elementGUID, int? currentIndex = null)
+        {
+            currentIndex = currentIndex ?? CurrentIndex;
+            if (SessionElementOrderedList.Count <= currentIndex.Value)
+                return null;
+            var lst = SessionElementOrderedList[currentIndex.Value];
+            var elm = lst.Where(x => x.State == SessionElementState.Playing && x.LogElementInfo.GUID.Equals(elementGUID)).FirstOrDefault();
+            if (elm != null)
+                return elm;
+
+            if (lst.Any(x => x.State == SessionElementState.Played)) //Must be at least one playing element on the currentIndex-position, otherwise the elementGUID cannot exist (think about it :)
+                return GetPlayingSessionElement(elementGUID, currentIndex.Value + 1);
+
+            return null;
+        }
+
         public void SetSessionElementAsDone(Guid elementGUID) //Visse events kan godt være forud... f.eks. PageRequest-events som jo kommer i bølger, de vil naturligt nok være efter CurrentIndex
         {
-            var lst = SessionElementOrderedList[CurrentIndex];
+            //CurrentIndex skal forhøjes.. men kun hvis alle andre på CurrentIndex-positionen også er markeret som Played            
 
-            var logElementInfo = lst.First(x => x.LogElementInfo.GUID.Equals(elementGUID)); 
-            logElementInfo.State = SessionElementState.Played;
-
-            //GetOrderedList styrer at vi kan have 2 events kørende samtidigt på en session, men kun hvis den ene er server og den anden klient. Dette lyder ikke specielt holdbart i forbindelse med threading på serversiden. (Beskriv dette i rapporten)
-
-            //Hvordan fanden skal jeg fortælle LogPlayeren-UI'et at serverside-httpmodule/sqlcommandlrap/osv var færdig .... hov, via namedpipes selvfølgelig, jeg er vist træt
-
+            var elm = GetPlayingSessionElement(elementGUID);
+            if (elm == null)
+                throw new Exception($"Unable to find playing element ({elementGUID})");
+            elm.State = SessionElementState.Played;
+            
             StartNewEventsIfPossible();
         }
 
@@ -468,7 +482,7 @@ namespace TestBrowser
             //Er jo lidt noget rod, for det første event som vil være et pagerequest event... skal ikke markeres som done, men siden skal kaldes med pageguid
 
             var lst = SessionElementOrderedList[CurrentIndex];
-            if (lst.Where(x => x.State == SessionElementState.Playing).Any())
+            if (lst.Any(x => x.State == SessionElementState.Playing))
                 return; //Still waiting for at least one element to complete
 
             CurrentIndex++;

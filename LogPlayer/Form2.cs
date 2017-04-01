@@ -101,13 +101,23 @@ namespace TestBrowser
 
         private void EventsTable1_OnPlayElement(LogElementDTO logElement)
         {            
-            if (!Sessions.Any(x => x.ProcessGUID.Equals(logElement.SessionGUID)))
+            if (!Sessions.Any(x => x.ProcessGUID.Equals(logElement.SessionGUID))) //TODO Check if the logElement is both the first one of a bundle... and able to spawn a new session/browser
             {
                 SpawnSession(logElement.SessionGUID, logElement.PageGUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/'));
             }
             else
             {
-                MessageBox.Show("Error: Session is already open?");
+                if (LogTypeHelper.IsClientsideEvent(logElement.LogType))
+                {
+                    //throw new Exception("Clientside events is not implemented yet.... to be continued :)");
+                }
+                else
+                {
+                    //Ignore serverside.. they are handled by the webserver
+                }
+
+                //TODO Spawn this a spawn session/browser event occurs more than once?!
+                //MessageBox.Show("Error: Session is already open?");
             }
         }
 

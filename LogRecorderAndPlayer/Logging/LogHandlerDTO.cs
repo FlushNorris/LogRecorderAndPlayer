@@ -53,58 +53,7 @@ namespace LogRecorderAndPlayer
         public DateTime Timestamp { get; set; }
         public Guid SessionGUID { get; set; }
         public Guid PageGUID { get; set; }
-        public LogType LogType { get; set; }
-
-        public bool ClientsideLogType
-        {
-            get
-            {
-                switch (LogType)
-                {
-                    case LogType.OnHandlerRequestSend:
-                    case LogType.OnHandlerResponseReceived:
-                    case LogType.OnBlur:
-                    case LogType.OnFocus:
-                    case LogType.OnChange:
-                    case LogType.OnSelect:
-                    case LogType.OnCopy:
-                    case LogType.OnCut:
-                    case LogType.OnPaste:
-                    case LogType.OnKeyDown:
-                    case LogType.OnKeyUp:
-                    case LogType.OnKeyPress:
-                    case LogType.OnMouseDown:
-                    case LogType.OnMouseUp:
-                    case LogType.OnClick:
-                    case LogType.OnDblClick:
-                    case LogType.OnSearch:
-                    case LogType.OnResize:
-                    case LogType.OnDragStart:
-                    case LogType.OnDragEnd:
-                    case LogType.OnDragOver:
-                    case LogType.OnDrop:
-                    case LogType.OnScroll:
-                        return true;
-                    case LogType.OnHandlerRequestReceived:
-                    case LogType.OnHandlerResponseSend:
-                    case LogType.OnPageRequest:
-                    case LogType.OnPageResponse:
-                    case LogType.OnPageSessionBefore:
-                    case LogType.OnPageSessionAfter:
-                    case LogType.OnPageViewStateBefore:
-                    case LogType.OnPageViewStateAfter:
-                    case LogType.OnWCFServiceRequest:
-                    case LogType.OnWCFServiceResponse:
-                    case LogType.OnDatabaseRequest:
-                    case LogType.OnDatabaseResponse:
-                    case LogType.OnHandlerSessionBefore:
-                    case LogType.OnHandlerSessionAfter:
-                        return false;
-                    default:
-                        throw new NotImplementedException();
-                }
-            }
-        }
+        public LogType LogType { get; set; }        
     }
 
     public class LogElementsInfo
@@ -171,6 +120,57 @@ namespace LogRecorderAndPlayer
         OnDatabaseResponse = 34,
         OnHandlerSessionBefore = 35,
         OnHandlerSessionAfter = 36
+    }
+
+    public static class LogTypeHelper
+    {
+        public static bool IsClientsideEvent(LogType logType)
+        {
+            switch (logType)
+            {
+                case LogType.OnHandlerRequestSend:
+                case LogType.OnHandlerResponseReceived:
+                case LogType.OnBlur:
+                case LogType.OnFocus:
+                case LogType.OnChange:
+                case LogType.OnSelect:
+                case LogType.OnCopy:
+                case LogType.OnCut:
+                case LogType.OnPaste:
+                case LogType.OnKeyDown:
+                case LogType.OnKeyUp:
+                case LogType.OnKeyPress:
+                case LogType.OnMouseDown:
+                case LogType.OnMouseUp:
+                case LogType.OnClick:
+                case LogType.OnDblClick:
+                case LogType.OnSearch:
+                case LogType.OnResize:
+                case LogType.OnDragStart:
+                case LogType.OnDragEnd:
+                case LogType.OnDragOver:
+                case LogType.OnDrop:
+                case LogType.OnScroll:
+                    return true;
+                case LogType.OnHandlerRequestReceived:
+                case LogType.OnHandlerResponseSend:
+                case LogType.OnPageRequest:
+                case LogType.OnPageResponse:
+                case LogType.OnPageSessionBefore:
+                case LogType.OnPageSessionAfter:
+                case LogType.OnPageViewStateBefore:
+                case LogType.OnPageViewStateAfter:
+                case LogType.OnWCFServiceRequest:
+                case LogType.OnWCFServiceResponse:
+                case LogType.OnDatabaseRequest:
+                case LogType.OnDatabaseResponse:
+                case LogType.OnHandlerSessionBefore:
+                case LogType.OnHandlerSessionAfter:
+                    return false;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
     }
 
     public static class ContentType //https://msdn.microsoft.com/en-us/library/ms775147.aspx
