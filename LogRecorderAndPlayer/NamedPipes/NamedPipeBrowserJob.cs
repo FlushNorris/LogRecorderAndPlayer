@@ -15,5 +15,8 @@ namespace LogRecorderAndPlayer
 
         [DataMember]
         public Guid? LogElementGUID { get; set; } 
+
+        [DataMember]
+        public LogElementDTO LogElement { get; set; } //Only available when launching browserJob
     }
 }

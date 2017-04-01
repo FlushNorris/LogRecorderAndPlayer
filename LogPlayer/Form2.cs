@@ -17,7 +17,7 @@ namespace TestBrowser
     {
         private NamedPipeServer Server { get; set; } = null;
         private Guid ServerGUID { get; set; }
-        private List<Session> Sessions { get; set; } = new List<Session>();
+        private List<NamedPipeSession> Sessions { get; set; } = new List<NamedPipeSession>();
 
         public Form2()
         {
@@ -100,8 +100,10 @@ namespace TestBrowser
         }
 
         private void EventsTable1_OnPlayElement(LogElementDTO logElement)
-        {            
-            if (!Sessions.Any(x => x.ProcessGUID.Equals(logElement.SessionGUID))) //TODO Check if the logElement is both the first one of a bundle... and able to spawn a new session/browser
+        {
+            var session = Sessions.FirstOrDefault(x => x.ProcessGUID.Equals(logElement.SessionGUID));
+
+            if (session == null) //TODO Check if the logElement is both the first one of a bundle... and able to spawn a new session/browser
             {
                 SpawnSession(logElement.SessionGUID, logElement.PageGUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/'));
             }
@@ -110,6 +112,8 @@ namespace TestBrowser
                 if (LogTypeHelper.IsClientsideEvent(logElement.LogType))
                 {
                     //throw new Exception("Clientside events is not implemented yet.... to be continued :)");
+                    //send request to browser via namedpipe
+                    NamedPipeHelper.SendBrowserJob(session, logElement);
                 }
                 else
                 {
@@ -123,7 +127,7 @@ namespace TestBrowser
 
         private void SpawnSession(Guid processGUID, Guid pageGUID, string url)
         {
-            var session = new Session() { ProcessGUID = processGUID, ProcessId = -1 };
+            var session = new NamedPipeSession() { ProcessGUID = processGUID, ProcessId = -1 };
 
             Sessions.Add(session);
 
@@ -172,10 +176,5 @@ namespace TestBrowser
         }
 
         #endregion
-    }
-
-    public class Session : NamedPipeSession
-    {
-        
     }
 }

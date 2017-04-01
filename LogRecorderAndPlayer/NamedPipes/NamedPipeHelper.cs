@@ -36,5 +36,19 @@ namespace LogRecorderAndPlayer
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while syncing with player ({error ?? serverResponse.Message})");
         }
+
+        public static void SendBrowserJob(NamedPipeSession session, LogElementDTO logElement)
+        {
+            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJob, Data = logElement };
+            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            string error;            
+            var serverResponseJSON = NamedPipeClient.SendRequest_Threading(session.ProcessGUID, serverRequestJSON, out error);
+            NamedPipeServerResponse serverResponse = null;
+            if (error == null)
+                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+
+            if (error != null || !serverResponse.Success)
+                throw new Exception($"Error occured while sending starting browser job ({error ?? serverResponse.Message})");
+        }
     }
 }

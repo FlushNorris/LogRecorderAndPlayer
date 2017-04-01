@@ -19,9 +19,9 @@ namespace LogBrowser
 {
     public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {
-        public delegate void PageLoaded(BrowserForm browser);
+        public delegate void JobCompleted(BrowserForm browser, Guid? logElementGUID);
 
-        public event PageLoaded OnPageLoaded = null;
+        public event JobCompleted OnJobCompleted = null;
 
         public Guid ServerGUID { get; set; }
         public Guid PageGUID { get; set; }
@@ -102,8 +102,32 @@ namespace LogBrowser
 
         private void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            OnPageLoaded?.Invoke(this);
+            OnJobCompleted?.Invoke(this, null);
         }
+        public void ResizeBrowser(BrowserResize browserResize, Guid logElementGUID)
+        {
+            //browser.ResizeBrowser(browserResize);
+            //webBrowser.Url = new Uri("javascript:$('input').val('hest');alert('1');");
+
+            var diffWidth = browserResize.width - webBrowser.Size.Width;
+            var diffHeight = browserResize.height - webBrowser.Size.Height;
+
+            this.Width += diffWidth;
+            this.Height += diffHeight;
+
+            OnJobCompleted?.Invoke(this, logElementGUID);
+        }
+
+        public void ScrollBrowser(BrowserScroll browserScroll, Guid logElementGUID)
+        {
+            webBrowser.Url = new Uri($"javascript:window.scrollTo({browserScroll.left}, {browserScroll.top});");
+            //When does this event complete? Shouldn't we let the LRAP-JS determine this? And to a callback via window.external...
+            //Clientside then needs to know it is playing, it doesn't now... playing=1 are only in the url at the first page atm, should be added to the session and used in the lrap-js-init function!
+            //blah blah blah
+
+            //OnJobCompleted?.Invoke(this, logElementGUID);
+        }
+
 
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
         //{

@@ -82,11 +82,31 @@ namespace LogBrowser
         {
             switch (logElement.LogType)
             {
-                case LogType.OnPageSessionBefore: //Burde jeg slå alle disse page pagerequest-events sammen?
+                case LogType.OnPageSessionBefore: //Burde jeg slå alle disse page pagerequest-events sammen?... nej, da der kan være event kald imellem eventsene
                     JumpToURL(logElement.PageGUID, logElement.Element);
+                    break;
+                case LogType.OnResize:
+                    var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value);
+                    FindBrowserAndExec(logElement.PageGUID, x => x.ResizeBrowser(browserResize, logElement.GUID));
+                    break;
+                case LogType.OnScroll:
+                    var browserScroll = SerializationHelper.Deserialize<BrowserScroll>(logElement.Value);
+                    FindBrowserAndExec(logElement.PageGUID, x => x.ScrollBrowser(browserScroll, logElement.GUID));
+                    break;
+                default:
+                    MessageBox.Show(logElement.Value);
                     break;
             }
             return new NamedPipeServerResponse() {Success = true};
+        }
+
+        private void FindBrowserAndExec(Guid pageGUID, Action<BrowserForm> fn)
+        {
+            var browser = Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
+            if (browser == null)
+                throw new Exception($"Error: Browser({pageGUID}) is not found");
+
+            fn(browser);
         }
 
         private void JumpToURL(Guid pageGUID, string url)
@@ -96,15 +116,15 @@ namespace LogBrowser
             {
                 browser = new BrowserForm(ServerGUID.Value, pageGUID, url);
                 browser.FormClosing += Browser_FormClosing;
-                browser.OnPageLoaded += Browser_OnPageLoaded;          
+                browser.OnJobCompleted += Browser_OnJobCompleted;          
                 Browsers.Add(browser);
                 browser.Show();
             }
         }
 
-        private void Browser_OnPageLoaded(BrowserForm browser)
+        private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID)
         {
-            SendToPlayer(NamedPipeServerRequestType.BrowserJobComplete, new NamedPipeBrowserJob() {PageGUID = browser.PageGUID, LogElementGUID = null});
+            SendToPlayer(NamedPipeServerRequestType.BrowserJobComplete, new NamedPipeBrowserJob() {PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
         }
 
         private void SendToPlayer(NamedPipeServerRequestType requestType, object data = null)

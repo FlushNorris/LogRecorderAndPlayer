@@ -67,7 +67,7 @@ namespace LogRecorderAndPlayer
                     break;
                 }
                 case NamedPipeServerRequestType.BrowserJob:
-                {
+                {                        
                     var logElement = (LogElementDTO) serverRequest.Data;
                     if (OnBrowserJob != null)
                         serverResponse = OnBrowserJob(logElement);
