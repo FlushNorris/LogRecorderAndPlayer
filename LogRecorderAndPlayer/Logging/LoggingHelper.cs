@@ -313,12 +313,12 @@ namespace LogRecorderAndPlayer
             }
         }
 
-        public static string PrepareUrlForLogPlayer(string url, Guid serverGUID, Guid pageGUID)
+        public static string PrepareUrlForLogPlayer(string url, Guid serverGUID, Guid sessionGUID, Guid pageGUID)
         {
             var result = url;
+            result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.SessionGUIDTag), Consts.SessionGUIDTag, sessionGUID.ToString());
             result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.ServerGUIDTag), Consts.ServerGUIDTag, serverGUID.ToString());
             result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.PageGUIDTag), Consts.PageGUIDTag, pageGUID.ToString());
-            result = WebHelper.AddQryStrElement(WebHelper.RemoveQryStrElement(result, Consts.PlayingTag), Consts.PlayingTag, "1");
             return result;
         }
 
@@ -337,7 +337,6 @@ namespace LogRecorderAndPlayer
             queryBuilder.Remove(Consts.PageGUIDTag);
             queryBuilder.Remove(Consts.BundleGUIDTag);
             queryBuilder.Remove(Consts.ServerGUIDTag);
-            queryBuilder.Remove(Consts.PlayingTag);
 
             query = queryBuilder.ToString();
 
@@ -426,10 +425,11 @@ namespace LogRecorderAndPlayer
 
         public static bool IsPlaying(HttpContext context)
         {
-            var r = context.Request[Consts.PlayingTag];
+            var r = context.Request[Consts.ServerGUIDTag];
             if (String.IsNullOrWhiteSpace(r))
                 return false;
-            return r == "1";
+            Guid g;
+            return Guid.TryParse(r, out g) && !g.Equals(new Guid());
         }
     }
 

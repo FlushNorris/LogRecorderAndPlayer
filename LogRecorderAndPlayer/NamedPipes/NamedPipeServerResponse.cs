@@ -9,6 +9,7 @@ namespace LogRecorderAndPlayer
 {
     [DataContract]
     [KnownType(typeof(LogElementDTO))]
+    [KnownType(typeof(NamedPipeBrowserJob))]
     public class NamedPipeServerResponse
     {
         [DataMember]

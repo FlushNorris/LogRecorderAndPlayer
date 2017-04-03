@@ -4,11 +4,25 @@
 
     var pageGUIDCache = null;
     var sessionGUIDCache = null;
+    var serverGUIDCache = null;
 
     var GUIDTag = "lrap-guid";
     var SessionGUIDTag = "lrap-sessionguid";
     var PageGUIDTag = "lrap-pageguid";
     var BundleGUIDTag = "lrap-bundleguid";
+    var ServerGUIDTag = "lrap-serverguid"; //For the namedpipe-connection to the LogPlayer
+    var LogElementGUID = null;
+
+    function pushLogElementGUID(logElementGUID) {
+        alert('pushing ' + logElementGUID);
+        LogElementGUID = logElementGUID;
+    }
+
+    function popLogElementGUID() {
+        var r = LogElementGUID;
+        LogElementGUID = null;
+        return r;
+    }
 
     function unixTimestamp(dt) { //seconds since 1970/1/1
         if (typeof (dt) == "undefined" || dt == null)
@@ -41,9 +55,38 @@
 
         var $frm = getPrimaryForm();
         var $pageGUID = $frm.find("." + PageGUIDTag);
-        if ($pageGUID.size() != 0) 
-            pageGUIDCache = $pageGUID.val();       
+        if ($pageGUID.size() != 0)
+            pageGUIDCache = $pageGUID.val();
         return pageGUIDCache;
+    }
+
+    function setServerGUID(_serverGUID) {
+        var v = getServerGUID();
+        if (v == null) {
+            serverGUIDCache = _serverGUID;
+            var $frm = getPrimaryForm();
+            $("<input type='hidden' />")
+                .attr("class", ServerGUIDTag)
+                .attr("name", ServerGUIDTag)
+                .val(_serverGUID)
+                .appendTo($frm);
+        }
+    }
+
+    function getServerGUID() {
+        if (serverGUIDCache != null)
+            return serverGUIDCache;
+
+        var $frm = getPrimaryForm();
+        var $serverGUID = $frm.find("." + ServerGUIDTag);
+        if ($serverGUID.size() != 0)
+            serverGUIDCache = $serverGUID.val();
+        return serverGUIDCache;
+    }
+
+    function isPlaying() {
+        var r = getServerGUID();
+        return (r != null && r != "");
     }
 
     function setSessionGUID(_sessionGUID) {
@@ -116,13 +159,14 @@
         OnHandlerSessionAfter: 36
     };
 
-    function init(sessionGUID, pageGUID) {
+    function init(sessionGUID, pageGUID, serverGUID/*for playing*/) {
         if (!window.jQuery) {
             return;
         }
 
         setSessionGUID(sessionGUID);
-        setPageGUID(pageGUID); 
+        setPageGUID(pageGUID);
+        setServerGUID(serverGUID);
 
         setupAjaxEvents('ajaxSend');
         setupAjaxEvents('ajaxComplete');
@@ -224,7 +268,7 @@
                 return "[ERROR]";
             parentPath = getElementPath($parent[0]);
         }
-        return (parentPath ? parentPath + "," : "") + (idxPath + 1) + selector;
+        return (parentPath ? parentPath + "," : "") + (idxPath + 1) + '!' + selector;
     }
 
     function getElementPath(elm) {
@@ -244,6 +288,62 @@
             return null;
         return getElementIdxAndParentPath(elm, nodeName);
     }
+
+    function getElementByElementPath(elementPath) {
+        if (elementPath == null || elementPath == "")
+            return null;
+        //if (elementPath.charAt(0) == "#")
+        //    return $(elementPath)[0];
+
+        var arr = elementPath.split(',');
+        var $elm = null;
+        $.each(arr, function(i, v) {
+            v = $.trim(v);
+            if (v == "")
+                return;
+            if (v.charAt(0) == "#") {
+                if (v.toUpperCase() == "#DOCUMENT")
+                    $elm = $(document);
+                else
+                    $elm = $(v);
+            } else {
+                if ($elm == null || $elm.size() == 0)
+                    return;
+
+                //Get int prefix, 
+                var vArr = v.split('!', 2);
+                if (vArr.length != 2)
+                    return;
+
+                var childIndex = +vArr[0];
+                var childSelector = vArr[1];
+
+                var $child = null;
+
+                $.each($elm.children(childSelector), function(ci, cv) {
+                    if (ci == childIndex) {
+                        $child = cv;
+                    }
+                });
+
+                if ($child == null)
+                    return;
+
+                $elm = $child;
+
+                //Hvilket element starter jeg fra? I tilfælde af jeg kun har klassenavne her i pathen
+                //#form1,3!DIV,1!.clientTextboxWithNoID
+            }
+        });
+
+        if ($elm == null)
+            return null;
+        return $elm[0];
+
+        //#ost, 2<div>, 1.qwerty.lord.helmet”
+
+
+    }
     //regionend: Path to the element from the closest self or parent with an ID
 
     function getEvents(elm, type) {
@@ -257,9 +357,9 @@
     }
 
     function getAttributes(that) {
-        var result = {};
-        $.each(that.attributes, function(i, v) {
-            result[v.name] = v.value;
+        var result = [];
+        $.each(that.attributes, function (i, v) {
+            result.push({ Key: v.name, Value: v.value });
         });
         return result;
     }
@@ -476,8 +576,15 @@
         });        
     }
 
-    function logWindowScroll()
-    {
+    function logWindowScroll() {
+        //if (isPlaying()) {
+        //    var logElementGUID = popLogElementGUID();
+        //    if (logElementGUID != null) {
+        //        window.external.SetLogElementAsDone(logElementGUID);
+        //    }
+        //    return;
+        //}
+
         var $this = $(window);
 
         var v = {
@@ -627,7 +734,7 @@
     }
 
     function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, unixTimestamp, logType, element, value, compareFn, combineFn) {
-        if (element == null)
+        if (element == null || isPlaying())
             return;
 
         if (typeof (compareFn) == "undefined")
@@ -1079,6 +1186,10 @@
         }
     }
 
+    function runEventsFor(elementPath) {
+        getElementPath()
+    }
+
     ///#endregion
 
     var publicMethods = {};
@@ -1087,6 +1198,13 @@
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
     publicMethods.now = now;
+    publicMethods.pushLogElementGUID = pushLogElementGUID;
+    publicMethods.testmethod = function() {
+        alert('weeehoooo');
+        return 1337;
+    }
+    publicMethods.runEventsFor = runEventsFor;
+    publicMethods.LogType = LogType;
     
     return publicMethods;
 }());

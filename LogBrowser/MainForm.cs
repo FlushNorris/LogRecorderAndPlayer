@@ -44,6 +44,8 @@ namespace LogBrowser
                 startingUrl = Arguments[3];
             }
 
+            MessageBox.Show($"ServerGUID = {ServerGUID}");
+
             if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || startingUrl == null)
             {
                 MessageBox.Show("Invalid arguments");
@@ -52,10 +54,11 @@ namespace LogBrowser
             }
 
             //Send back process id related to guid
-            SendToPlayer(NamedPipeServerRequestType.SyncSession);
+            NamedPipeHelper.SendSyncSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id);
 
             this.Text = $"Session: {ProcessGUID.Value} Page: {0}";
 
+            //MessageBox.Show($"Starting session-server {ProcessGUID.Value}");
             Server = new NamedPipeServer(ProcessGUID.Value);
             Server.ServiceInstanse.OnBrowserJob += ServiceInstanse_OnBrowserJob;
 
@@ -86,17 +89,30 @@ namespace LogBrowser
                     JumpToURL(logElement.PageGUID, logElement.Element);
                     break;
                 case LogType.OnResize:
-                    var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value);
+                    var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value, SerializationType.Json);
                     FindBrowserAndExec(logElement.PageGUID, x => x.ResizeBrowser(browserResize, logElement.GUID));
                     break;
                 case LogType.OnScroll:
-                    var browserScroll = SerializationHelper.Deserialize<BrowserScroll>(logElement.Value);
+                    var browserScroll = SerializationHelper.Deserialize<BrowserScroll>(logElement.Value, SerializationType.Json);
                     FindBrowserAndExec(logElement.PageGUID, x => x.ScrollBrowser(browserScroll, logElement.GUID));
                     break;
+                case LogType.OnMouseDown:
+                    var browserMouseDown = SerializationHelper.Deserialize<BrowserMouseDown>(logElement.Value, SerializationType.Json);
+                    browserMouseDown.element = logElement.Element;
+                    FindBrowserAndExec(logElement.PageGUID, x => x.MouseDownBrowser(browserMouseDown, logElement.GUID));
+                    break;
+                case LogType.OnFocus:
+                    MessageBox.Show("OnFocus");
+                    var browserFocus = SerializationHelper.Deserialize<BrowserFocus>(logElement.Value, SerializationType.Json);
+                    browserFocus.element = logElement.Element;
+                    FindBrowserAndExec(logElement.PageGUID, x => x.FocusBrowser(browserFocus, logElement.GUID));
+                    break;
                 default:
-                    MessageBox.Show(logElement.Value);
+                    MessageBox.Show($"Supportere ikke {logElement.LogType} endnu...");
+                    throw new Exception($"Supportere ikke {logElement.LogType} endnu...");
                     break;
             }
+
             return new NamedPipeServerResponse() {Success = true};
         }
 
@@ -113,8 +129,8 @@ namespace LogBrowser
         {
             var browser = Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
             if (browser == null)
-            {
-                browser = new BrowserForm(ServerGUID.Value, pageGUID, url);
+            {                
+                browser = new BrowserForm(ServerGUID.Value, ProcessGUID.Value, pageGUID, url);
                 browser.FormClosing += Browser_FormClosing;
                 browser.OnJobCompleted += Browser_OnJobCompleted;          
                 Browsers.Add(browser);
@@ -124,30 +140,11 @@ namespace LogBrowser
 
         private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID)
         {
-            SendToPlayer(NamedPipeServerRequestType.BrowserJobComplete, new NamedPipeBrowserJob() {PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
-        }
+            MessageBox.Show("Send BrowserJobComplete to player");
+            NamedPipeHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, async: false); 
 
-        private void SendToPlayer(NamedPipeServerRequestType requestType, object data = null)
-        {
-            if (requestType == NamedPipeServerRequestType.SyncSession || requestType == NamedPipeServerRequestType.BrowserJobComplete)
-            {
-                data = data ?? new NamedPipeSession() {ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id};
-                
-                var serverRequest = new NamedPipeServerRequest() {Type = requestType, Data = data };
-                var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
-                string error;
-                var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
-                NamedPipeServerResponse serverResponse = null;
-                if (error == null)
-                    serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-
-                if (error != null || !serverResponse.Success)
-                {
-                    MessageBox.Show($"Error occured while syncing with player ({error ?? serverResponse.Message})");
-                    Close();
-                }
-            }
-        }
+//            NamedPipeHelper.SendBrowserJobComplete(ServerGUID.Value, new NamedPipeBrowserJob() { PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
+        }       
 
         private void Browser_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -158,32 +155,28 @@ namespace LogBrowser
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (ProcessGUID == null || ServerGUID == null)
-                return;
-
-            var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-            if (dialogResult == DialogResult.No)
+            try
             {
-                e.Cancel = true;
-                return;
+                if (ProcessGUID == null || ServerGUID == null)
+                    return;
+
+                var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                if (dialogResult == DialogResult.No)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                if (!NamedPipeHelper.SendClosingSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id))
+                {
+                    e.Cancel = true;
+                    MessageBox.Show("Player does not allow closing the browser at this point");
+                }
             }
-
-            var session = new NamedPipeSession() { ProcessGUID = ProcessGUID.Value, ProcessId = Process.GetCurrentProcess().Id };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.ClosingSession, Data = session };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
-            string error;
-            var serverResponseJSON = NamedPipeClient.SendRequest_Threading(ServerGUID.Value, serverRequestJSON, out error);
-            if (error != null)
+            catch(Exception ex)
             {
-                MessageBox.Show("Failed to communicate with server");
-                return;
-            }
-
-            var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-            if (!serverResponse.Success)
-            {
-                e.Cancel = true;
-                MessageBox.Show("Player does not allow closing the browser at this point");
+                MessageBox.Show("Error occured while closing form");
+                e.Cancel = false;
             }
         }
     }

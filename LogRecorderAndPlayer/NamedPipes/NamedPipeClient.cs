@@ -18,7 +18,7 @@ namespace LogRecorderAndPlayer
             return Proxy.ProcessData(value);
         }
 
-        public static string SendRequest_Threading(Guid serverId, string value, out string error)
+        public static string SendRequest_Threading(Guid serverId, string value, out string error, bool async = false)
         {
             string result = null;
             string errorTmp = null;
@@ -36,6 +36,11 @@ namespace LogRecorderAndPlayer
                 }
             });
             t.Start();
+            if (async)
+            {
+                error = null;
+                return null;
+            }
             t.Join(60000); //wait 60sec for response
             error = errorTmp;
             return result;

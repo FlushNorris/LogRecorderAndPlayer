@@ -27,7 +27,7 @@ namespace LogRecorderAndPlayer
             ));
         }
 
-        public static void LogResponse(HttpContext context, string response)
+        public static string LogResponse(HttpContext context, string response)
         {
             //Need to parse info from request to response... in this case where ashx is called from a external website
             var requestContainsInstanceGuid = context.Request.Params[Consts.GUIDTag] != null;
@@ -46,6 +46,8 @@ namespace LogRecorderAndPlayer
                 times: 1,
                 unixTimestampEnd: null
             ));
+
+            return response;
         }
 
         public static void LogSession(HttpContext context, bool before)

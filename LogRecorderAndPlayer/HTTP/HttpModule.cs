@@ -225,15 +225,16 @@ namespace LogRecorderAndPlayer
                 //TransferRequestHandler... hvad i alverden anvendes den til???
                 var sessionGUID = LoggingHelper.GetSessionGUID(context, page, () => new Guid());
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => null); //or perhaps should be renamed to playerGUID
 
                 if (page != null)
-                    LoggingPage.LogResponse(context, page, response);
+                    response = LoggingPage.LogResponse(context, page, response);
                 else
-                    LoggingHandler.LogResponse(context, response);
+                    response = LoggingHandler.LogResponse(context, response);
                 
-                if (context.Response.ContentType == ContentType.TextHtml && !LoggingHelper.IsPlaying(context))
-                {
-                    string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\");</script>";
+                if (context.Response.ContentType == ContentType.TextHtml) 
+                {                    
+                    string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap?v={AssemblyHelper.RetrieveLinkerTimestamp().Ticks}\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
                     var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapScript);
                     context.Response.Clear();
                     context.Response.Write(newResponse);

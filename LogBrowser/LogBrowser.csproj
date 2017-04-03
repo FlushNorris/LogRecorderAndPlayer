@@ -35,6 +35,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -53,8 +55,10 @@
     <Compile Include="BrowserForm.Designer.cs">
       <DependentUpon>BrowserForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Clientside\BrowserFocus.cs" />
     <Compile Include="Clientside\BrowserScroll.cs" />
     <Compile Include="Clientside\BrowserResize.cs" />
+    <Compile Include="Clientside\BrowserMouseDown.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

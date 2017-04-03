@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.Remoting.Channels;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
@@ -473,7 +474,13 @@ namespace TestBrowser
             if (elm == null)
                 throw new Exception($"Unable to find playing element ({elementGUID})");
             elm.State = SessionElementState.Played;
-            
+
+            //Prevent deadlock, when e.g. marking an PageResponse as done and start the next event which 
+            //var t = new Thread(() =>
+            //{
+            //    StartNewEventsIfPossible();
+            //});
+            //t.Start();            
             StartNewEventsIfPossible();
         }
 

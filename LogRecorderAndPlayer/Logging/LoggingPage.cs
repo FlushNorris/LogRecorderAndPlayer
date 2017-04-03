@@ -30,7 +30,7 @@ namespace LogRecorderAndPlayer
                 viewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                 LoggingHelper.SetViewStateValues(page, viewStateValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async:false); //Non deadlock, because we would never call the webserver via namedpipe back again
 
                 return;
             }
@@ -70,7 +70,7 @@ namespace LogRecorderAndPlayer
 
                 LoggingHelper.SetRequestValues(context, requestFormValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
 
                 return;
             }
@@ -108,7 +108,7 @@ namespace LogRecorderAndPlayer
                 sessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                 LoggingHelper.SetSessionValues(page, sessionValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
 
                 return;
             }
@@ -135,7 +135,7 @@ namespace LogRecorderAndPlayer
             ));
         }
 
-        public static void LogResponse(HttpContext context, Page page, string response)
+        public static string LogResponse(HttpContext context, Page page, string response)
         {
             if (LoggingHelper.IsPlaying(context))
             {
@@ -151,9 +151,9 @@ namespace LogRecorderAndPlayer
                 context.Response.Clear();
                 context.Response.Write(newResponse);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
 
-                return;
+                return newResponse;
             }
 
             var postBackControlClientId = GetPostBackControlClientId(context, page);
@@ -172,6 +172,8 @@ namespace LogRecorderAndPlayer
                 times: 1,
                 unixTimestampEnd: null
             ));
+
+            return response;
         }
 
         /// <summary>

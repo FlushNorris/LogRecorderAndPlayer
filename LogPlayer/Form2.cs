@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
@@ -23,6 +24,7 @@ namespace TestBrowser
         {
             ServerGUID = Guid.NewGuid();
             InitializeComponent();
+            //MessageBox.Show($"Starting player-server {ServerGUID}");
             Server = new NamedPipeServer(ServerGUID);
             Server.ServiceInstanse.OnSyncSession += ServiceInstanse_OnSyncSession;
             Server.ServiceInstanse.OnClosingSession += ServiceInstanse_OnClosingSession;
@@ -38,6 +40,7 @@ namespace TestBrowser
 
         private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob)
         {
+            //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             if (namedPipeBrowserJob.LogElementGUID.HasValue) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
             {
                 eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.LogElementGUID.Value);
@@ -111,9 +114,7 @@ namespace TestBrowser
             {
                 if (LogTypeHelper.IsClientsideEvent(logElement.LogType))
                 {
-                    //throw new Exception("Clientside events is not implemented yet.... to be continued :)");
-                    //send request to browser via namedpipe
-                    NamedPipeHelper.SendBrowserJob(session, logElement);
+                    NamedPipeHelper.SendBrowserJob_ASYNC(session, logElement);
                 }
                 else
                 {
