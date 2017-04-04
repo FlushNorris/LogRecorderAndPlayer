@@ -289,7 +289,7 @@
         return getElementIdxAndParentPath(elm, nodeName);
     }
 
-    function getElementByElementPath(elementPath) {
+    function getJQueryElementByElementPath(elementPath) {
         if (elementPath == null || elementPath == "")
             return null;
         //if (elementPath.charAt(0) == "#")
@@ -338,13 +338,9 @@
             }
         });
 
-        if ($elm == null)
-            return null;
-        return $elm[0];
+        return $elm;
 
-        //#ost, 2<div>, 1.qwerty.lord.helmet”
-
-
+        //#ost, 2!<div>, 1!.qwerty.lord.helmet”
     }
     //regionend: Path to the element from the closest self or parent with an ID
 
@@ -1188,8 +1184,45 @@
         }
     }
 
-    function runEventsFor(elementPath) {
-        getElementPath();
+    function playEventFor(logType, elementPath) {
+        
+        //Udfør eventet
+        //Kør alle jQuery-events
+        //Kør alt On<Event> javascript
+
+        var $elm = getJQueryElementByElementPath(elementPath);
+        if ($elm == null || $elm.size() == 0) {
+            alert("Error occured while playing event for " + elementPath+", could not be located");
+            return;
+        }
+
+        var propEvent = null;
+        var eventType = null;
+
+        switch(logType) {
+            case LogType.OnFocus:
+                $elm.focus();
+                propEvent = 'onfocus';
+                eventType = 'focus';
+                break;
+            default:
+                alert("LogType (" + logType + ") is not supported");
+                return;
+        }
+
+        if (eventType != null) {
+            var events = getEvents($elm[0], eventType);
+            if (events != null) {
+
+            }
+        }
+
+        if (propEvent != null) {
+            var p = $elm.prop(propEvent);
+            if (p) {
+                eval(p);
+            }
+        }
     }
 
     ///#endregion
@@ -1205,9 +1238,9 @@
         alert('weeehoooo');
         return 1337;
     }
-    publicMethods.runEventsFor = runEventsFor;
+    publicMethods.playEventFor = playEventFor;
     publicMethods.LogType = LogType;
-    publicMethods.getElementByElementPath = getElementByElementPath;
+    publicMethods.getJQueryElementByElementPath = getJQueryElementByElementPath;
     publicMethods.getElementPath = getElementPath;
     
     return publicMethods;
