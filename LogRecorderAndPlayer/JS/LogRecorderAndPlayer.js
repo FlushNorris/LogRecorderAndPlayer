@@ -315,19 +315,21 @@
                 if (vArr.length != 2)
                     return;
 
-                var childIndex = +vArr[0];
+                var childIndex = +vArr[0]; //1..n
                 var childSelector = vArr[1];
 
                 var $child = null;
 
                 $.each($elm.children(childSelector), function(ci, cv) {
-                    if (ci == childIndex) {
-                        $child = cv;
+                    if (ci + 1 == childIndex) {
+                        $child = $(cv);
                     }
                 });
 
-                if ($child == null)
+                if ($child == null) {
+                    alert('fandt intet?!');
                     return;
+                }
 
                 $elm = $child;
 
@@ -1187,7 +1189,7 @@
     }
 
     function runEventsFor(elementPath) {
-        getElementPath()
+        getElementPath();
     }
 
     ///#endregion
@@ -1205,6 +1207,8 @@
     }
     publicMethods.runEventsFor = runEventsFor;
     publicMethods.LogType = LogType;
+    publicMethods.getElementByElementPath = getElementByElementPath;
+    publicMethods.getElementPath = getElementPath;
     
     return publicMethods;
 }());

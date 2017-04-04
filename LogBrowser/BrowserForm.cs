@@ -302,7 +302,7 @@ namespace LogBrowser
                 //jQueryEvent:
                 StringBuilder sbJS = new StringBuilder();
                 sbJS.Append("javascript:try{");
-                Ja, kan ikke compile pga denne kommentar som du skal læse i morgen!... ja, runEventsFor skal køre ala følgende kode... test getElementByElementPath som noget af det første!                
+                //Ja, kan ikke compile pga denne kommentar som du skal læse i morgen!... ja, runEventsFor skal køre ala følgende kode... test getElementByElementPath som noget af det første!                
 
                 sbJS.Append($"logRecorderAndPlayer.runEventsFor(logRecorderAndPlayer.LogType.OnFocus, \"{browserFocus.element}\");");
                 //sbJS.Append($"logRecorderAndPlayer.getJQueryElement(\"{browserFocus.element}\");");
