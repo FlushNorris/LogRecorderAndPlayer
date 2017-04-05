@@ -326,11 +326,6 @@
                     }
                 });
 
-                if ($child == null) {
-                    alert('fandt intet?!');
-                    return;
-                }
-
                 $elm = $child;
 
                 //Hvilket element starter jeg fra? I tilfælde af jeg kun har klassenavne her i pathen
