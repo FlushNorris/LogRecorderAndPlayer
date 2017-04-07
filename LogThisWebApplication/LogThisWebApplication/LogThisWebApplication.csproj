@@ -70,6 +70,7 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="img_logo.gif" />
     <Content Include="packages.config" />
     <Content Include="Page.Master" />
     <None Include="Web.Debug.config">

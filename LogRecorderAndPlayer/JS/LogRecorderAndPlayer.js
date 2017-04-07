@@ -157,7 +157,7 @@
         OnDatabaseResponse: 34,
         OnHandlerSessionBefore: 35,
         OnHandlerSessionAfter: 36
-    };
+    }; //Hover etc results in too many event, describe this...!
 
     function init(sessionGUID, pageGUID, serverGUID/*for playing*/) {
         if (!window.jQuery) {
@@ -222,15 +222,17 @@
         callLogHandler(false/*async*/, undefined, function() {
             setupLogger();
         });
-    }
+    }    
 
-    function getSelectionText(elm) {
-        var selectedText = null;
+    function getSelectionInfo(elm) {
+        var selectedInfo = {};
 
-        if (elm.selectionStart != undefined) {
+        if (elm.selectionStart != undefined) { //IE10, Chrome and FF
             var startPos = elm.selectionStart;
             var endPos = elm.selectionEnd;
-            selectedText = elm.value.substring(startPos, endPos);
+            selectedInfo.text = elm.value.substring(startPos, endPos);
+            selectedInfo.startPos = startPos;
+            selectedInfo.endPos = endPos;
         }
         else
             // IE older versions
@@ -238,11 +240,30 @@
                 var $focused = $(document.activeElement);
                 elm.focus(); //TODO Ignore this logevent for focus and blur
                 var sel = document.selection.createRange();
-                selectedText = sel.text;
+                selectedInfo.text = sel.text;
+                selectedInfo.startPos = 0;
+                selectedInfo.endPos = sel.text.length;
                 $focused.focus(); //TODO Ignore this logevent for focus and blur
             }
 
-        return selectedText;
+        return selectedInfo;
+    }
+
+    function setSelectionText(elm, startPos, endPos) {
+        elm.focus();
+        if (typeof elm.selectionStart != "undefined") { //IE10, Chrome and FF
+            elm.selectionStart = startPos;
+            elm.selectionEnd = endPos;
+        }
+        else if (document.selection && document.selection.createRange) {
+            // IE branch
+            elm.select();
+            var range = document.selection.createRange();
+            range.collapse(true);
+            range.moveEnd("character", endPos);
+            range.moveStart("character", startPos);
+            range.select();
+        }
     }
 
     //regionstart: Path to the element from the closest self or parent with an ID
@@ -250,7 +271,7 @@
         return x.replace(/^\s+|\s+$/gm, '');
     }
 
-    function getElementIdxAndParentPath(elm, selector) {
+    function getElementIdxAndParentPath(elm, selector) { //must match getJQueryElementByElementPath countwise
         var $elm = $(elm);
         var $parent = $elm.parent();
         var parentPath = null;
@@ -264,14 +285,16 @@
                     idxPath = idx;
                 }
             });
-            if (idxPath == -1)
+            if (idxPath == -1) {
+                console.log("ERROR: selector = " + selector);
                 return "[ERROR]";
+            }
             parentPath = getElementPath($parent[0]);
         }
         return (parentPath ? parentPath + "," : "") + (idxPath + 1) + '!' + selector;
     }
 
-    function getElementPath(elm) {
+    function getElementPath(elm) { //e.g. "#someId,2!DIV,3!INPUT[type=text]"
         var $elm = $(elm);
 
         var elmID = $elm.attr("id");
@@ -286,14 +309,21 @@
         var nodeName = $elm.prop('nodeName');
         if (nodeName.length > 0 && nodeName.charAt(0) == '#') //#document or any other #<nodeName>, the very last element
             return null;
+        
+        if (nodeName.toUpperCase() === "INPUT") {
+            var nodeType = $elm.attr("type");
+            if (typeof (nodeType) != "undefined")
+                nodeName = "INPUT[type=" + nodeType + "]";
+            else
+                nodeName = "INPUT:not([type])";
+        }
+
         return getElementIdxAndParentPath(elm, nodeName);
     }
 
     function getJQueryElementByElementPath(elementPath) {
         if (elementPath == null || elementPath == "")
             return null;
-        //if (elementPath.charAt(0) == "#")
-        //    return $(elementPath)[0];
 
         var arr = elementPath.split(',');
         var $elm = null;
@@ -357,8 +387,9 @@
         return result;
     }
 
-    function logEvent(that, value, eventType, logType, event) {
+    function logEvent(that, value, eventType, logType, event, compareFn) {
         var v = {
+            event: JSONEvent(event),
             attributes: getAttributes(that),
             events: [],
             value: value
@@ -380,11 +411,18 @@
             return;
         }
 
-        if (event.pageX != 0 && event.pageY != 0) {
-            var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
-            if (that == elmP) {                
-                logElementEx(logType, getElementPath(that), JSON.stringify(v));
+        if (typeof (event.pageX) != "undefined")
+        {
+            if (event.pageX != 0 && event.pageY != 0) {
+                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
+                if (that == elmP) {                
+                    logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
+                }
             }
+        }
+        else
+        {
+            logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
         }
     }
 
@@ -398,7 +436,7 @@
                 button: event.button, //0=left 1=middle 2=right //The best supported
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey
+                ctrlKey: event.ctrlKey                
             };
 
             logEvent(this, v, 'mousedown', LogType.OnMouseDown, event);
@@ -412,7 +450,7 @@
                 button: event.button,
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey
+                ctrlKey: event.ctrlKey                
             };
 
             logEvent(this, v, 'mouseup', LogType.OnMouseUp, event);
@@ -439,25 +477,35 @@
         $document.on('dragstart', inputSelector, function (event) {            
             var target = event.target ? event.target : event.srcElement;
 
-            logElementEx(LogType.OnDragStart, getElementPath(target), "");
+            var v = {
+                event: JSONEvent(event)
+            };
+
+            logEvent(target, v, 'dragstart', LogType.OnDragStart, event);
         });
 
         $document.on('dragend', inputSelector, function (event) {
             var target = event.target ? event.target : event.srcElement;
 
-            logElementEx(LogType.OnDragEnd, getElementPath(target), "");
+            var v = {};
+
+            logEvent(target, v, 'dragend', LogType.OnDragEnd, event);
         });
 
         $document.on('dragover', inputSelector, function (event) { //To tell if it is allowed
             var target = event.target ? event.target : event.srcElement;
 
-            logElementEx(LogType.OnDragOver, getElementPath(target), "");
+            var v = {};
+
+            logEvent(target, v, 'dragover', LogType.OnDragOver, event);
         });
 
         $document.on('drop', inputSelector, function (event) {
             var target = event.target ? event.target : event.srcElement;
 
-            logElementEx(LogType.OnDrop, getElementPath(target), "");
+            var v = {};
+
+            logEvent(target, v, 'drop', LogType.OnDrop, event);
         });
 
         $document.on('scroll', inputSelector, function (event) {
@@ -465,15 +513,16 @@
 
             var v = {
                 top: $this.scrollTop(),
-                left: $this.scrollLeft()
+                left: $this.scrollLeft()                
             };
 
-            logElementEx(LogType.OnScroll, getElementPath(this), JSON.stringify(v), compareLogElementsNoValue);
+            logEvent(this, v, 'scroll', LogType.OnScroll, event, compareLogElementsNoValue);
         });
     }
 
-    function logInputClientsideControlEvent(that, logType, value, compareFn, combineFn) {
+    function logInputClientsideControlEvent(that, logType, value, event, compareFn, combineFn) {
         var v = {
+            event: event,
             attributes: getAttributes(that),
             value: value
         };         
@@ -481,36 +530,56 @@
         logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn, combineFn);
     }
 
+    function JSONEvent(event) {
+        var r = {};
+        for (var key in event) {
+            var v = event[key];
+            var type = (typeof (v) + "").toLowerCase();
+            if (type !== 'function' && type !== 'object') {
+                r[key] = v;
+            }
+        };
+        return r;
+    }
+
     function setupInputClientsideControlEvents(inputSelector) {
 
         var $document = $(document);
 
-        $document.on('blur', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnBlur, "");
+        $document.on('blur', inputSelector, function (event) {
+            logInputClientsideControlEvent(this, LogType.OnBlur, null, JSONEvent(event));
         });
 
-        $document.on('focus', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnFocus, "");
+        $document.on('focus', inputSelector, function (event) {
+            logInputClientsideControlEvent(this, LogType.OnFocus, null, JSONEvent(event));
         });
 
-        $document.on('change', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnChange, $(this).val());
+        $document.on('change', inputSelector, function (event) {
+            var $this = $(this);
+            var type = $this.prop('type').toUpperCase();
+            var v;
+            if (type === 'RADIO' || type === 'CHECKBOX')
+                v = $this.prop("checked");
+            else
+                v = $this.val();
+
+            logInputClientsideControlEvent(this, LogType.OnChange, v, JSONEvent(event));
         });
 
-        $document.on('select', inputSelector, function () { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
-            logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionText(this));
+        $document.on('select', inputSelector, function (event) { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
+            logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionInfo(this), JSONEvent(event));
         });
 
-        $document.on('copy', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionText(this));
+        $document.on('copy', inputSelector, function (event) {
+            logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionInfo(this), JSONEvent(event));
         });
 
-        $document.on('cut', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnCut, getSelectionText(this));
+        $document.on('cut', inputSelector, function (event) {
+            logInputClientsideControlEvent(this, LogType.OnCut, getSelectionInfo(this), JSONEvent(event));
         });
 
-        $document.on('paste', inputSelector, function () {
-            logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val());
+        $document.on('paste', inputSelector, function (event) {
+            logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val(), JSONEvent(event));
         });
 
         $document.on('keydown', inputSelector,
@@ -529,7 +598,7 @@
                     caretPos: getCaretPositionRelativeToEnd(this)
                 };
 
-                logInputClientsideControlEvent(this, LogType.OnKeyDown, v);
+                logInputClientsideControlEvent(this, LogType.OnKeyDown, v, JSONEvent(event));
             });
 
         $document.on('keyup', inputSelector, function (event) { //keyCode is incase-sensative
@@ -547,7 +616,7 @@
                 caretPos: getCaretPositionRelativeToEnd(this)
             };
 
-            logInputClientsideControlEvent(this, LogType.OnKeyUp, v, compareLogElementsKeyup, combineLogElementsKeyup);
+            logInputClientsideControlEvent(this, LogType.OnKeyUp, v, JSONEvent(event), compareLogElementsKeyup, combineLogElementsKeyup);
         });
 
         $document.on('keypress', inputSelector, function (event) { //keyCode is case-sensative
@@ -562,10 +631,10 @@
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
                 ctrlKey: event.ctrlKey,
-                caretPos: getCaretPositionRelativeToEnd(this)
+                caretPos: getCaretPositionRelativeToEnd(this)                
             };
             
-            logInputClientsideControlEvent(this, LogType.OnKeyPress, v, compareLogElementsKeypress, combineLogElementsKeypress);
+            logInputClientsideControlEvent(this, LogType.OnKeyPress, v, JSONEvent(event), compareLogElementsKeypress, combineLogElementsKeypress);
         });        
     }
 
@@ -969,7 +1038,7 @@
 
     function compareLogElements(le1, le2) { //Without UnixTimestamp compares atm... should build a delay check on the compare        
         return  compareLogElementsNoValue(le1, le2) &&
-                le1.Value == le2.Value;
+                le1.Value == le2.Value; 
     }
 
     //from http://www.freeformatter.com/epoch-timestamp-to-date-converter.html
@@ -1179,7 +1248,216 @@
         }
     }
 
-    function playEventFor(logType, elementPath) {
+    function validateSelectorAgainstElement(selector, $elm) {
+        var id = $elm.prop("id");
+        var classes = $elm.prop("class");
+
+        var $child = $('<div></div>');
+        if (typeof (id) != "undefined")
+            $child.prop("id", id);
+        if (typeof (classes) != "undefined")
+            $child.prop("class", classes);
+
+        var $parent = $('<div></div>');
+        $parent.append($child);
+
+        var f = $parent.find(selector);
+        if (f.size() > 0)
+            return f[0] == $child[0];
+        return false;
+    }
+
+    function getJQueryEvents($elm, $curr, eventType /*e.g. 'focus'*/, level) {
+        if ($curr.size() == 0) //e.g. $(document).parent() / Top Level
+            return [];
+
+        level = typeof (level) == "undefined" ? 0 : level;
+
+        //AND: a=$('[myc="blue"][myid="1"][myid="3"]');
+        //OR: a=$('[myc="blue"],[myid="1"],[myid="3"]');
+
+        var result = [];
+
+        var events = ($._data || $.data)($curr[0], 'events');
+        if (events) {
+            var typeEvents = events[eventType];
+            if (typeEvents && ((eventType != 'focus' && eventType != 'blur') || level == 0)) { //focus and blur event should only be used if they are directly attached the the $elm
+                result = typeEvents;
+            }
+            if (eventType == 'focus' && level > 0) {
+                var typeEvents = events["focusin"];
+                if (typeEvents) {
+                    result.push.apply(result, typeEvents);
+                }
+            }
+            if (eventType == 'blur' && level > 0) {
+                var typeEvents = events["focusout"];
+                if (typeEvents) {
+                    result.push.apply(result, typeEvents);
+                }
+            }
+        }
+
+        if ($elm !== $curr) {
+            result = $.grep(result, function (vTE) {
+                return validateSelectorAgainstElement(vTE.selector, $elm);
+            });
+        }
+
+        result = $.map(result, function (v) {
+            return {
+                level: level,
+                handler: v.handler
+            };
+        });
+
+        result.push.apply(result, getJQueryEvents($elm, $curr.parent(), eventType, level + 1));
+
+        return result;
+    }
+
+    function callElementsEventMethods($elm, eventType/*e.g. click or focus*/, event) {
+        var $events = getJQueryEvents($elm, $elm, eventType);
+        var cancelAllHandlers = false;
+        var lastLevel = null;
+        $.each($events, function (i, v) {
+            if (cancelAllHandlers)
+                return;
+            if (lastLevel != null && v.level > lastLevel)
+                return;
+
+            if (i == 0) {
+                logRecorderAndPlayer.stopImmediatePropagationCalled = false;
+                logRecorderAndPlayer.stopPropagationCalled = false;
+            }
+
+            v.handler.call($elm[0], event); //document.createEvent('Event'));
+
+            if (logRecorderAndPlayer.stopImmediatePropagationCalled) {
+                if (v.level == 0)
+                    cancelAllHandlers = true;
+                lastLevel = v.level;
+            }
+            if (logRecorderAndPlayer.stopPropagationCalled) {
+                lastLevel = v.level;
+            }
+        });
+        return;
+    }
+
+    function createKeyboardEvent(elm, event) {
+        var modifiers = [];
+        if (event.altKey)
+            modifiers.push("Alt");
+        if (event.shiftKey)
+            modifiers.push("Shift");
+        if (event.ctrlKey)
+            modifiers.push("Control");
+
+        var keyboardEvent = document.createEvent("KeyboardEvent");
+
+        keyboardEvent.initKeyboardEvent(
+            event.type,
+            event.bubbles,
+            event.cancelable,
+            null, //viewArg,
+            event.key, // keyArg,
+            null, //locationArg,        
+            modifiers.join(" "), //modifiersListArg,
+            false,//repeat
+            null //locale
+            );
+
+        return keyboardEvent;
+    }
+
+    function createMouseEvent(elm, event) {
+        var mouseEvent = document.createEvent("MouseEvent");
+
+        mouseEvent.initMouseEvent(
+            event.type, //typeArg: string, 
+            event.bubbles, //canBubbleArg: boolean, 
+            event.cancelable, //cancelableArg: boolean, 
+            null, //viewArg: Window, 
+            event.detail, //detailArg: number, 
+            event.screenX, //screenXArg: number, 
+            event.screenY, //screenYArg: number, 
+            event.clientX, //clientXArg: number, 
+            event.clientX, //clientYArg: number, 
+            event.ctrlKey, //ctrlKeyArg: boolean, 
+            event.altKey, //altKeyArg: boolean, 
+            event.shiftKey, //shiftKeyArg: boolean, 
+            event.metaKey, //metaKeyArg: boolean, 
+            event.button, //buttonArg: number, 
+            elm); //relatedTargetArg: EventTarget);
+
+        return mouseEvent;
+    }
+
+    function createFocusEvent(elm, event) {
+        var focusEvent = document.createEvent("FocusEvent");
+        focusEvent.initFocusEvent(
+            event.type, //typeArg,  (focus, blur, focusin, focusout)
+            event.bubbles, //canBubbleArg, 
+            event.cancelable, //cancelableArg, 
+            null, //viewArg, 
+            null, //detailArg, 
+            elm); //relatedTargetArg
+
+        return focusEvent;
+    }
+    
+    function createDragEvent(elm, event) {
+        var dragEvent = document.createEvent("DragEvent");
+        dragEvent.initDragEvent(
+            event.type, //typeArg: string, 
+            event.bubbles, //canBubbleArg: boolean, 
+            event.cancelable, //cancelableArg: boolean, 
+            null, //viewArg: Window, 
+            event.detail, //detailArg: number, 
+            event.screenX, //screenXArg: number, 
+            event.screenY, //screenYArg: number, 
+            event.clientX, //clientXArg: number, 
+            event.clientY, //clientYArg: number, 
+            event.ctrlKey, //ctrlKeyArg: boolean, 
+            event.altKey, //altKeyArg: boolean, 
+            event.shiftKey, //shiftKeyArg: boolean, 
+            event.metaKey, //metaKeyArg: boolean, 
+            event.button, //buttonArg: number, 
+            elm, //relatedTargetArg: EventTarget, 
+            null); //dataTransferArg: DataTransfer;
+        return dragEvent;
+    }
+
+    function createDefaultEvent(elm, event) {
+        var defaultEvent = document.createEvent('Event');
+        defaultEvent.initEvent(
+            event.type, //typeArg: string
+            event.bubbles, //canBubbleArg: boolean
+            event.cancelable); //cancelableArg: boolean
+        return defaultEvent;
+    }
+
+    function createEventForElm(elm, elementValue) {
+        var event = elementValue.value.event;
+        if (typeof (event) == "undefined") {
+            return document.createEvent('Event');
+        }
+
+        var type = (event.type+"").toLowerCase();
+
+        if (type == 'keydown' || type == 'keypress' || type == 'keyup')
+            return createKeyboardEvent(elm, event);
+        if (type == 'focus' || type == 'blur' || type == 'focusin' || type == 'focusout')
+            return createFocusEvent(elm, event);
+        if (type == 'click' || type == 'mousedown' || type == 'mouseup' || type == 'mouseover' || type == 'mousemove' || type == 'mouseout')
+            return createMouseEvent(elm, event);        
+        if (type == 'drag' || type == 'dragend' || type == 'dragenter' || type == 'dragexit' || type == 'dragleave' || type == 'dragover' || type == 'dragstart' || type == 'drop')
+            return createDragEvent(elm, event);
+        return createDefaultEvent(elm, event);
+    }
+
+    function playEventFor(logType, elementPath, elementValue/*json*/) {
         
         //Udfør eventet
         //Kør alle jQuery-events
@@ -1191,32 +1469,157 @@
             return;
         }
 
-        var propEvent = null;
-        var eventType = null;
+        var eventName = null;
+
+        //button
+        //checkbox
+        //color
+        //date
+        //datetime - local
+        //email
+        //file
+        //hidden
+        //image
+        //month
+        //number
+        //password
+        //radio
+        //range
+        //reset
+        //search
+        //submit
+        //tel
+        //text
+        //time
+        //url
+        //week
 
         switch(logType) {
             case LogType.OnFocus:
                 $elm.focus();
-                propEvent = 'onfocus';
-                eventType = 'focus';
+                eventName = 'focus';
                 break;
+            case LogType.OnBlur:
+                $elm.blur();
+                eventName = 'blur';
+                break;
+            case LogType.OnChange:
+                var inputType = $elm.prop("type").toUpperCase();
+                if (inputType === 'RADIO' || inputType == 'CHECKBOX') {
+                    $elm.prop("checked", elementValue.value);
+                } else {
+                    $elm.val(elementValue.value);
+                }
+                eventName = 'change';
+                //nye html5 elementer:
+                //Datalist https://www.w3schools.com/html/html_form_elements.asp
+                //Keygen
+                //Output
+                break;
+            case LogType.OnSelect: //selected text
+                //selectedInfo.text = elm.value.substring(startPos, endPos);
+                //selectedInfo.startPos = startPos;
+                //selectedInfo.endPos = endPos;
+                setSelectionText($elm[0], elementValue.startPos, elementValue.endPos);
+
+                var validateText = getSelectionInfo($elm[0]);
+                if (validateText != elementValue.text) {
+                    alert('ERROR: Selection was not played successfully');
+                    return;
+                }
+
+                eventName = 'select';
+                break;
+            case LogType.OnCopy:
+                //clipboard copy, wouldn't make any sense to simulate this
+                eventName = 'copy';
+                break;
+            case LogType.OnCut:
+                //change event will be call afterwards
+                eventName = 'cut';
+                break;
+            case LogType.OnPaste:
+                //change event will be call afterwards
+                eventName = 'paste';
+                break;
+            case LogType.OnKeyDown:
+                //The value is not changed yet
+                eventName = 'keydown';
+                //Har behov for at oprette et event der matcher det der blev optaget... ellers give denne playEventFor jo ingen mening, gælder vel også for de andre ovenstående events
+                break;
+            case LogType.OnKeyPress: //Som minimum skal en keydown og keyup også udføres
+                //Is the value changed? No, it is one keystroke behind!
+                eventName = 'keypress';
+                //Jeg er nået til dette event.. som jo skal rette på $elm.val, burde nok gøre det via caretPos og selvfølgelig den charcode
+                //var v = {
+                //charCode: charCode,
+                //ch: ch,
+                //shiftKey: event.shiftKey,
+                //altKey: event.altKey,
+                //ctrlKey: event.ctrlKey,
+                //caretPos: getCaretPositionRelativeToEnd(this)                
+                break;
+            case LogType.OnKeyUp:
+                //The value is changed
+                eventName = 'keyup';
+                break;
+            case LogType.OnMouseDown:
+                break;
+            case LogType.OnMouseUp:
+                break;
+            case LogType.OnClick:
+                break;
+            case LogType.OnDblClick:
+                break;
+            case LogType.OnSearch:
+                break;
+            case LogType.OnResize:
+                break;
+            case LogType.OnDragStart:
+                break;
+            case LogType.OnDragEnd:
+                break;
+            case LogType.OnDragOver:
+                break;
+            case LogType.OnDrop:
+                break;
+            case LogType.OnScroll:
+                break;
+//OnHandlerRequestSend: 0,
+//OnHandlerRequestReceived: 1,
+//OnHandlerResponseSend: 2,
+//OnHandlerResponseReceived:3,
+//OnPageRequest: 25,
+//OnPageResponse: 26,
+//OnPageSessionBefore: 27,
+//OnPageSessionAfter: 28,
+//OnPageViewStateBefore: 29,
+//OnPageViewStateAfter: 30,
+//OnWCFServiceRequest: 31,
+//OnWCFServiceResponse: 32,
+//OnDatabaseRequest: 33,
+//OnDatabaseResponse: 34,
+//OnHandlerSessionBefore: 35,
+//OnHandlerSessionAfter: 36
             default:
                 alert("LogType (" + logType + ") is not supported");
                 return;
         }
 
-        if (eventType != null) {
-            var events = getEvents($elm[0], eventType);
-            if (events != null) {
+        var propResult = true;
 
-            }
-        }
+        var event = createEventForElm($elm[0], elementValue);
 
-        if (propEvent != null) {
-            var p = $elm.prop(propEvent);
+        if (eventName != null) {
+            var p = $elm.prop("on" + eventName);
             if (p) {
-                eval(p);
+                propResult = p.call($elm[0]); //Mangler en måde at sætte event ved attribute-events
+                propResult = typeof (propResult) == "undefined" || propResult;
             }
+        }        
+
+        if (propResult) {
+            callElementsEventMethods($elm, eventName, event);
         }
     }
 
@@ -1237,9 +1640,23 @@
     publicMethods.LogType = LogType;
     publicMethods.getJQueryElementByElementPath = getJQueryElementByElementPath;
     publicMethods.getElementPath = getElementPath;
+    publicMethods.stopImmediatePropagationCalled = false;
+    publicMethods.stopPropagationCalled = false;
     
     return publicMethods;
 }());
+
+Event.prototype.origStopImmediatePropagation = Event.prototype.stopImmediatePropagation;
+Event.prototype.origStopPropagation = Event.prototype.stopPropagation;
+Event.prototype.stopImmediatePropagation = function () {
+    logRecorderAndPlayer.stopImmediatePropagationCalled = true;
+    this.origStopImmediatePropagation();
+} //stop all other handlers from being called
+
+Event.prototype.stopPropagation = function () {
+    logRecorderAndPlayer.stopPropagationCalled = true;
+    this.origStopPropagation();
+} //stop parent handlers from being called
 
 $.fn.origSize = $.fn.size;
 $.fn.size = function () {
