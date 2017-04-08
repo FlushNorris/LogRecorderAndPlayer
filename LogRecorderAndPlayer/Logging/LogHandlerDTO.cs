@@ -27,6 +27,8 @@ namespace LogRecorderAndPlayer
         public int Times { get; set; }
         public double? UnixTimestampEnd { get; set; }
 
+        public LogElementDTO[] CombinedRequestsWithDifferentLogType { get; set; }
+
         public LogElementDTO() { }
 
         public LogElementDTO(Guid guid, Guid sessionGUID, Guid pageGUID, Guid? bundleGUID, Guid? progressGUID, double unixTimestamp, LogType logType, string element, string element2, string value, int times, double? unixTimestampEnd)
@@ -43,6 +45,7 @@ namespace LogRecorderAndPlayer
             Value = value;
             Times = times;
             UnixTimestampEnd = unixTimestampEnd;
+            CombinedRequestsWithDifferentLogType = new LogElementDTO[0];
         }
     }
 

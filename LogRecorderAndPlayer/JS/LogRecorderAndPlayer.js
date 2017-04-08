@@ -535,7 +535,7 @@
         for (var key in event) {
             var v = event[key];
             var type = (typeof (v) + "").toLowerCase();
-            if (type !== 'function' && type !== 'object') {
+            if (type !== 'function' && type !== 'object' && key != 'timeStamp' && key.indexOf("jQuery") != 0) {
                 r[key] = v;
             }
         };
@@ -582,24 +582,23 @@
             logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val(), JSONEvent(event));
         });
 
-        $document.on('keydown', inputSelector,
-            function (event) {
-                if (!event)
-                    event = window.event;
-                var charCode = event.which || event.keyCode;
-                var ch = String.fromCharCode(charCode);
+        $document.on('keydown', inputSelector, function (event) {
+            if (!event)
+                event = window.event;
+            var charCode = event.which || event.keyCode;
+            var ch = String.fromCharCode(charCode);
 
-                var v = {
-                    charCode: charCode,
-                    ch: ch,
-                    shiftKey: event.shiftKey,
-                    altKey: event.altKey,
-                    ctrlKey: event.ctrlKey,
-                    caretPos: getCaretPositionRelativeToEnd(this)
-                };
+            var v = {
+                charCode: charCode,
+                ch: ch,
+                shiftKey: event.shiftKey,
+                altKey: event.altKey,
+                ctrlKey: event.ctrlKey,
+                caretPos: getCaretPositionRelativeToEnd(this)
+            };
 
-                logInputClientsideControlEvent(this, LogType.OnKeyDown, v, JSONEvent(event));
-            });
+            logInputClientsideControlEvent(this, LogType.OnKeyDown, v, JSONEvent(event));
+        });
 
         $document.on('keyup', inputSelector, function (event) { //keyCode is incase-sensative
             if (!event)
@@ -818,6 +817,7 @@
             Value: value != null ? htmlEncode(value) : null,
             Times: 1,
             UnixTimestampEnd: null,
+            CombinedRequestsWithDifferentLogType: [],
             CompareFn: compareFn,
             CombineFn: combineFn
         };
@@ -826,69 +826,7 @@
         compactLogElementList();
     }
 
-    //function getCompareFnByLogType(logType) {
-    //    switch (logType) {
-    //        case LogType.OnKeyPress:
-    //            return compareLogElementsKeypress;
-    //        case LogType.OnKeyUp:
-    //            return compareLogElementsKeyup;
-    //        case LogType.OnScroll:
-    //            return compareLogElementsNoValue;
-    //        case LogType.OnResize:
-    //            return compareLogElementsNoValue;
-    //        default:
-    //            return compareLogElements;
-    //    }
-    //}
-
-    //function getCombineFnByLogType(logType) {
-    //    switch(logType) {
-    //        case LogType.OnKeyPress:
-    //            return combineLogElementsKeypress;
-    //        case LogType.OnKeyUp:
-    //            return combineLogElementsKeyup;
-    //        default:
-    //            return combineLogElements;
-    //    }
-    //}   
-
-    //function compressItAll(logElements) {
-    //    for(var i = logElements.length - 1; i > 0; i--) {
-    //        var le = logElements[i];
-
-    //        var compareFn = getCompareFnByLogType(le.LogType);
-    //        var combineFn = getCombineFnByLogType(le.LogType);
-
-    //        var removedElements = compactLogElementList(logElements, i, compareFn, combineFn);
-    //        //removedElements=0 træk 0 fra
-    //        //removedElements=1 træk 0 fra, da den nye jo også kan collapse videre
-    //        //removedElements=2 træk 1 fra da vi har mistet en
-    //        //removedElements=3 træk 2 fra...
-
-    //        //i -= (removedElements == 0 ? 0 : removedElements - 1);
-    //    }
-    //}
-
-    ////Returns how many logElements were removed
-    //function compactLogElementList(logElements, fromIdx, compareFn, combineFn) {
-    //    var removed = 0;
-    //    while (fromIdx > 0) {
-    //        var secondLastRequest = logElements[fromIdx - 1];
-    //        var lastRequest = logElements[fromIdx];
-    //        var compareResult = compareFn(secondLastRequest, lastRequest, logElements, fromIdx);
-    //        if (compareResult) {
-    //            combineFn(secondLastRequest, lastRequest, compareResult);
-
-    //            //logElements.pop(); //remove lastRequest
-    //            logElements.splice(fromIdx, 1);
-    //            removed++;
-    //            fromIdx--;
-    //        } else
-    //            return;
-    //    }
-    //}
-
-    function compactLogElementList() { 
+    function compactLogElementList() {
         var requestIdx = logElements.length - 1;
 
         while (requestIdx > 0) {
@@ -906,12 +844,16 @@
 
             var compareResult = compareFn(secondLastRequest, lastRequest);
             if (compareResult) {
-                combineFn(secondLastRequest, lastRequest, compareResult);
+                var newLogElement = combineFn(secondLastRequest, lastRequest, compareResult);
 
                 logElements.pop(); //remove lastRequest
+                logElements.pop(); //remove secondLastRequest
+                logElements.push(newLogElement);
+
                 requestIdx--;
-            } else
+            } else {
                 return;
+            }
         }
     }
 
@@ -922,7 +864,6 @@
     }
 
     function compareLogElementsKeypress(le1, le2) {
-        //return 0;
         if (le1.SessionGUID == le2.SessionGUID &&
             le1.PageGUID == le2.PageGUID &&
             le1.BundleGUID == le2.BundleGUID &&
@@ -946,20 +887,70 @@
             }
         }
 
-        if (compareLogElements(le1, le2)) {
-            return 2;
-        }
+        if (le1.LogType == LogType.OnKeyPress && le2.LogType == LogType.OnKeyPress)
+            return compareLogElementsKeypress2(le1, le2); //Do not call default compareMethod for KeyPress/KeyPress
+        
+        if (compareLogElements(le1, le2)) 
+            return 2;       
 
         return 0;
     }
 
-    function combineLogElementsKeypress(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
-        le1.UnixTimestampEnd = le2.UnixTimestamp;
-        le1.Value = le2.Value;
-        le1.LogType = le2.LogType;
-        if (compareResult == 2) {
-            le1.Times += le2.Times;
+    //le1/le2 == KeyPress
+    function compareLogElementsKeypress2(le1, le2) {
+        var v1 = JSON.parse(htmlDecode(le1.Value)).value;
+        var v2 = JSON.parse(htmlDecode(le2.Value)).value;
+
+        if (v1.ch != v2.ch ||
+            v1.shiftKey != v2.shiftKey ||
+            v1.altKey != v2.altKey ||
+            v1.ctrlKey != v2.ctrlKey ||
+            v1.caretPos != v2.caretPos) {
+            return 0;
         }
+
+        if (GetCombinedElement(le1, 'KeyDown') == GetCombinedElement(le1, 'KeyUp') &&
+            GetCombinedElement(le2, 'KeyDown') == GetCombinedElement(le2, 'KeyUp'))
+            return 2;
+
+        return 0;
+    }
+
+    //le1=OnKeyDown/OnKeyPress le2=OnKeyPress
+    function combineLogElementsKeypress(le1, le2, compareResult) { // le2 = le1 + le2 (non pure)
+        if (le1.LogType != le2.LogType) {
+            le2.CombinedRequestsWithDifferentLogType.push(le1); 
+        }
+        //le1.UnixTimestampEnd = le2.UnixTimestamp;
+        //le1.Value = le2.Value;
+        //le1.LogType = le2.LogType;
+        if (compareResult == 2) {
+            le2.Times += le1.Times;
+        }
+
+        if (le1.LogType == LogType.OnKeyDown && le2.LogType == LogType.OnKeyPress) {
+            SetCombinedElement(le2,  'KeyDown', GetCombinedElement(le2, 'KeyDown') + 1);
+        } else if (le1.LogType == LogType.OnKeyPress && le2.LogType == LogType.OnKeyPress) { //Only able to combine if the KeyDown/KeyUp ratio is 1 on both le1 and le2
+            SetCombinedElement(le2,  'KeyDown', GetCombinedElement(le2, 'KeyDown') + GetCombinedElement(le1, 'KeyDown'));
+            SetCombinedElement(le2,  'KeyUp', GetCombinedElement(le2, 'KeyUp') + GetCombinedElement(le1, 'KeyUp'));
+        }
+
+        return le2;
+    }
+
+    function SetCombinedElement(le, type, value) {
+        if (!le.CombinedElements)
+            le.CombinedElements = {};
+        le.CombinedElements[type] = value;
+    }
+
+    function GetCombinedElement(le, type) {
+        if (!le || !le.CombinedElements)
+            return 0;
+        var c = le.CombinedElements[type];
+        if (!c)
+            return 0;
+        return c;
     }
 
     function compareLogElementsKeyup(le1, le2) {
@@ -1004,27 +995,31 @@
         return 0;
     }
 
+    //le1=KeyPress
+    //le2=KeyUp
     function combineLogElementsKeyup(le1, le2, compareResult) { // le1 = le1 + le2 (non pure)
+        if (le1.LogType != le2.LogType) {
+            le1.CombinedRequestsWithDifferentLogType.push(le2);
+        }
         le1.UnixTimestampEnd = le2.UnixTimestamp;
         if (compareResult == 1) {
             if (!le1.CombinedElements) 
                 le1.CombinedElements = {};
-            
-            if (!le1.CombinedElements["KeyUp"]) 
-                le1.CombinedElements["KeyUp"] = 1;
-            else 
-                le1.CombinedElements["KeyUp"]++;            
+
+            SetCombinedElement(le1, 'KeyUp', GetCombinedElement(le1, 'KeyUp') + 1);
         }
-        //if (compareResult == 2) {
-        //    le1.Times += le2.Times;
-        //}
+        return le1;
     }
 
     function combineLogElements(le1, le2) { // le1 = le1 + le2 (non pure)
+        if (le1.LogType != le2.LogType) {
+            le1.CombinedRequestsWithDifferentLogType.push(le2);
+        }
         le1.Times += le2.Times;
         le1.UnixTimestampEnd = le2.UnixTimestamp;
         le1.Value = le2.Value;
         le1.LogType = le2.LogType;
+        return le1;
     }
 
     function compareLogElementsNoValue(le1, le2) { //NoValue compare would be used with e.g. resize events
@@ -1494,6 +1489,9 @@
         //url
         //week
 
+        var preLogTypes = [];
+        var postLogTypes = [];
+
         switch(logType) {
             case LogType.OnFocus:
                 $elm.focus();
@@ -1544,20 +1542,14 @@
                 break;
             case LogType.OnKeyDown:
                 //The value is not changed yet
-                eventName = 'keydown';
-                //Har behov for at oprette et event der matcher det der blev optaget... ellers give denne playEventFor jo ingen mening, gælder vel også for de andre ovenstående events
+                eventName = 'keydown';                
                 break;
-            case LogType.OnKeyPress: //Som minimum skal en keydown og keyup også udføres
+            case LogType.OnKeyPress: //Som minimum skal en keydown og keyup også udføres (eller elementValue skal angive om keypress, består af KeyDown og/eller KeyUp
                 //Is the value changed? No, it is one keystroke behind!
                 eventName = 'keypress';
-                //Jeg er nået til dette event.. som jo skal rette på $elm.val, burde nok gøre det via caretPos og selvfølgelig den charcode
-                //var v = {
-                //charCode: charCode,
-                //ch: ch,
-                //shiftKey: event.shiftKey,
-                //altKey: event.altKey,
-                //ctrlKey: event.ctrlKey,
-                //caretPos: getCaretPositionRelativeToEnd(this)                
+                preLogTypes.push(LogType.OnKeyDown);
+                postLogTypes.push(LogType.OnKeyUp);
+                //HOV... husk tælleren "Times"
                 break;
             case LogType.OnKeyUp:
                 //The value is changed
@@ -1585,27 +1577,43 @@
                 break;
             case LogType.OnScroll:
                 break;
-//OnHandlerRequestSend: 0,
-//OnHandlerRequestReceived: 1,
-//OnHandlerResponseSend: 2,
-//OnHandlerResponseReceived:3,
-//OnPageRequest: 25,
-//OnPageResponse: 26,
-//OnPageSessionBefore: 27,
-//OnPageSessionAfter: 28,
-//OnPageViewStateBefore: 29,
-//OnPageViewStateAfter: 30,
-//OnWCFServiceRequest: 31,
-//OnWCFServiceResponse: 32,
-//OnDatabaseRequest: 33,
-//OnDatabaseResponse: 34,
-//OnHandlerSessionBefore: 35,
-//OnHandlerSessionAfter: 36
             default:
                 alert("LogType (" + logType + ") is not supported");
                 return;
         }
 
+        $.each(preLogTypes, function (preIdx, preLogType) {
+            switch (preLogType) {
+                case LogType.OnKeyDown:
+                    callEventMethods($elm, elementValue, 'keydown');
+                    break;
+            }
+        });
+
+        callEventMethods($elm, elementValue, eventName);
+
+        //Post-section
+        switch (logType) {
+            case LogType.OnKeyPress:                
+
+                //Jeg er nået til dette event.. som jo skal rette på $elm.val, burde nok gøre det via caretPos og selvfølgelig den charcode
+                //var v = {
+                //charCode: charCode,
+                //ch: ch,
+                //shiftKey: event.shiftKey,
+                //altKey: event.altKey,
+                //ctrlKey: event.ctrlKey,
+                //caretPos: getCaretPositionRelativeToEnd(this)                
+
+                break;
+        }
+
+        //Post-events (for combined elements with different logTypes)
+        postLogTypes.push(LogType.OnKeyUp);
+
+    }
+
+    function callEventMethods($elm, elementValue, eventName) {
         var propResult = true;
 
         var event = createEventForElm($elm[0], elementValue);
@@ -1613,10 +1621,10 @@
         if (eventName != null) {
             var p = $elm.prop("on" + eventName);
             if (p) {
-                propResult = p.call($elm[0]); //Mangler en måde at sætte event ved attribute-events
+                propResult = p.call($elm[0], event);
                 propResult = typeof (propResult) == "undefined" || propResult;
             }
-        }        
+        }
 
         if (propResult) {
             callElementsEventMethods($elm, eventName, event);
