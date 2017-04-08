@@ -28,7 +28,7 @@
         if (typeof (dt) == "undefined" || dt == null)
             dt = new Date();
         return dt.getTime() / 1000.0;
-    }
+    }    
 
     var clientTimeOffset = 0;
 
@@ -413,8 +413,8 @@
 
         if (typeof (event.pageX) != "undefined")
         {
-            if (event.pageX != 0 && event.pageY != 0) {
-                var elmP = document.elementFromPoint(event.pageX - window.pageXOffset, event.pageY - window.pageYOffset);
+            if (event.pageX != 0 && event.pageY != 0) {                
+                var elmP = document.elementFromPoint(Math.ceil(event.pageX - window.pageXOffset), Math.ceil(event.pageY - window.pageYOffset));
                 if (that == elmP) {                
                     logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
                 }
@@ -1452,17 +1452,86 @@
         return createDefaultEvent(elm, event);
     }
 
-    function playEventFor(logType, elementPath, elementValue/*json*/) {
-        
-        //Udfør eventet
-        //Kør alle jQuery-events
-        //Kør alt On<Event> javascript
+    function isControlVisible($elm) {
+        var position = $elm.position();
+        return $elm[0] == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top));
+    }
+
+    function playEventFor2(logType, elementPath, logElement /*json*/, testlength) {
+        alert("testlength.length = " + testlength.length);
+
+        //alert(typeof (logType));
+        //alert(logType);
+        //alert(typeof (elementPath));
+        //alert(elementPath);
+        //alert(typeof(logElement));
+        //alert(logElement);
+        //alert(JSON.stringify(logElement));
+        //alert("length = " + JSON.stringify(logElement).length);
+    }
+
+    function playEventFor(logType, elementPath, logElement /*json*/) {
 
         var $elm = getJQueryElementByElementPath(elementPath);
         if ($elm == null || $elm.size() == 0) {
-            alert("Error occured while playing event for " + elementPath+", could not be located");
+            alert("Error occured while playing event for " + elementPath + ", could not be located");
             return;
         }
+
+        var loopTotal = elementValue.Times ? elementValue.Times : 1;
+        var timeoutInSec = 10;
+        //var loopStart = unixTimestamp();
+
+        playLoop(loopTotal, 
+            function () { //condition
+                return isControlVisible($elm);
+            },
+            function () { //execute
+                doPlayEventFor(logType, $elm, logElement);
+            },
+            function (loopCounter/*n-1..0*/) { //progress                             
+            },
+            function (timedout) { //done
+                if (timedout) {
+                    alert('Error occured while playing events (Timeout exception)');
+                    return;
+                }
+                alert('the end');
+                window.external.doSomethingAwfulWhenWeAreDoneOrATimeoutExceptionHasOccured('!!!!');
+            },
+            timeoutInSec
+        );
+    }
+
+    function playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
+        if (loopCounter <= 0) {
+            doneFunc(false);
+            return;
+        }
+
+        if (!roundStart)
+            roundStart = unixTimestamp();
+
+        if (timeoutInSec && unixTimestamp() - roundStart > timeoutInSec) {
+            doneFunc(true);
+            return;
+        }
+
+        setTimeout(function () {
+            if (conditionFunc(loopCounter)) {
+                executeFunc(loopCounter);
+                if (progressFunc)
+                    progressFunc(loopCounter);
+                playLoop(loopCounter - 1, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, undefined);
+            } else {
+                playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart);
+            }            
+        }, 100);
+    }
+
+    function doPlayEventFor(logType, $elm, logElement/*json*/) {
+
+        var elementValue = logElement.Value;
 
         var eventName = null;
 
@@ -1489,8 +1558,8 @@
         //url
         //week
 
-        var preLogTypes = [];
-        var postLogTypes = [];
+        var preCombinedLogTypes = [];
+        var postCombinedLogTypes = [];
 
         switch(logType) {
             case LogType.OnFocus:
@@ -1547,9 +1616,19 @@
             case LogType.OnKeyPress: //Som minimum skal en keydown og keyup også udføres (eller elementValue skal angive om keypress, består af KeyDown og/eller KeyUp
                 //Is the value changed? No, it is one keystroke behind!
                 eventName = 'keypress';
-                preLogTypes.push(LogType.OnKeyDown);
-                postLogTypes.push(LogType.OnKeyUp);
-                //HOV... husk tælleren "Times"
+
+                //OnKeyDown: 11,
+                //OnKeyUp: 12,
+                //OnKeyPress: 13,
+                
+                preCombinedLogTypes = $.grep(logElement.CombinedRequestsWithDifferentLogType, function (c) {
+                    return c.LogType == LogType.OnKeyDown;
+                });
+
+                postCombinedLogTypes = $.grep(logElement.CombinedRequestsWithDifferentLogType, function (c) {
+                    return c.LogType == LogType.OnKeyUp;
+                });
+
                 break;
             case LogType.OnKeyUp:
                 //The value is changed
@@ -1582,7 +1661,7 @@
                 return;
         }
 
-        $.each(preLogTypes, function (preIdx, preLogType) {
+        $.each(preCombinedLogTypes, function (preIdx, preLogType) {
             switch (preLogType) {
                 case LogType.OnKeyDown:
                     callEventMethods($elm, elementValue, 'keydown');
@@ -1645,6 +1724,7 @@
         return 1337;
     }
     publicMethods.playEventFor = playEventFor;
+    publicMethods.playEventFor2 = playEventFor2;
     publicMethods.LogType = LogType;
     publicMethods.getJQueryElementByElementPath = getJQueryElementByElementPath;
     publicMethods.getElementPath = getElementPath;

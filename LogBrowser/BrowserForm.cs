@@ -322,6 +322,38 @@ namespace LogBrowser
             return;
         }
 
+        /*
+         * 
+         *         public static LogElementsInfo LoadElementsInfo(string path, LRAPLogType logType, DateTime? from = null, DateTime? to = null)
+        {
+            return GetLoggingPersister(logType).LoadLogElementsInfo(path, from, to);
+        }
+
+        public static LogElementDTO LoadElement(LRAPLogType logType, LogElementInfo logElementInfo)
+        {
+            return GetLoggingPersister(logType).LoadLogElement(logElementInfo);
+        }
+
+         * 
+         * */
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            //            var result = webBrowser.Document.InvokeScript("testInvokeScript", new object[] { "hest" });
+//            var result = webBrowser.Document.InvokeScript("logRecorderAndPlayer_PlayEvent", new object[] { "hest" });
+            var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null);
+            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
+
+            var leJSON = SerializationHelper.Serialize(lst[0], SerializationType.Json);
+            //MessageBox.Show($"length = {leJSON.Length}");
+
+            var testLength = new String('c', 40*1024*1024); // approx max 40MB (aka more than enough for my logelements :D)
+
+            var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor2(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
+            if (result != null)
+                MessageBox.Show(result.ToString());
+        }
+
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
         //{
         //    var link = (HtmlElement)sender;

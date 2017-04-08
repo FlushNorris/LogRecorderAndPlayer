@@ -69,6 +69,9 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
 <img id="drag1" src="img_logo.gif" draggable="true" ondragstart="drag(event)" width="336" height="69">
 <br><br>
 <input id="btnTestPropEvent" type="button" value="test prop event" onclick="testPropEvent()"/>   
+<br><br>
+<input type="button" value="test playloop" onclick="playEventFor()"/>   
+
     
     <style>
     #div1 {
@@ -79,6 +82,70 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
     }
     </style>
     <script type="text/javascript">
+        function testInvokeScript(someValue) {
+            var $elm = logRecorderAndPlayer.getJQueryElementByElementPath("#firstinput");
+            $elm.val("tjuhej");
+            return 1337;
+        }
+
+        function unixTimestamp(dt) { //seconds since 1970/1/1
+            if (typeof (dt) == "undefined" || dt == null)
+                dt = new Date();
+            return dt.getTime() / 1000.0;
+        }
+
+        function playEventFor() {
+
+            var loopTotal = 10;
+            var timeoutInSec = 10;
+
+            playLoop(loopTotal,
+                function () { //condition
+                    return false;
+                },
+                function (loopCounter) { //execute
+                    alert('execute ' + loopCounter);
+                },
+                function (loopCounter/*n-1..0*/) { //progress             
+                    console.log('progress ' + loopCounter);
+                },
+                function (timedout) { //done
+                    if (timedout) {
+                        alert('Error occured while playing events (Timeout exception)');
+                        return;
+                    }
+                    alert('the end');
+                },
+                timeoutInSec
+            );
+        }
+
+        function playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
+            if (loopCounter <= 0) {
+                doneFunc(false);
+                return;
+            }
+
+            if (!roundStart)
+                roundStart = unixTimestamp();
+
+            if (timeoutInSec && unixTimestamp() - roundStart > timeoutInSec) {
+                doneFunc(true);
+                return;
+            }
+
+            setTimeout(function () {
+                if (conditionFunc()) {
+                    executeFunc(loopCounter);
+                    if (progressFunc)
+                        progressFunc(loopCounter);
+                    playLoop(loopCounter - 1, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, undefined);
+                } else {
+                    playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart);
+                }
+            }, 100);
+        }        
+
         function testPropEvent() {
             var $btnTestPropEvent = $("#btnTestPropEvent");
             var f = $btnTestPropEvent.prop("onclick");
