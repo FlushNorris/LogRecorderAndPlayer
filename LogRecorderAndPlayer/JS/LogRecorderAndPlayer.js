@@ -225,11 +225,12 @@
     }    
 
     function getSelectionInfo(elm) {
-        var selectedInfo = {};
+        var selectedInfo = null;
 
         if (elm.selectionStart != undefined) { //IE10, Chrome and FF
             var startPos = elm.selectionStart;
             var endPos = elm.selectionEnd;
+            selectedInfo = {};
             selectedInfo.text = elm.value.substring(startPos, endPos);
             selectedInfo.startPos = startPos;
             selectedInfo.endPos = endPos;
@@ -240,6 +241,7 @@
                 var $focused = $(document.activeElement);
                 elm.focus(); //TODO Ignore this logevent for focus and blur
                 var sel = document.selection.createRange();
+                selectedInfo = {};
                 selectedInfo.text = sel.text;
                 selectedInfo.startPos = 0;
                 selectedInfo.endPos = sel.text.length;
@@ -324,6 +326,13 @@
     function getJQueryElementByElementPath(elementPath) {
         if (elementPath == null || elementPath == "")
             return null;
+
+        var elementPathUpperCase = elementPath.toUpperCase();
+
+        if (elementPathUpperCase == 'WINDOW')
+            return $(window);
+        if (elementPathUpperCase == 'DOCUMENT')
+            return $(document);
 
         var arr = elementPath.split(',');
         var $elm = null;
@@ -657,9 +666,10 @@
     }
 
     function logWindowSize() {
+        var $window = $(window);
         var v = {
-            width: window.outerWidth,
-            height: window.outerHeight
+            width: $window.width(),
+            height: $window.height()
         };        
         logElementEx(LogType.OnResize, "window", JSON.stringify(v), compareLogElementsNoValue);
     }
@@ -1434,7 +1444,7 @@
     }
 
     function createEventForElm(elm, elementValue) {
-        var event = elementValue.value.event;
+        var event = elementValue.event;
         if (typeof (event) == "undefined") {
             return document.createEvent('Event');
         }
@@ -1452,25 +1462,40 @@
         return createDefaultEvent(elm, event);
     }
 
+    function isControlRequiredToBeVisible($elm, logElement) {
+        if ($elm[0] === document) //nodeName = #document, but still a "non-visual" element
+            return false;
+
+        var nodeName = $elm.prop("nodeName"); //e.g. window does not have a nodeName (which is used for scroll and resize events)
+        if (!nodeName)
+            return false;
+
+        return true;
+
+        //Following code would be correct, if the control somehow was possible to enter by e.g. the tab-key.. but for most cases i would say that it's more normal to have a overlay/model-div on top
+
+        //var logType = logElement.LogType;
+
+        //return logType == LogType.OnMouseDown ||
+        //    logType == LogType.OnMouseUp ||
+        //    logType == LogType.OnClick ||
+        //    logType == LogType.OnDblClick ||
+        //    logType == LogType.OnDragStart ||
+        //    logType == LogType.OnDragEnd ||
+        //    logType == LogType.OnDragOver ||
+        //    logType == LogType.OnDrop;
+    }
+
     function isControlVisible($elm) {
         var position = $elm.position();
-        return $elm[0] == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top));
+        return $elm[0] == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top)); 
     }
 
-    function playEventFor2(logType, elementPath, logElement /*json*/, testlength) {
-        alert("testlength.length = " + testlength.length);
-
-        //alert(typeof (logType));
-        //alert(logType);
-        //alert(typeof (elementPath));
-        //alert(elementPath);
-        //alert(typeof(logElement));
-        //alert(logElement);
-        //alert(JSON.stringify(logElement));
-        //alert("length = " + JSON.stringify(logElement).length);
-    }
-
-    function playEventFor(logType, elementPath, logElement /*json*/) {
+    function playEventFor(elementPath, logElement /*json*/) {
+        //setTimeout(function() {
+        //    window.external.SetLogElementAsDone(0, false, 'woohooo timed!');
+        //}, 3000);
+        //return;
 
         var $elm = getJQueryElementByElementPath(elementPath);
         if ($elm == null || $elm.size() == 0) {
@@ -1484,20 +1509,21 @@
 
         playLoop(loopTotal, 
             function () { //condition
-                return isControlVisible($elm);
+                return isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm) : true;
             },
             function () { //execute
-                doPlayEventFor(logType, $elm, logElement);
+                doPlayEventFor($elm, logElement);
             },
             function (loopCounter/*n-1..0*/) { //progress                             
             },
             function (timedout) { //done
                 if (timedout) {
                     alert('Error occured while playing events (Timeout exception)');
+                    window.external.SetLogElementAsDone(logElement.GUID);
                     return;
                 }
                 alert('the end');
-                window.external.doSomethingAwfulWhenWeAreDoneOrATimeoutExceptionHasOccured('!!!!');
+                window.external.SetLogElementAsDone(logElement.GUID);
             },
             timeoutInSec
         );
@@ -1529,9 +1555,34 @@
         }, 100);
     }
 
-    function doPlayEventFor(logType, $elm, logElement/*json*/) {
+    function scrollToElement($elm) {
+        var elm = $elm[0];
+        if (elm === window || elm === document)
+            return;
 
-        var elementValue = logElement.Value;
+        var $window = $(window);
+        var windowTop = $window.scrollTop();
+        var windowLeft = $window.scrollLeft();
+        var windowWidth = $window.width();
+        var windowHeight = $window.height();
+        var elmPosition = $elm.position();
+        var elmLeft = elmPosition.left;
+        var elmTop = elmPosition.top;
+
+        if (windowTop <= elmTop &&
+            windowLeft <= elmLeft &&
+            windowTop + windowHeight > elmTop &&
+            windowLeft + windowWidth > elmLeft)
+            return; //elm is visible, do nothing
+
+        window.scrollBy(elmLeft - windowLeft, elmTop - windowTop);
+    }
+
+    function doPlayEventFor($elm, logElement) {
+        scrollToElement($elm);
+
+        var logType = logElement.LogType;
+        var elementValue = JSON.parse(htmlDecode(logElement.Value));
 
         var eventName = null;
 
@@ -1613,13 +1664,8 @@
                 //The value is not changed yet
                 eventName = 'keydown';                
                 break;
-            case LogType.OnKeyPress: //Som minimum skal en keydown og keyup også udføres (eller elementValue skal angive om keypress, består af KeyDown og/eller KeyUp
-                //Is the value changed? No, it is one keystroke behind!
+            case LogType.OnKeyPress: 
                 eventName = 'keypress';
-
-                //OnKeyDown: 11,
-                //OnKeyUp: 12,
-                //OnKeyPress: 13,
                 
                 preCombinedLogTypes = $.grep(logElement.CombinedRequestsWithDifferentLogType, function (c) {
                     return c.LogType == LogType.OnKeyDown;
@@ -1635,45 +1681,84 @@
                 eventName = 'keyup';
                 break;
             case LogType.OnMouseDown:
+                //Only call event
+                eventName = 'mousedown';
                 break;
             case LogType.OnMouseUp:
+                //Only call event
+                eventName = 'mouseup';
                 break;
             case LogType.OnClick:
+                //Only call event
+                eventName = 'click';
                 break;
             case LogType.OnDblClick:
+                //Only call event
+                eventName = 'dblclick';
                 break;
             case LogType.OnSearch:
+                //Only call event
+                eventName = 'search';
                 break;
             case LogType.OnResize:
+                //Only call event
+                eventName = 'resize';
                 break;
             case LogType.OnDragStart:
+                //Only call event
+                eventName = 'dragstart';
                 break;
             case LogType.OnDragEnd:
+                //Only call event
+                eventName = 'dragend';
                 break;
             case LogType.OnDragOver:
+                //Only call event
+                eventName = 'dragover';
                 break;
             case LogType.OnDrop:
+                //Only call event
+                eventName = 'drop';
                 break;
             case LogType.OnScroll:
+                //Perform.scroll
+                eventName = 'scroll';
+                alert('scroll top=' + elementValue.top);
+                $elm[0].scrollTo(elementValue.left, elementValue.top);                
                 break;
             default:
                 alert("LogType (" + logType + ") is not supported");
                 return;
         }
 
-        $.each(preCombinedLogTypes, function (preIdx, preLogType) {
-            switch (preLogType) {
-                case LogType.OnKeyDown:
-                    callEventMethods($elm, elementValue, 'keydown');
-                    break;
-            }
+        $.each(preCombinedLogTypes, function (preIdx, preCombinedLogType) {
+            doPlayEventFor(preCombinedLogType.LogType, $elm, preCombinedLogType);
         });
 
         callEventMethods($elm, elementValue, eventName);
 
         //Post-section
         switch (logType) {
-            case LogType.OnKeyPress:                
+            case LogType.OnKeyPress:
+
+                var selectionInfo = getSelectionInfo($elm[0]);
+                if (selectionInfo != null) { //startPos + endPos
+                    var value = $elm.val();
+                    var relatedToStart;
+                    var newValue;
+                    var startPos = selectionInfo.startPos;
+                    var endPos = selectionInfo.endPos;
+                    if (startPos >= endPos) {
+                        //replace text within startPos and endPos
+                    } else {
+                        //use caretPos to insert value                        
+                        relatedToStart = value.length - elementValue.value.caretPos;
+                        startPos = relatedToStart;
+                        endPos = relatedToStart;
+                    }
+                    newValue = value.substring(0, startPos) + elementValue.value.ch + value.substring(endPos);
+                    $elm.val(newValue);
+                }
 
                 //Jeg er nået til dette event.. som jo skal rette på $elm.val, burde nok gøre det via caretPos og selvfølgelig den charcode
                 //var v = {
@@ -1687,9 +1772,9 @@
                 break;
         }
 
-        //Post-events (for combined elements with different logTypes)
-        postLogTypes.push(LogType.OnKeyUp);
-
+        $.each(postCombinedLogTypes, function (preIdx, postCombinedLogType) {
+            doPlayEventFor(postCombinedLogType.LogType, $elm, postCombinedLogType);
+        });
     }
 
     function callEventMethods($elm, elementValue, eventName) {
@@ -1723,8 +1808,9 @@
         alert('weeehoooo');
         return 1337;
     }
-    publicMethods.playEventFor = playEventFor;
-    publicMethods.playEventFor2 = playEventFor2;
+    publicMethods.getSelectionInfo = getSelectionInfo;
+    publicMethods.playEventFor = playEventFor; //function playEventFor(logType, elementPath, logElement /*json*/) 
+    //publicMethods.playEventFor2 = playEventFor2;
     publicMethods.LogType = LogType;
     publicMethods.getJQueryElementByElementPath = getJQueryElementByElementPath;
     publicMethods.getElementPath = getElementPath;

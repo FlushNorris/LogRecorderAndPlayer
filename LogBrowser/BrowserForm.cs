@@ -338,18 +338,19 @@ namespace LogBrowser
          * */
 
         private void button1_Click(object sender, EventArgs e)
-        {
+        {            
+
             //            var result = webBrowser.Document.InvokeScript("testInvokeScript", new object[] { "hest" });
 //            var result = webBrowser.Document.InvokeScript("logRecorderAndPlayer_PlayEvent", new object[] { "hest" });
             var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null);
-            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
+//            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
 
-            var leJSON = SerializationHelper.Serialize(lst[0], SerializationType.Json);
+            var leJSON = "null"; //SerializationHelper.Serialize(lst[0], SerializationType.Json);
             //MessageBox.Show($"length = {leJSON.Length}");
 
-            var testLength = new String('c', 40*1024*1024); // approx max 40MB (aka more than enough for my logelements :D)
+            var testLength = ""; //new String('c', 40*1024*1024); // approx max 40MB (aka more than enough for my logelements :D)
 
-            var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor2(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
+            var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
             if (result != null)
                 MessageBox.Show(result.ToString());
         }
@@ -415,8 +416,21 @@ namespace LogBrowser
             MessageBox.Show($"OpenNewTab: {obj.ToString()}");
         }
 
-        public void SetLogElementAsDone(object obj)
+        public void SetLogElementAsDone(object obj, bool error, string errorMessage)
         {
+            if (error)
+            {
+                MessageBox.Show("fejl!");
+            }
+            else
+            {
+                MessageBox.Show("ok!");
+            }
+            MessageBox.Show(errorMessage ?? "null");
+            //MessageBox.Show($"error = {error}");            
+            return;
+
+
             Guid logElementGUID;
             if (!Guid.TryParse(obj.ToString(), out logElementGUID))
                 throw new Exception($"SetLogElementAsDone called with invalid arguments ({obj})");
@@ -424,7 +438,7 @@ namespace LogBrowser
             //MessageBox.Show("XXXXX");
 
             OnJobCompleted?.Invoke(logElementGUID);
-        }
+        }        
     }
 
 }

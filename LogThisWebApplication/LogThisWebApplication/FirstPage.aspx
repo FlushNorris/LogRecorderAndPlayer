@@ -71,6 +71,8 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
 <input id="btnTestPropEvent" type="button" value="test prop event" onclick="testPropEvent()"/>   
 <br><br>
 <input type="button" value="test playloop" onclick="playEventFor()"/>   
+<br><br>
+<input id="btnTestGetselectioninfo" type="button" value="test getselectioninfo" onclick="testGetSelectionInfo()"/>   
 
     
     <style>
@@ -82,6 +84,55 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
     }
     </style>
     <script type="text/javascript">
+        $("#clientTextboxWithID").on('select', function (event) {
+            console.log('select!');
+        });
+
+        function scrollToElement($elm) {
+            var elm = $elm[0];
+            if (elm === window || elm === document)
+                return;
+
+            var $window = $(window);
+            var windowTop = $window.scrollTop();
+            var windowLeft = $window.scrollLeft();
+            var windowWidth = $window.width();
+            var windowHeight = $window.height();
+            var elmPosition = $elm.position();
+            var elmLeft = elmPosition.left;
+            var elmTop = elmPosition.top;
+
+            if (windowTop <= elmTop &&
+                windowLeft <= elmLeft &&
+                windowTop + windowHeight > elmTop &&
+                windowLeft + windowWidth > elmLeft) {
+                alert("its visible");
+                return; //elm is visible, do nothing
+            }
+
+            alert('okay, will scroll to it!');
+            window.scrollBy(elmLeft - windowLeft, elmTop - windowTop);
+        }
+
+
+        $("#btnTestGetselectioninfo").on('click', function (event) {
+            setTimeout(function () {
+
+                scrollToElement($("#i21"));
+
+                //var $this = $("#clientTextboxWithID");
+                //$this.val($this.val() + 'x');
+            }, 5000);
+        });
+
+        function testGetSelectionInfo() {
+
+
+            //var $elm = logRecorderAndPlayer.getJQueryElementByElementPath("#clientTextboxWithID");
+            //var v = logRecorderAndPlayer.getSelectionInfo($elm[0]);
+            //alert(JSON.stringify(v));
+        }
+
         function testInvokeScript(someValue) {
             var $elm = logRecorderAndPlayer.getJQueryElementByElementPath("#firstinput");
             $elm.val("tjuhej");
