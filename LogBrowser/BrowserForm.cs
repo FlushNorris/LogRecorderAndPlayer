@@ -1,6 +1,4 @@
-﻿
-
-using System;
+﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -21,7 +19,7 @@ namespace LogBrowser
 {
     public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {
-        public delegate void JobCompleted(BrowserForm browser, Guid? logElementGUID);
+        public delegate void JobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus);
 
         public event JobCompleted OnJobCompleted = null;
 
@@ -61,40 +59,16 @@ namespace LogBrowser
 
         private void BrowserForm_Load(object sender, EventArgs e)
         {
-            //var t = new Thread(() =>
-            //{
-            //    try
-            //    {
-            //        if (this.InvokeRequired)
-            //        {
-            //            this.Invoke(new MethodInvoker(delegate
-            //            {
-            //                throw new NotImplementedException();
-            //            }));
-            //        }
-            //    }
-            //    catch (NotImplementedException nex)
-            //    {
-            //        if (this.InvokeRequired)
-            //        {
-            //            this.Invoke(new MethodInvoker(delegate
-            //            {
-            //                MessageBox.Show(nex.GetType().ToString());
-            //            }));
-            //        }
-            //    }
-
-            //});
-            //t.Start();
+           
             webBrowser.Url = new Uri(StartingURL);
             var scriptManager = new ScriptManager(this);
             scriptManager.OnJobCompleted += ScriptManager_OnJobCompleted;
             webBrowser.ObjectForScripting = scriptManager;
         }
 
-        private void ScriptManager_OnJobCompleted(Guid? logElementGUID)
+        private void ScriptManager_OnJobCompleted(Guid? logElementGUID, JobStatus jobStatus)
         {
-            OnJobCompleted?.Invoke(this, logElementGUID);
+            OnJobCompleted?.Invoke(this, logElementGUID, jobStatus);
         }
 
         private void webBrowser_Navigated(object sender, WebBrowserNavigatedEventArgs e)
@@ -104,7 +78,7 @@ namespace LogBrowser
 
         private void Browser_ProgressChanged(object sender, WebBrowserProgressChangedEventArgs e)
         {
-            var webBrowser = (WebBrowser) sender;
+            var webBrowser = (WebBrowser) sender;            
             if (webBrowser.Document != null)
             {
                 foreach (HtmlElement tag in webBrowser.Document.All)
@@ -142,7 +116,7 @@ namespace LogBrowser
         private void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
             //MessageBox.Show("Complete!!");
-            OnJobCompleted?.Invoke(this, null);
+            OnJobCompleted?.Invoke(this, null, new JobStatus() {Success = true});
             //webBrowser.Url = new Uri("javascript:$('input').val('hest');alert('1');");
 
         }
@@ -158,7 +132,7 @@ namespace LogBrowser
             this.Width += diffWidth;
             this.Height += diffHeight;
 
-            OnJobCompleted?.Invoke(this, logElementGUID);
+            OnJobCompleted?.Invoke(this, logElementGUID, new JobStatus() {Success = true});
         }
 
         private void WaitTillDocumentIsComplete(MethodInvoker invoker, double timeoutInMS = 30000)
@@ -202,7 +176,7 @@ namespace LogBrowser
             t.Start();
         }
 
-        private void WaitTillWebBrowserIsNoLongerInUse(string url, double timeoutInMS = 30000)
+        private void WaitTillWebBrowserIsNoLongerInUse(Func<WebBrowser, bool> f, double timeoutInMS = 30000)
         {
             var t = new Thread(() => //prevent deadlock (e.g. OnPageResponse followed by clientside event which has to wait for the pageresponse to end)
             {
@@ -215,13 +189,13 @@ namespace LogBrowser
                         if (this.InvokeRequired) //but needs to run in on the main ui-thread
                         {
                             this.Invoke(new MethodInvoker(delegate
-                            {
-                                webBrowser.Url = new Uri(url);
-                                finished = true;
+                            {                                
+                                //webBrowser.Url = new Uri(url);
+                                finished = f(webBrowser);
                             }));
                         }
                     }
-                    catch (COMException coex) //e.g. The requested resource is in use. (Exception from HRESULT: 0x800700AA) = which is raised if an alert-box is shown
+                    catch (COMException) //e.g. The requested resource is in use. (Exception from HRESULT: 0x800700AA) = which is raised if an alert-box is shown
                     {
                         Thread.Sleep(300);
                         Application.DoEvents();
@@ -234,108 +208,22 @@ namespace LogBrowser
             t.Start();
         }
 
-        public void ScrollBrowser(BrowserScroll browserScroll, Guid logElementGUID)
+        public void PerformLogElement(LogElementDTO logElement)
         {
+            //function playEventFor(elementPath, logElement /*json*/) {
+
+            var jsonLogElement = SerializationHelper.Serialize(logElement, SerializationType.Json);
+
             WaitTillDocumentIsComplete(delegate
             {
-                WaitTillWebBrowserIsNoLongerInUse($"javascript:logRecorderAndPlayer.pushLogElementGUID(\"{logElementGUID}\");window.scrollTo({browserScroll.left}, {browserScroll.top});window.external.SetLogElementAsDone(\"{logElementGUID}\");");
-            }); //Ja ja... men hvad så med sideload -> postbackevent -> sideload -> Gør noget clientside. I dette tilfælde vil documentet være complete
-            return;
-            MessageBox.Show("ScrollBrowser2");
-            //Faktisk vil det være nødvendigt at LoggingPage.LogRequest fortalte browseren at et request var på vej, da alle efterfølgende clientevents relateret til den samme pageGUID skal vente på webBrowser_DocumentCompleted er kaldt!
-            return;
-
-            MessageBox.Show($"javascript:logRecorderAndPlayer.pushLogElementGUID(\"{logElementGUID}\");window.scrollTo({browserScroll.left}, {browserScroll.top});");
-            //WaitTillWebBrowserIsNoLongerInUse($"javascript:logRecorderAndPlayer.pushLogElementGUID(\"{logElementGUID}\");window.scrollTo({browserScroll.left}, {browserScroll.top});");
-            MessageBox.Show("!!!!!");
-
-//            webBrowser.Url = new Uri("javascript:alert('1337');");
-//            webBrowser.Document.InvokeScript("logRecorderAndPlayer.testmethod");
-
-            //webBrowser.Url = new Uri("javascript:$('input').val('hest');alert('1');");
-            //webBrowser.Url = new Uri($"javascript:alert(logRecorderAndPlayer);"); //alert(logRecorderAndPlayer.pushLogElementGUID);logRecorderAndPlayer.pushLogElementGUID(\"{logElementGUID}\");alert(1337);alert(window);alert(window.scrollTo);window.scrollTo({browserScroll.left}, {browserScroll.top});");
-//            MessageBox.Show("Scroll is called 2");
-
-            return;
-            //When does this event complete? Shouldn't we let the LRAP-JS determine this? And to a callback via window.external...
-            //Clientside then needs to know it is playing, it doesn't now... playing=1 are only in the url at the first page atm, should be added to the session and used in the lrap-js-init function!
-            //blah blah blah.. this shouldn't compile!!
-
-            //Problemet med clientside events er jo at alle scrollTo events vil blive udført!.... hov, jeg skal jo bare oprette et event i slutningen til dette player-formål          
-
-            //OnJobCompleted?.Invoke(this, logElementGUID);
-        }
-
-        public void MouseDownBrowser(BrowserMouseDown browserMouseDown, Guid logElementGUID)
-        {
-            WaitTillDocumentIsComplete(delegate
-            {
-                //browserMouseDown.attributes
-                //browserMouseDown.events
-
-                //jQueryEvent:
-                StringBuilder sbJS = new StringBuilder();
-                sbJS.Append("javascript:try{");
-                sbJS.Append($"logRecorderAndPlayer.runEventsFor(\"{browserMouseDown.element}\")");
-
-                //foreach (var e in browserMouseDown.events) //Currently max count = 2
-                //{
-                //    if (e.IndexOf("jQueryEvent:") == 0)
-                //        sbJS.Append("logRecorderAndPlayer.runJQueryEvents('mousedown');"); //Check if the same amount of event-methods are executed, as when we recorded the flow
-                //    else
-                //        sbJS.Append(e); //could contain "return <statement>", therefore run everything in a try/finally to ensure that the SetLogElementAsDone are being executed
-                //}
-
-                sbJS.Append($"}}finally{{window.external.SetLogElementAsDone(\"{logElementGUID}\");}}");
-
-                WaitTillWebBrowserIsNoLongerInUse(sbJS.ToString());
-            }); //Ja ja... men hvad så med sideload -> postbackevent -> sideload -> Gør noget clientside. I dette tilfælde vil documentet være complete
-            return;
-        }
-        public void FocusBrowser(BrowserFocus browserFocus, Guid logElementGUID)
-        {
-            WaitTillDocumentIsComplete(delegate
-            {
-                //browserMouseDown.attributes
-                //browserMouseDown.events
-
-                //jQueryEvent:
-                StringBuilder sbJS = new StringBuilder();
-                sbJS.Append("javascript:try{");
-                //Ja, kan ikke compile pga denne kommentar som du skal læse i morgen!... ja, runEventsFor skal køre ala følgende kode... test getElementByElementPath som noget af det første!                
-
-                sbJS.Append($"logRecorderAndPlayer.runEventsFor(logRecorderAndPlayer.LogType.OnFocus, \"{browserFocus.element}\");");
-                //sbJS.Append($"logRecorderAndPlayer.getJQueryElement(\"{browserFocus.element}\");");
-
-                //foreach (var e in browserFocus.events) //Currently max count = 2
-                //{
-                //    if (e.IndexOf("jQueryEvent:") == 0)
-                //        sbJS.Append("logRecorderAndPlayer.runJQueryEvents('focus');"); //Check if the same amount of event-methods are executed, as when we recorded the flow
-                //    else
-                //        sbJS.Append(e); //could contain "return <statement>", therefore run everything in a try/finally to ensure that the SetLogElementAsDone are being executed
-                //}
-
-                sbJS.Append($"}}finally{{window.external.SetLogElementAsDone(\"{logElementGUID}\");}}");
-
-                WaitTillWebBrowserIsNoLongerInUse(sbJS.ToString());
-            }); //Ja ja... men hvad så med sideload -> postbackevent -> sideload -> Gør noget clientside. I dette tilfælde vil documentet være complete
-            return;
-        }
-
-        /*
-         * 
-         *         public static LogElementsInfo LoadElementsInfo(string path, LRAPLogType logType, DateTime? from = null, DateTime? to = null)
-        {
-            return GetLoggingPersister(logType).LoadLogElementsInfo(path, from, to);
-        }
-
-        public static LogElementDTO LoadElement(LRAPLogType logType, LogElementInfo logElementInfo)
-        {
-            return GetLoggingPersister(logType).LoadLogElement(logElementInfo);
-        }
-
-         * 
-         * */
+                //WaitTillWebBrowserIsNoLongerInUse($"javascript:logRecorderAndPlayer.pushLogElementGUID(\"{logElementGUID}\");window.scrollTo({browserScroll.left}, {browserScroll.top});window.external.SetLogElementAsDone(\"{logElementGUID}\");");
+                WaitTillWebBrowserIsNoLongerInUse(webBrowser =>
+                {                    
+                    webBrowser.Document.InvokeScript("eval", new object[] {$"logRecorderAndPlayer.playLogElement({jsonLogElement})"});
+                    return true;
+                });
+            });
+        }       
 
         private void button1_Click(object sender, EventArgs e)
         {            
@@ -353,6 +241,18 @@ namespace LogBrowser
             var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
             if (result != null)
                 MessageBox.Show(result.ToString());
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+//            var w = new WebBrowser();
+//            w.Url = new Uri("http://localhost:61027/FirstPage.aspx");
+            //w.DocumentText = "<html><body><input type='text' value='something'/></body></html>";
+
+            //var r = w.DocumentText;
+            //textBox1.Text = r;
+
+            //var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.getJQueryElementByElementPath('#form1,3!DIV,3!INPUT:not([type])').val('WHAT')" });            
         }
 
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
@@ -398,7 +298,7 @@ namespace LogBrowser
     [ComVisible(true)]
     public class ScriptManager
     {
-        public delegate void JobCompleted(Guid? logElementGUID);
+        public delegate void JobCompleted(Guid? logElementGUID, JobStatus jobStatus);
         public event JobCompleted OnJobCompleted = null;
 
         BrowserForm _form;
@@ -418,26 +318,29 @@ namespace LogBrowser
 
         public void SetLogElementAsDone(object obj, bool error, string errorMessage)
         {
-            if (error)
-            {
-                MessageBox.Show("fejl!");
-            }
-            else
-            {
-                MessageBox.Show("ok!");
-            }
-            MessageBox.Show(errorMessage ?? "null");
-            //MessageBox.Show($"error = {error}");            
-            return;
-
-
             Guid logElementGUID;
             if (!Guid.TryParse(obj.ToString(), out logElementGUID))
                 throw new Exception($"SetLogElementAsDone called with invalid arguments ({obj})");
 
-            //MessageBox.Show("XXXXX");
+            //MessageBox.Show($"Player.OnDone {error} : {errorMessage ?? "null"}");
 
-            OnJobCompleted?.Invoke(logElementGUID);
+            OnJobCompleted?.Invoke(logElementGUID, new JobStatus() {Success = !error, Message = errorMessage});
+
+            //if (error)
+            //{
+            //    MessageBox.Show("fejl!");
+            //}
+            //else
+            //{
+            //    MessageBox.Show("ok!");
+            //}
+            //MessageBox.Show(errorMessage ?? "null");
+            ////MessageBox.Show($"error = {error}");            
+            //return;
+
+            ////MessageBox.Show("XXXXX");
+
+            //OnJobCompleted?.Invoke(logElementGUID);
         }        
     }
 

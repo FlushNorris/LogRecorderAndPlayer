@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Common\AssemblyHelper.cs" />
     <Compile Include="Common\Consts.cs" />
+    <Compile Include="Common\JobStatus.cs" />
     <Compile Include="Common\ResourceHelper.cs" />
     <Compile Include="Common\ResponseHelper.cs" />
     <Compile Include="Common\SerializationHelper.cs" />

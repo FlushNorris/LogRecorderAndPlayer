@@ -19,8 +19,8 @@ namespace LogBrowser
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new MainForm(args));
-            Application.Run(new BrowserForm(new Guid(), new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
+            Application.Run(new MainForm(args));
+            //Application.Run(new BrowserForm(new Guid(), new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
         }
     }
 }

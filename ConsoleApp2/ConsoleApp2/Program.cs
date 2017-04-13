@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -139,8 +140,8 @@ namespace ConsoleApp2
 
             //////////////////////////////
 
-            string sx = $"{{}}";
-            Console.WriteLine(sx);
+            //string sx = $"{{}}";
+            //Console.WriteLine(sx);
 
             //var hmm = new BrowserMouseDown();
             //hmm.attributes = new Dictionary<string, string>();
@@ -155,10 +156,184 @@ namespace ConsoleApp2
             //var obj = SerializationHelper.Deserialize<BrowserMouseDown>(json1, SerializationType.Json);
 
 
+            var s = @""" />AWBCDAW BCDAW CBDATOD<!DOCTYPE html>
 
+<html xmlns=""http://www.w3.org/1999/xhtml"">
+<head><title>
+
+</title>
+</head>
+<script src=""/scripts/jquery-3.1.1.min.js""></script>
+<link rel=""stylesheet"" href=""/scripts/jquery-ui.min.css"">
+<script src=""/scripts/jquery-ui.min.js""></script><script type=""text/javascript"" src=""/logrecorderandplayerjs.lrap?v=636274548300000000""></script><script type=""text/javascript"">logRecorderAndPlayer.init(""669ff16d-3e12-40d2-aaf0-ce38e2a2d9a3"", ""49618e82-649e-4eb5-9cf2-dd848d38b625"", """");</script>
+<body>
+    <form method=""post"" action=""./FirstPage.aspx"" id=""form1"">
+<div class=""aspNetHidden"">
+<input type=""hidden"" name=""wgat"" id=""what"" value=""/eRcjbZ24MjLi/cKzmsv0oKlnNZ6EB1pVeMswZ9H/hfj/XQNq+hzxUV/>JOvFP65mndga+QyFlpFaiWVHoYuoZHabl1D7XHmETqX952RsUb80SA="" />
+<input type=""hidden"" name=""__VIEWSTATE"" id=""__VIEWSTATE"" value=""/eRcjbZ24MabjLi/cKzmsv0oKlnNZ6EB1pVeMswZ9H/hfj/XQNq+hzxUVJOvFP65mndga+QyFlpFaiWVHoYuoZHl1D7XHmETqX952RsUb80SA="" />
+</div>
+
+<div class=""aspNetHidden"">
+
+	<input type=""hidden"" name=""__VIEWSTATEGENERATOR"" id=""__VIEWSTATEGENERATOR"" value=""156D3223"" />
+	<input type=""hidden"" name=""__EVENTVALIDATION"" id=""__EVENTVALIDATION"" value=""ufOUSnm/3nJaW+YSwrkjC9w8XMcncV3Hjx+1FnF0bjNXrbEAyOKuZEvJIyiYPCFvuZi5vmQDDAkrZHhPOJHqMDxx4EIXg+Z6VlD31Z78ejGYODtCjiP1dL5P4KyjY9NwuL2VAasb/kz/5O2Oef/htA=="" />
+</div>
+    <div>
+        
+    Server textbox: <input name=""ctl00$ContentPlaceHolder1$serverTextbox"" type=""text"" id=""ContentPlaceHolder1_serverTextbox"" /><br/>
+    <input type=""submit"" name=""ctl00$ContentPlaceHolder1$serverButton"" value=""Fetch current time"" id=""ContentPlaceHolder1_serverButton"" /><br/>
+    <br/>
+    <br/>";
+
+            //var r = new Regex("<input.+\"__VIEWSTATE\".*value=\"(.*)\".*/>");
+            //var r = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
+            ////var r = new Regex("<input.+\"__EVENTVALIDATION\".*value=\"(.*)\".*/>");            
+
+            ////var r = new Regex("(<input(?! />)+\"__VIEWSTATE\")");
+            ////var r = new Regex("((?!AB)..)"); //Vil lede efter det første eksemplar af en section der ikke starter med "ab".. det burde jo være "bc"
+            ////var r = new Regex("((?!\"\\s*/\\>)..)"); //Vil lede efter det første eksemplar af en section der ikke starter med "\"/>" eller "\" />"  eller "\"               />"
+            ////var r = new Regex("<input((?!\"\\s*/\\>).*)\"__VIEWSTATE\"");
+            ////var r = new Regex("(<input(?!\"\\s*/\\>).*)\"__VIEWSTATE\"");
+
+            ////var r = new Regex("(A((?!WBC).)*D)"); //Må vel næsten betyde at WBC ikke må komme i den rækkefølge?
+
+            ////var xxx = r.Replace(s, "QWERTY");
+
+            //var m = r.Match(s);
+            //if (m.Success)
+            //{
+            //    //^(?!.*ab).*$
+            //    Console.WriteLine(m.Groups[1].Value);
+            //    var m1 = m.Groups[2];
+            //    //m1.Index
+            //    //m1.Length
+
+            //    var xxx = s.Substring(0, m1.Index) + "LOLOL" + s.Substring(m1.Index + m1.Length);
+            //    Console.WriteLine(xxx);
+
+            //    Console.WriteLine("Ja : "+m1);
+            //}
+            //else
+            //{
+            //    Console.WriteLine("Nej");
+            //}
+
+            var nvc = GetResponseViewState(s);
+            nvc.AllKeys.ToList().ForEach(x => nvc[x] = "???");
+
+            var html2 = SetResponseViewState(s, nvc);
+
+            Console.Write(html2);
 
             Console.ReadKey(true);
 
+        }
+
+        private static void ExecuteViewStateValueMatchesOrdered(string html, Action<Match> f)
+        {
+            var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
+            var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
+            var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
+
+            var lst = new List<Match> { rViewState.Match(html), rViewStateGenerator.Match(html), rEventValidation.Match(html) };
+
+            lst.Where(x => x.Success).OrderBy(x => x.Index).ToList().ForEach(f);
+        }
+
+        public static NameValueCollection GetResponseViewState(string html)
+        {
+            var nvc = new NameValueCollection();
+
+            ExecuteViewStateValueMatchesOrdered(html, m =>
+            {
+                var tagName = m.Groups[1].Value;
+                var value = m.Groups[2].Value;
+                nvc[tagName] = value;
+            });
+
+            return nvc;
+
+            //var doc1 = new HTMLDocument();
+            //var doc2 = (IHTMLDocument2)doc1;
+            //doc2.write(new object[] { html });
+
+
+            //var enu = doc2.all.GetEnumerator();
+            //while (enu.MoveNext())
+            //{
+            //    var elm = enu.Current;
+            //    if (elm is mshtml.HTMLInputElement)
+            //    {
+            //        var input = (mshtml.HTMLInputElement)elm;
+            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+            //        {
+            //            nvc[input.name] = input.value;
+            //        }
+            //    }
+            //}
+        }
+
+        public static string SetResponseViewState(string html, NameValueCollection nvc)
+        {
+            StringBuilder sb = new StringBuilder();
+            int currPosition = 0;
+            ExecuteViewStateValueMatchesOrdered(html, m =>
+            {
+                var tagName = m.Groups[1].Value;
+                var valueObj = m.Groups[2];
+                var value = nvc[tagName];
+                if (value != null)
+                {
+                    sb.Append(html.Substring(currPosition, valueObj.Index - currPosition));
+                    sb.Append(value);
+                    currPosition = valueObj.Index + valueObj.Length;
+                }
+            });
+            if (currPosition < html.Length)
+                sb.Append(html.Substring(currPosition));
+
+            return sb.ToString();
+
+            //var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
+            //var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
+            //var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
+
+            //var lst = new List<Match>();
+            //lst.Add(rViewState.Match(html));
+            //lst.Add(rViewStateGenerator.Match(html));
+            //lst.Add(rEventValidation.Match(html));
+
+            //lst = lst.Where(x => x.Success).OrderByDescending(x => x.Index).ToList();
+
+            //var nvc = new NameValueCollection();
+
+            //lst.ForEach(m =>
+            //{
+            //    var tagName = m.Groups[1].Value;
+            //    var value = m.Groups[2].Value;
+            //    nvc[tagName] = value;
+            //});
+
+            //var doc1 = new HTMLDocument();
+            //var doc2 = (IHTMLDocument2)doc1;
+            //doc2.write(new object[] { html });
+
+            //var enu = doc2.all.GetEnumerator();
+            //while (enu.MoveNext())
+            //{
+            //    var elm = enu.Current;
+            //    if (elm is mshtml.HTMLInputElement)
+            //    {
+            //        var input = (mshtml.HTMLInputElement)elm;
+            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+            //        {
+            //            input.value = nvc[input.name];
+            //        }
+            //    }
+            //}
+
+            //var r = doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
+            //return r;
         }
     }
 }

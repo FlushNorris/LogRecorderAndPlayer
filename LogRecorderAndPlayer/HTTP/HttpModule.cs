@@ -234,8 +234,10 @@ namespace LogRecorderAndPlayer
                 
                 if (context.Response.ContentType == ContentType.TextHtml) 
                 {                    
-                    string lrapScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap?v={AssemblyHelper.RetrieveLinkerTimestamp().Ticks}\"></script><script type=\"text/javascript\">logRecorderAndPlayer.init(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
-                    var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapScript);
+                    string lrapPreScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap?v={AssemblyHelper.RetrieveLinkerTimestamp().Ticks}\"></script><script type=\"text/javascript\">logRecorderAndPlayer.preInit(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
+                    var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapPreScript);                    
+                    string lrapPostScript = $"<script type=\"text/javascript\">logRecorderAndPlayer.postInit(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
+                    newResponse += lrapPostScript;
                     context.Response.Clear();
                     context.Response.Write(newResponse);
                 }

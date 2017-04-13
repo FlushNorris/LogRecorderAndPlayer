@@ -30,7 +30,7 @@ namespace LogRecorderAndPlayer
                 viewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                 LoggingHelper.SetViewStateValues(page, viewStateValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async:false); //Non deadlock, because we would never call the webserver via namedpipe back again
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() {Success = true}); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
 
                 return;
             }
@@ -70,7 +70,7 @@ namespace LogRecorderAndPlayer
 
                 LoggingHelper.SetRequestValues(context, requestFormValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
 
                 return;
             }
@@ -108,7 +108,7 @@ namespace LogRecorderAndPlayer
                 sessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                 LoggingHelper.SetSessionValues(page, sessionValues);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
 
                 return;
             }
@@ -151,7 +151,7 @@ namespace LogRecorderAndPlayer
                 context.Response.Clear();
                 context.Response.Write(newResponse);
 
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, async: false);
+                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
 
                 return newResponse;
             }

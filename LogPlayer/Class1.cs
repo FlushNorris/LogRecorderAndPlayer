@@ -466,7 +466,15 @@ namespace TestBrowser
             return null;
         }
 
-        public void SetSessionElementAsDone(Guid elementGUID) //Visse events kan godt være forud... f.eks. PageRequest-events som jo kommer i bølger, de vil naturligt nok være efter CurrentIndex
+        public enum NewEvent
+        {
+            None = 0,
+            StartedAtLeastOne = 1,
+            WaitingForOtherClientEvents = 2,
+            WaitingForServerEvents = 3           
+        }
+
+        public NewEvent SetSessionElementAsDone(Guid elementGUID) //Visse events kan godt være forud... f.eks. PageRequest-events som jo kommer i bølger, de vil naturligt nok være efter CurrentIndex
         {
             //CurrentIndex skal forhøjes.. men kun hvis alle andre på CurrentIndex-positionen også er markeret som Played            
 
@@ -481,24 +489,29 @@ namespace TestBrowser
             //    StartNewEventsIfPossible();
             //});
             //t.Start();            
-            StartNewEventsIfPossible();
+
+            return StartNewEventsIfPossible();
         }
 
-        private void StartNewEventsIfPossible() //REMEMBER ONLY START CLIENTSIDE EVENTS!!! Serverside-events should have time to be executed before doing anything else...
+        private NewEvent StartNewEventsIfPossible() //REMEMBER ONLY START CLIENTSIDE EVENTS!!! Serverside-events should have time to be executed before doing anything else...
         {
             //Er jo lidt noget rod, for det første event som vil være et pagerequest event... skal ikke markeres som done, men siden skal kaldes med pageguid
 
             var lst = SessionElementOrderedList[CurrentIndex];
             if (lst.Any(x => x.State == SessionElementState.Playing))
-                return; //Still waiting for at least one element to complete
+                return NewEvent.WaitingForOtherClientEvents; //Still waiting for at least one element to complete
 
             CurrentIndex++;
             if (SessionElementOrderedList.Count <= CurrentIndex)
-                return; //Completed everything!
+                return NewEvent.None; //Completed everything!
+
+            var newEvent = NewEvent.None;
 
             lst = SessionElementOrderedList[CurrentIndex];
             foreach (var sessionElement in lst.Where(x => x.Session.State == SessionState.Playing || x.Session.State == SessionState.WaitingForStartingElement && IsValidStartingEvent(x)))
             {
+                LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType)
+
                 sessionElement.Session.State = SessionState.Playing;
                 sessionElement.State = SessionElementState.Playing;
                 var logElementDTO = OnLoadLogElement?.Invoke(sessionElement);
@@ -506,8 +519,11 @@ namespace TestBrowser
                 {
                     sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
                     OnPlayElement?.Invoke(logElementDTO);
+                    newEvent = NewEvent.StartedAtLeastOne;
                 }
             }
+
+            return newEvent;
         }
 
         private Panel HoverPanel = null;

@@ -11,18 +11,18 @@
     var PageGUIDTag = "lrap-pageguid";
     var BundleGUIDTag = "lrap-bundleguid";
     var ServerGUIDTag = "lrap-serverguid"; //For the namedpipe-connection to the LogPlayer
-    var LogElementGUID = null;
+//    var LogElementGUID = null;
 
-    function pushLogElementGUID(logElementGUID) {
-        alert('pushing ' + logElementGUID);
-        LogElementGUID = logElementGUID;
-    }
+    //function pushLogElementGUID(logElementGUID) {
+    //    alert('pushing ' + logElementGUID);
+    //    LogElementGUID = logElementGUID;
+    //}
 
-    function popLogElementGUID() {
-        var r = LogElementGUID;
-        LogElementGUID = null;
-        return r;
-    }
+    //function popLogElementGUID() {
+    //    var r = LogElementGUID;
+    //    LogElementGUID = null;
+    //    return r;
+    //}
 
     function unixTimestamp(dt) { //seconds since 1970/1/1
         if (typeof (dt) == "undefined" || dt == null)
@@ -36,8 +36,8 @@
     //    return unixTimestamp() + clientTimeOffset;
     //}
 
-    function setPageGUID(_pageGUID) {
-        var v = getPageGUID();
+    function setPageGUID(_pageGUID, ignoreCache) {
+        var v = ignoreCache ? null : getPageGUID();
         if (v == null) {
             pageGUIDCache = _pageGUID;
             var $frm = getPrimaryForm();
@@ -60,8 +60,8 @@
         return pageGUIDCache;
     }
 
-    function setServerGUID(_serverGUID) {
-        var v = getServerGUID();
+    function setServerGUID(_serverGUID, ignoreCache) {
+        var v = ignoreCache ? null : getServerGUID();
         if (v == null) {
             serverGUIDCache = _serverGUID;
             var $frm = getPrimaryForm();
@@ -89,8 +89,8 @@
         return (r != null && r != "");
     }
 
-    function setSessionGUID(_sessionGUID) {
-        var v = getSessionGUID();
+    function setSessionGUID(_sessionGUID, ignoreCache) {
+        var v = ignoreCache ? null : getSessionGUID();
         if (v == null) {
             sessionGUIDCache = _sessionGUID;
             var $frm = getPrimaryForm();
@@ -114,8 +114,7 @@
     }    
 
     function getPrimaryForm() {
-        var __EVENTTARGET = $("#__EVENTTARGET");
-        return __EVENTTARGET.closest("form");
+        return $(".aspNetHidden").closest("form");
     }
 
     var LogType =
@@ -159,7 +158,17 @@
         OnHandlerSessionAfter: 36
     }; //Hover etc results in too many event, describe this...!
 
-    function init(sessionGUID, pageGUID, serverGUID/*for playing*/) {
+    function postInit(sessionGUID, pageGUID, serverGUID/*for playing*/) {
+        if (!window.jQuery) {
+            return;
+        }
+
+        setSessionGUID(sessionGUID, true);
+        setPageGUID(pageGUID, true);
+        setServerGUID(serverGUID, true);
+    }
+
+    function preInit(sessionGUID, pageGUID, serverGUID/*for playing*/) {
         if (!window.jQuery) {
             return;
         }
@@ -341,6 +350,9 @@
             if (v == "")
                 return;
             if (v.charAt(0) == "#") {
+                //if (elementPath.indexOf('not([type') != -1) {
+                //    alert(v);
+                //}
                 if (v.toUpperCase() == "#DOCUMENT")
                     $elm = $(document);
                 else
@@ -359,7 +371,12 @@
 
                 var $child = null;
 
-                $.each($elm.children(childSelector), function(ci, cv) {
+                //if (elementPath.indexOf('not([type') != -1) {
+                //    alert("childIndex=" + childIndex + " : childSelector=" + childSelector + " : $elm.children(childSelector).length=" + $elm.children(childSelector).length);
+                //}
+
+                $.each($elm.children(childSelector), function (ci, cv) {
+                    //alert(ci + ": " + $(cv)[0].outerHTML);
                     if (ci + 1 == childIndex) {
                         $child = $(cv);
                     }
@@ -422,7 +439,10 @@
 
         if (typeof (event.pageX) != "undefined")
         {
-            if (event.pageX != 0 && event.pageY != 0) {                
+            if (event.pageX != 0 && event.pageY != 0) {
+                //Hvis nu jeg ikke finder f.eks. en checkbox her pga margin/padding har ændret det clickable area, så får jeg underliggende element via elementFromPoint.
+                //Og hvis det sker, så kunne jeg vel undersøge om that er placeret z-index-wise over det fundne element elmP og give det en godkendelse via det check?
+                //Så undgår jeg også at checke margin osv osv for at finde det area for 'that' man faktisk kan hente kontrollen udfra 
                 var elmP = document.elementFromPoint(Math.ceil(event.pageX - window.pageXOffset), Math.ceil(event.pageY - window.pageYOffset));
                 if (that == elmP) {                
                     logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
@@ -1487,46 +1507,62 @@
     }
 
     function isControlVisible($elm) {
-        var position = $elm.position();
-        return $elm[0] == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top)); 
+        scrollToElement($elm);
+        var elm = $elm[0];
+        //var position = $elm.position();
+        var position = elm.getBoundingClientRect(); //also works with element with arbitrary margins and checkboxes
+        return elm == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top)); 
     }
 
-    function playEventFor(elementPath, logElement /*json*/) {
+    function playLogElement(logElement /*json*/) {
         //setTimeout(function() {
         //    window.external.SetLogElementAsDone(0, false, 'woohooo timed!');
         //}, 3000);
         //return;
 
-        var $elm = getJQueryElementByElementPath(elementPath);
+        //alert("playLogElement called: " + logElement.Element + " : " + logElement.LogType);
+
+        var $elm = getJQueryElementByElementPath(logElement.Element);
+
         if ($elm == null || $elm.size() == 0) {
-            alert("Error occured while playing event for " + elementPath + ", could not be located");
+            alert("Error occured while playing event for " + logElement.Element + ", could not be located");
             return;
         }
 
-        var loopTotal = elementValue.Times ? elementValue.Times : 1;
+
+        var loopTotal = logElement.Times && logElement.LogType != LogType.OnResize && logElement.LogType != LogType.OnScroll ? logElement.Times : 1;
         var timeoutInSec = 10;
         //var loopStart = unixTimestamp();
 
+        //alert("playLogElement called2: " + logElement.Element + " : " + logElement.LogType + " : loopTotal=" + loopTotal);
+
         playLoop(loopTotal, 
             function () { //condition
-                return isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm) : true;
+                //alert("playLogElement condition1: " + logElement.Element + " : " + logElement.LogType);
+                var rx = isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm) : true;
+                //alert("playLogElement condition2: " + logElement.Element + " : " + logElement.LogType);
+                return rx;
             },
             function () { //execute
-                doPlayEventFor($elm, logElement);
+                //alert("playLogElement execute1: " + logElement.Element + " : " + logElement.LogType);
+                var rx = doPlayEventFor($elm, logElement);
+                //alert("playLogElement execute2: " + logElement.Element + " : " + logElement.LogType);
+                return rx;
             },
             function (loopCounter/*n-1..0*/) { //progress                             
             },
-            function (timedout) { //done
-                if (timedout) {
-                    alert('Error occured while playing events (Timeout exception)');
-                    window.external.SetLogElementAsDone(logElement.GUID);
+            function (error, errorMessage) { //done
+                if (error) {
+                    alert('Error occured while playing events (' + errorMessage + ')');
+                    window.external.SetLogElementAsDone(logElement.GUID, true, errorMessage);
                     return;
                 }
-                alert('the end');
-                window.external.SetLogElementAsDone(logElement.GUID);
+                //alert('the end');
+                window.external.SetLogElementAsDone(logElement.GUID, false, null);
             },
             timeoutInSec
         );
+        //alert("playLogElement called3: " + logElement.Element + " : " + logElement.LogType + " : loopTotal=" + loopTotal);
     }
 
     function playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
@@ -1539,13 +1575,17 @@
             roundStart = unixTimestamp();
 
         if (timeoutInSec && unixTimestamp() - roundStart > timeoutInSec) {
-            doneFunc(true);
+            doneFunc(true, 'Timeout occured');
             return;
         }
 
         setTimeout(function () {
             if (conditionFunc(loopCounter)) {
-                executeFunc(loopCounter);
+                var r = executeFunc(loopCounter);
+                if (r && !r.Success) {
+                    doneFunc(true, r.Message ? r.Message : 'Error occured');
+                    return;
+                }
                 if (progressFunc)
                     progressFunc(loopCounter);
                 playLoop(loopCounter - 1, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, undefined);
@@ -1565,7 +1605,8 @@
         var windowLeft = $window.scrollLeft();
         var windowWidth = $window.width();
         var windowHeight = $window.height();
-        var elmPosition = $elm.position();
+        //var elmPosition = $elm.position();
+        var elmPosition = $elm[0].getBoundingClientRect(); //also works with element with arbitrary margins
         var elmLeft = elmPosition.left;
         var elmTop = elmPosition.top;
 
@@ -1579,10 +1620,11 @@
     }
 
     function doPlayEventFor($elm, logElement) {
+        //alert(logElement.LogType);
         scrollToElement($elm);
 
         var logType = logElement.LogType;
-        var elementValue = JSON.parse(htmlDecode(logElement.Value));
+        var elementValue = JSON.parse(htmlDecode(logElement.Value));        
 
         var eventName = null;
 
@@ -1638,12 +1680,18 @@
                 //selectedInfo.text = elm.value.substring(startPos, endPos);
                 //selectedInfo.startPos = startPos;
                 //selectedInfo.endPos = endPos;
-                setSelectionText($elm[0], elementValue.startPos, elementValue.endPos);
 
-                var validateText = getSelectionInfo($elm[0]);
-                if (validateText != elementValue.text) {
+                //alert(JSON.stringify(logElement));
+                //alert(JSON.stringify(elementValue));               
+
+                setSelectionText($elm[0], elementValue.value.startPos, elementValue.value.endPos);
+                
+                var selectionInfo = getSelectionInfo($elm[0]);
+                if (selectionInfo.text != elementValue.value.text) {
+                    alert(selectionInfo.text);
+                    alert(elementValue.value.text);
                     alert('ERROR: Selection was not played successfully');
-                    return;
+                    return { Success: false, Message: "Selection was not played successfully" };
                 }
 
                 eventName = 'select';
@@ -1723,16 +1771,16 @@
             case LogType.OnScroll:
                 //Perform.scroll
                 eventName = 'scroll';
-                alert('scroll top=' + elementValue.top);
+                //alert('scroll top=' + elementValue.top);
                 $elm[0].scrollTo(elementValue.left, elementValue.top);                
                 break;
             default:
                 alert("LogType (" + logType + ") is not supported");
-                return;
+                return { Success: false, Message: "LogType (" + logType + ") is not supported" };
         }
 
         $.each(preCombinedLogTypes, function (preIdx, preCombinedLogType) {
-            doPlayEventFor(preCombinedLogType.LogType, $elm, preCombinedLogType);
+            doPlayEventFor($elm, preCombinedLogType);
         });
 
         callEventMethods($elm, elementValue, eventName);
@@ -1773,8 +1821,10 @@
         }
 
         $.each(postCombinedLogTypes, function (preIdx, postCombinedLogType) {
-            doPlayEventFor(postCombinedLogType.LogType, $elm, postCombinedLogType);
+            doPlayEventFor($elm, postCombinedLogType);
         });
+
+        return { Success: true };
     }
 
     function callEventMethods($elm, elementValue, eventName) {
@@ -1799,18 +1849,19 @@
 
     var publicMethods = {};
 
-    publicMethods.init = init;
+    publicMethods.getPrimaryForm = getPrimaryForm;
+    publicMethods.preInit = preInit;
+    publicMethods.postInit = postInit;
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
     publicMethods.now = now;
-    publicMethods.pushLogElementGUID = pushLogElementGUID;
+//    publicMethods.pushLogElementGUID = pushLogElementGUID;
     publicMethods.testmethod = function() {
         alert('weeehoooo');
         return 1337;
     }
     publicMethods.getSelectionInfo = getSelectionInfo;
-    publicMethods.playEventFor = playEventFor; //function playEventFor(logType, elementPath, logElement /*json*/) 
-    //publicMethods.playEventFor2 = playEventFor2;
+    publicMethods.playLogElement = playLogElement; 
     publicMethods.LogType = LogType;
     publicMethods.getJQueryElementByElementPath = getJQueryElementByElementPath;
     publicMethods.getElementPath = getElementPath;
@@ -1838,4 +1889,3 @@ $.fn.size = function () {
         return $.fn.origSize();
     return this.length;
 };
-

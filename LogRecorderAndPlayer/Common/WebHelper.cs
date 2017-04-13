@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
@@ -157,52 +160,113 @@ namespace LogRecorderAndPlayer
             return url + (url.IndexOf('?') == -1 ? "?" : "&") + tag + "=" + value;
         }
 
+        private static void ExecuteViewStateValueMatchesOrdered(string html, Action<Match> f)
+        {
+            var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
+            var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
+            var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
+
+            var lst = new List<Match> {rViewState.Match(html), rViewStateGenerator.Match(html), rEventValidation.Match(html)};
+
+            lst.Where(x => x.Success).OrderBy(x => x.Index).ToList().ForEach(f);
+        }
+
         public static NameValueCollection GetResponseViewState(string html)
         {
-            var doc1 = new HTMLDocument();
-            var doc2 = (IHTMLDocument2)doc1;
-            doc2.write(new object[] { html });
-
             var nvc = new NameValueCollection();
 
-            var enu = doc2.all.GetEnumerator();
-            while (enu.MoveNext())
+            ExecuteViewStateValueMatchesOrdered(html, m =>
             {
-                var elm = enu.Current;
-                if (elm is mshtml.HTMLInputElement)
-                {
-                    var input = (mshtml.HTMLInputElement)elm;
-                    if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
-                    {
-                        nvc[input.name] = input.value;
-                    }
-                }
-            }
+                var tagName = m.Groups[1].Value;
+                var value = m.Groups[2].Value;
+                nvc[tagName] = value;
+            });
 
             return nvc;
+            
+            //var doc1 = new HTMLDocument();
+            //var doc2 = (IHTMLDocument2)doc1;
+            //doc2.write(new object[] { html });
+
+
+            //var enu = doc2.all.GetEnumerator();
+            //while (enu.MoveNext())
+            //{
+            //    var elm = enu.Current;
+            //    if (elm is mshtml.HTMLInputElement)
+            //    {
+            //        var input = (mshtml.HTMLInputElement)elm;
+            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+            //        {
+            //            nvc[input.name] = input.value;
+            //        }
+            //    }
+            //}
         }
 
         public static string SetResponseViewState(string html, NameValueCollection nvc)
-        {
-            var doc1 = new HTMLDocument();
-            var doc2 = (IHTMLDocument2)doc1;
-            doc2.write(new object[] { html });
-
-            var enu = doc2.all.GetEnumerator();
-            while (enu.MoveNext())
+        {            
+            StringBuilder sb = new StringBuilder();
+            int currPosition = 0;
+            ExecuteViewStateValueMatchesOrdered(html, m =>
             {
-                var elm = enu.Current;
-                if (elm is mshtml.HTMLInputElement)
+                var tagName = m.Groups[1].Value;
+                var valueObj = m.Groups[2];
+                var value = nvc[tagName];
+                if (value != null)
                 {
-                    var input = (mshtml.HTMLInputElement)elm;
-                    if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
-                    {
-                        input.value = nvc[input.name];
-                    }
-                }
-            }
+                    sb.Append(html.Substring(currPosition, valueObj.Index - currPosition));
+                    sb.Append(value);
+                    currPosition = valueObj.Index + valueObj.Length;
 
-            return doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
+                    //html = html.Substring(0, valueObj.Index);
+                }
+            });
+            if (currPosition < html.Length)
+                sb.Append(html.Substring(currPosition));
+
+            return sb.ToString();
+
+            //var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
+            //var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
+            //var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
+
+            //var lst = new List<Match>();
+            //lst.Add(rViewState.Match(html));
+            //lst.Add(rViewStateGenerator.Match(html));
+            //lst.Add(rEventValidation.Match(html));
+
+            //lst = lst.Where(x => x.Success).OrderByDescending(x => x.Index).ToList();
+
+            //var nvc = new NameValueCollection();
+
+            //lst.ForEach(m =>
+            //{
+            //    var tagName = m.Groups[1].Value;
+            //    var value = m.Groups[2].Value;
+            //    nvc[tagName] = value;
+            //});
+
+            //var doc1 = new HTMLDocument();
+            //var doc2 = (IHTMLDocument2)doc1;
+            //doc2.write(new object[] { html });
+
+            //var enu = doc2.all.GetEnumerator();
+            //while (enu.MoveNext())
+            //{
+            //    var elm = enu.Current;
+            //    if (elm is mshtml.HTMLInputElement)
+            //    {
+            //        var input = (mshtml.HTMLInputElement)elm;
+            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
+            //        {
+            //            input.value = nvc[input.name];
+            //        }
+            //    }
+            //}
+
+            //var r = doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
+            //return r;
         }
     }
 }

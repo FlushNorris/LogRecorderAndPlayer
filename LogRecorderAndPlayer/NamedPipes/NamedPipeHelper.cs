@@ -36,9 +36,11 @@ namespace LogRecorderAndPlayer
             return (LogElementDTO)serverResponse.Data;
         }
 
-        public static void SetLogElementAsDone(Guid serverGUID, Guid pageGUID, Guid? logElementGUID, bool async)
+        public static void SetLogElementAsDone(Guid serverGUID, Guid pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)
         {
-            var data = new NamedPipeBrowserJob() {PageGUID = pageGUID, LogElementGUID = logElementGUID};
+            var async = false;
+
+            var data = new NamedPipeBrowserJob() {PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
 
             var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJobComplete, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);

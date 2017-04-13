@@ -92,24 +92,8 @@ namespace LogBrowser
                     var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value, SerializationType.Json);
                     FindBrowserAndExec(logElement.PageGUID, x => x.ResizeBrowser(browserResize, logElement.GUID));
                     break;
-                case LogType.OnScroll:
-                    var browserScroll = SerializationHelper.Deserialize<BrowserScroll>(logElement.Value, SerializationType.Json);
-                    FindBrowserAndExec(logElement.PageGUID, x => x.ScrollBrowser(browserScroll, logElement.GUID));
-                    break;
-                case LogType.OnMouseDown:
-                    var browserMouseDown = SerializationHelper.Deserialize<BrowserMouseDown>(logElement.Value, SerializationType.Json);
-                    browserMouseDown.element = logElement.Element;
-                    FindBrowserAndExec(logElement.PageGUID, x => x.MouseDownBrowser(browserMouseDown, logElement.GUID));
-                    break;
-                case LogType.OnFocus:
-                    MessageBox.Show("OnFocus");
-                    var browserFocus = SerializationHelper.Deserialize<BrowserFocus>(logElement.Value, SerializationType.Json);
-                    browserFocus.element = logElement.Element;
-                    FindBrowserAndExec(logElement.PageGUID, x => x.FocusBrowser(browserFocus, logElement.GUID));
-                    break;
                 default:
-                    MessageBox.Show($"Supportere ikke {logElement.LogType} endnu...");
-                    throw new Exception($"Supportere ikke {logElement.LogType} endnu...");
+                    FindBrowserAndExec(logElement.PageGUID, x => x.PerformLogElement(logElement));
                     break;
             }
 
@@ -132,16 +116,16 @@ namespace LogBrowser
             {                
                 browser = new BrowserForm(ServerGUID.Value, ProcessGUID.Value, pageGUID, url);
                 browser.FormClosing += Browser_FormClosing;
-                browser.OnJobCompleted += Browser_OnJobCompleted;          
+                browser.OnJobCompleted += Browser_OnJobCompleted;
                 Browsers.Add(browser);
                 browser.Show();
             }
         }
 
-        private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID)
+        private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus)
         {
-            MessageBox.Show("Send BrowserJobComplete to player");
-            NamedPipeHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, async: false); 
+            //MessageBox.Show("Send BrowserJobComplete to player");
+            NamedPipeHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
 
 //            NamedPipeHelper.SendBrowserJobComplete(ServerGUID.Value, new NamedPipeBrowserJob() { PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
         }       

@@ -46,7 +46,7 @@ range:<input id="i13" type="range" value="50" /><br/> <!-- default min/max is 0/
 color:<input id="i2" type="color" name="favcolor" value="#ff0000" /><br/> <!-- Not supported in IE, just shown like a normal input -->
 date:<input id="i3" type="date" value="12-12-2012" /><br/>  <!-- Not supported in IE, just shown like a normal input -->
 datetime-local:<input id="i4" type="datetime-local" value="12-12-2012" /><br/>  <!-- Not supported in IE, just shown like a normal input -->
-email:<input id="i5" type="email" value="1" /><br/> <!-- Not supported in IE -->
+email:<input id="i5" type="email" value="asd@asd.dk" /><br/> <!-- Not supported in IE -->
 hidden:<input id="i7" type="hidden" value="1" /><br/> <!-- input -->
 image:<input id="i8" type="image" value="1" /><br/> <!-- image, cannot change -->
 month:<input id="i9" type="month" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
@@ -58,7 +58,7 @@ submit:<input id="i16" type="submit" value="1" /><br/> <!-- Button -->
 tel:<input id="i17" type="tel" value="1" /><br/> <!-- shown like a normal input -->
 text:<input id="i18" type="text" value="1" /><br/> <!-- shown like a normal input, because it is.. text is default -->
 time:<input id="i19" type="time" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
-url:<input id="i20" type="url" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
+url:<input id="i20" type="url" value="http://www.itu.dk" /><br/> <!-- Not supported in IE, just shown like a normal input -->
 week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
     
 <input type="button" value="test input elements" onclick="testInputElements()"/>   
@@ -73,6 +73,8 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
 <input type="button" value="test playloop" onclick="playEventFor()"/>   
 <br><br>
 <input id="btnTestGetselectioninfo" type="button" value="test getselectioninfo" onclick="testGetSelectionInfo()"/>   
+<br><br>
+<input type="button" value="test location change" onclick="window.location='firstpage.aspx'"/>   
 
     
     <style>

@@ -88,7 +88,7 @@ namespace LogRecorderAndPlayer
         public static Guid? GetServerGUID(HttpContext context, Func<Guid?> defaultValue = null)
         {
             var requestServerGUID = context.Request?.Params[Consts.ServerGUIDTag];
-            if (requestServerGUID != null)
+            if (!String.IsNullOrWhiteSpace(requestServerGUID))
                 return new Guid(requestServerGUID);
             return defaultValue != null ? defaultValue() : null;
         }

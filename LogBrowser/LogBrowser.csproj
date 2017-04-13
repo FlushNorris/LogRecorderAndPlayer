@@ -56,10 +56,7 @@
     <Compile Include="BrowserForm.Designer.cs">
       <DependentUpon>BrowserForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Clientside\BrowserFocus.cs" />
-    <Compile Include="Clientside\BrowserScroll.cs" />
     <Compile Include="Clientside\BrowserResize.cs" />
-    <Compile Include="Clientside\BrowserMouseDown.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
