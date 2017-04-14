@@ -122,7 +122,9 @@ namespace LogRecorderAndPlayer
         OnDatabaseRequest = 33,
         OnDatabaseResponse = 34,
         OnHandlerSessionBefore = 35,
-        OnHandlerSessionAfter = 36
+        OnHandlerSessionAfter = 36,
+        OnSubmit = 37,
+        OnReset = 38
     }
 
     public static class LogTypeHelper
@@ -154,6 +156,8 @@ namespace LogRecorderAndPlayer
                 case LogType.OnDragOver:
                 case LogType.OnDrop:
                 case LogType.OnScroll:
+                case LogType.OnSubmit:
+                case LogType.OnReset:
                     return true;
                 case LogType.OnHandlerRequestReceived:
                 case LogType.OnHandlerResponseSend:

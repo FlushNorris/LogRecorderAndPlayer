@@ -231,6 +231,10 @@ namespace TestBrowser
                 sessionElement.State = SessionElementState.Waiting;
                 curr.Add(sessionElement);
             }
+            if (curr.Count > 0)
+            {
+                result.Add(curr);
+            }
 
             return result;
         }
@@ -493,10 +497,8 @@ namespace TestBrowser
             return StartNewEventsIfPossible();
         }
 
-        private NewEvent StartNewEventsIfPossible() //REMEMBER ONLY START CLIENTSIDE EVENTS!!! Serverside-events should have time to be executed before doing anything else...
+        private NewEvent StartNewEventsIfPossible() //REMEMBER ONLY START CLIENTSIDE EVENTS!!! Serverside-events should have time to be executed before doing anything else... Denne metode sender blot information videre via OnPlayElement-eventet, som sørger for ikke at starte eventet hvis det er serverside
         {
-            //Er jo lidt noget rod, for det første event som vil være et pagerequest event... skal ikke markeres som done, men siden skal kaldes med pageguid
-
             var lst = SessionElementOrderedList[CurrentIndex];
             if (lst.Any(x => x.State == SessionElementState.Playing))
                 return NewEvent.WaitingForOtherClientEvents; //Still waiting for at least one element to complete
@@ -510,7 +512,8 @@ namespace TestBrowser
             lst = SessionElementOrderedList[CurrentIndex];
             foreach (var sessionElement in lst.Where(x => x.Session.State == SessionState.Playing || x.Session.State == SessionState.WaitingForStartingElement && IsValidStartingEvent(x)))
             {
-                LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType)
+                //if (LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType))
+                //{}
 
                 sessionElement.Session.State = SessionState.Playing;
                 sessionElement.State = SessionElementState.Playing;
@@ -612,7 +615,10 @@ namespace TestBrowser
                     return Color.Brown;
                 case LogType.OnDblClick:
                     return Color.RosyBrown;
-                case LogType.OnSearch:                    
+                case LogType.OnSubmit:
+                    return Color.BlueViolet;
+                case LogType.OnReset:
+                case LogType.OnSearch:
                 case LogType.OnResize:
                 case LogType.OnDragStart:
                 case LogType.OnDragEnd:

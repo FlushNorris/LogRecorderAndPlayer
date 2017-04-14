@@ -67,6 +67,8 @@
     <Compile Include="Dynamic\DynAssembly.cs" />
     <Compile Include="HTTP\HttpHandler.cs" />
     <Compile Include="HTTP\HttpModule.cs" />
+    <Compile Include="HTTP\RequestFilter.cs" />
+    <Compile Include="HTTP\ResponseFilter.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILoggingPersister.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />

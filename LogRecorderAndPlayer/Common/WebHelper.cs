@@ -162,13 +162,10 @@ namespace LogRecorderAndPlayer
 
         private static void ExecuteViewStateValueMatchesOrdered(string html, Action<Match> f)
         {
-            var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
-            var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
-            var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
+            var regExs = Consts.ViewStateFormFields.Select(formField => new Regex($"<input.+\"({formField})\".*value=\"(.*)\".*/>"));
+            var matches = regExs.Select(x => x.Match(html));
 
-            var lst = new List<Match> {rViewState.Match(html), rViewStateGenerator.Match(html), rEventValidation.Match(html)};
-
-            lst.Where(x => x.Success).OrderBy(x => x.Index).ToList().ForEach(f);
+            matches.Where(x => x.Success).OrderBy(x => x.Index).ToList().ForEach(f);
         }
 
         public static NameValueCollection GetResponseViewState(string html)
@@ -267,6 +264,35 @@ namespace LogRecorderAndPlayer
 
             //var r = doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
             //return r;
+        }
+
+        //https://msdn.microsoft.com/en-us/library/system.web.httprequest.params(v=vs.110).aspx
+        public static NameValueCollection ParamsWithSpecialRequestForm(HttpContext context, NameValueCollection requestForm)
+        {
+            var nvc = new NameValueCollection();
+            if (context != null && context.Request != null)
+                nvc.Add(context.Request.QueryString);
+
+            if (requestForm != null)
+                nvc.Add(requestForm);
+            else if (context != null && context.Request != null)
+                nvc.Add(context.Request.Form);
+
+            if (context != null && context.Request != null)
+            {
+                context.Request.Cookies.AllKeys.ToList().ForEach(x =>
+                {
+                    var cv = context.Request.Cookies[x];
+                    if (cv != null)
+                    {
+                        nvc.Add(x, cv.Value);
+                    }
+                });
+
+                nvc.Add(context.Request.ServerVariables);
+            }
+
+            return nvc;
         }
     }
 }

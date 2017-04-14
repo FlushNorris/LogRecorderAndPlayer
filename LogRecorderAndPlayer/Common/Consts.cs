@@ -15,6 +15,22 @@ namespace LogRecorderAndPlayer
         //public static readonly string ProgressGUIDTag = "lrap-progressguid";
         public static readonly string ServerGUIDTag = "lrap-serverguid"; //For the namedpipe-connection to the LogPlayer
 
+        public static readonly string[] LRAPFormFields = new string[]
+        {
+            GUIDTag,
+            SessionGUIDTag,
+            PageGUIDTag,
+            BundleGUIDTag,
+            ServerGUIDTag
+        };
+
+        public static readonly string[] ViewStateFormFields = new string[]
+        {
+            "__VIEWSTATE",
+            "__VIEWSTATEGENERATOR",
+            "__EVENTVALIDATION"
+        };
+
         public static readonly string[] ForbiddenRequestParams = new string[] {
             "ASP.NET_SessionId",
             "ALL_HTTP",

@@ -218,12 +218,32 @@ namespace ConsoleApp2
             //    Console.WriteLine("Nej");
             //}
 
-            var nvc = GetResponseViewState(s);
-            nvc.AllKeys.ToList().ForEach(x => nvc[x] = "???");
+            /////////////////////////////////////////////////////
 
-            var html2 = SetResponseViewState(s, nvc);
+            //var nvc = GetResponseViewState(s);
+            //nvc.AllKeys.ToList().ForEach(x => nvc[x] = "???");
 
-            Console.Write(html2);
+            //var html2 = SetResponseViewState(s, nvc);
+
+            //Console.Write(html2);
+
+            /////////////////////////////////////////////////////
+
+            var nvc1 = new NameValueCollection();
+            nvc1["rip"] = "and";
+            nvc1["rap"] = "and";
+            nvc1["rup"] = "and";
+
+            var nvc2 = new NameValueCollection();
+            nvc2["super"] = "mand";
+            nvc2["bat"] = "mand";
+            nvc2["spider"] = "mand";
+
+            var nvc3 = new NameValueCollection();
+            nvc3.Add(nvc1);
+            nvc3.Add(nvc2);
+
+            Console.WriteLine(string.Join(" ", nvc3.AllKeys));
 
             Console.ReadKey(true);
 

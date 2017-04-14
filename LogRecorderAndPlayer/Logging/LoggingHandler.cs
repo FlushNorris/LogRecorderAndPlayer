@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,19 +10,19 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingHandler
     {
-        public static void LogRequest(HttpContext context)
+        public static void LogRequest(HttpContext context, NameValueCollection requestForm)
         {
             LoggingHelper.LogElement(new LogElementDTO(
-                guid: LoggingHelper.GetInstanceGUID(context, () => new Guid()).GetValueOrDefault(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid()).GetValueOrDefault(),
-                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid()).GetValueOrDefault(),
-                bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid()).GetValueOrDefault(),
+                guid: LoggingHelper.GetInstanceGUID(context, () => new Guid(), requestForm).GetValueOrDefault(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid(), requestForm).GetValueOrDefault(),
+                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid(), requestForm).GetValueOrDefault(),
+                bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid(), requestForm).GetValueOrDefault(),
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: LogType.OnHandlerRequestReceived,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: null,
-                value: SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json),
+                value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null
             ));
@@ -50,7 +51,7 @@ namespace LogRecorderAndPlayer
             return response;
         }
 
-        public static void LogSession(HttpContext context, bool before)
+        public static void LogSession(HttpContext context, NameValueCollection requestForm, bool before)
         {
             var sessionValues = LoggingHelper.GetSessionValues(context);
             if (sessionValues == null)
@@ -58,8 +59,8 @@ namespace LogRecorderAndPlayer
 
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid()).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid()).Value,
+                sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid(), requestForm).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, null, () => new Guid(), requestForm).Value,
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),

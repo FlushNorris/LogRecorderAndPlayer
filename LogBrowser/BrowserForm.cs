@@ -27,6 +27,8 @@ namespace LogBrowser
         public Guid PageGUID { get; set; }
         private string StartingURL { get; set; }
 
+        private bool IsNavigating { get; set; } = true;
+
         public BrowserForm(Guid serverGUID, Guid sessionGUID, Guid pageGUID, string url)
         {
             if (serverGUID.Equals(new Guid()))
@@ -115,10 +117,9 @@ namespace LogBrowser
 
         private void webBrowser_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
         {
-            //MessageBox.Show("Complete!!");
+            IsNavigating = false;
             OnJobCompleted?.Invoke(this, null, new JobStatus() {Success = true});
             //webBrowser.Url = new Uri("javascript:$('input').val('hest');alert('1');");
-
         }
 
         public void ResizeBrowser(BrowserResize browserResize, Guid logElementGUID)
@@ -147,7 +148,7 @@ namespace LogBrowser
                     {
                         this.Invoke(new MethodInvoker(delegate
                         {
-                            if (webBrowser.Document != null)
+                            if (webBrowser.Document != null && !IsNavigating)
                             {
                                 finished = true;
                             }
@@ -255,6 +256,11 @@ namespace LogBrowser
             //var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.getJQueryElementByElementPath('#form1,3!DIV,3!INPUT:not([type])').val('WHAT')" });            
         }
 
+        private void webBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
+        {
+            IsNavigating = true;
+        }
+
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
         //{
         //    var link = (HtmlElement)sender;
@@ -314,6 +320,11 @@ namespace LogBrowser
         public void OpenNewTab(object obj)
         {
             MessageBox.Show($"OpenNewTab: {obj.ToString()}");
+        }
+
+        public void DebugMethod(object obj)
+        {
+            MessageBox.Show("Debug : " + obj.ToString());
         }
 
         public void SetLogElementAsDone(object obj, bool error, string errorMessage)

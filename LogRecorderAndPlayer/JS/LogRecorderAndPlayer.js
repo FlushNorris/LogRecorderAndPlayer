@@ -155,7 +155,9 @@
         OnDatabaseRequest: 33,
         OnDatabaseResponse: 34,
         OnHandlerSessionBefore: 35,
-        OnHandlerSessionAfter: 36
+        OnHandlerSessionAfter: 36,
+        OnSubmit: 37,
+        OnReset: 38
     }; //Hover etc results in too many event, describe this...!
 
     function postInit(sessionGUID, pageGUID, serverGUID/*for playing*/) {
@@ -231,7 +233,7 @@
         callLogHandler(false/*async*/, undefined, function() {
             setupLogger();
         });
-    }    
+    }
 
     function getSelectionInfo(elm) {
         var selectedInfo = null;
@@ -696,13 +698,13 @@
 
     function setupAllClientsideControlEvents() {
         var $document = $(document);
-        $document.on('submit', 'form', function () {
-            logElementEx(LogType.OnSubmit, getElementPath(this), "");
-        });
+        //$document.on('submit', 'form', function (e) { //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
+        //    logElementEx(LogType.OnSubmit, getElementPath(this), "");
+        //});
 
-        $document.on('reset', 'form', function () {
-            logElementEx(LogType.OnReset, getElementPath(this), "");
-        });
+        //$document.on('reset', 'form', function () { //ignore event, will be handled by reset-button.. or by other kind of action which calls reset()
+        //    logElementEx(LogType.OnReset, getElementPath(this), "");
+        //});
 
         setupBasicClientsideControlEvents("a");
         setupBasicClientsideControlEvents("p");
@@ -717,7 +719,7 @@
         setupInputClientsideControlEvents("input"); 
         setupInputClientsideControlEvents("select"); 
 
-        $document.on('search', "input[type=search]", function () {
+        $document.on('search', "input[type=search]", function () { //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
             logElementEx(LogType.OnSearch, getElementPath(this), $(this).val());
         });
 
@@ -1515,6 +1517,7 @@
     }
 
     function playLogElement(logElement /*json*/) {
+
         //setTimeout(function() {
         //    window.external.SetLogElementAsDone(0, false, 'woohooo timed!');
         //}, 3000);
@@ -1738,7 +1741,8 @@
                 break;
             case LogType.OnClick:
                 //Only call event
-                eventName = 'click';
+                //eventName = 'click';
+                $elm.click(); //e.g. to support submit-buttons, and therefore no need of calling events manually
                 break;
             case LogType.OnDblClick:
                 //Only call event
@@ -1774,6 +1778,12 @@
                 //alert('scroll top=' + elementValue.top);
                 $elm[0].scrollTo(elementValue.left, elementValue.top);                
                 break;
+            case LogType.OnSubmit:
+                //eventName = 'submit'; //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
+                break;
+            case LogType.OnReset:
+                //eventName = 'reset'; //ignore event, will be handled by reset-button.. or by other kind of action which calls reset()
+                break;
             default:
                 alert("LogType (" + logType + ") is not supported");
                 return { Success: false, Message: "LogType (" + logType + ") is not supported" };
@@ -1783,7 +1793,10 @@
             doPlayEventFor($elm, preCombinedLogType);
         });
 
-        callEventMethods($elm, elementValue, eventName);
+
+        if (eventName) {
+            callEventMethods($elm, elementValue, eventName);
+        }
 
         //Post-section
         switch (logType) {
@@ -1806,16 +1819,9 @@
                     }
                     newValue = value.substring(0, startPos) + elementValue.value.ch + value.substring(endPos);
                     $elm.val(newValue);
+                    //alert('keypress : ' + newValue);
                 }
-
-                //Jeg er nået til dette event.. som jo skal rette på $elm.val, burde nok gøre det via caretPos og selvfølgelig den charcode
-                //var v = {
-                //charCode: charCode,
-                //ch: ch,
-                //shiftKey: event.shiftKey,
-                //altKey: event.altKey,
-                //ctrlKey: event.ctrlKey,
-                //caretPos: getCaretPositionRelativeToEnd(this)                
+                //alert('keypress done');
 
                 break;
         }

@@ -43,7 +43,26 @@ namespace TestBrowser
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             if (namedPipeBrowserJob.LogElementGUID.HasValue) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
             {
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new MethodInvoker(delegate
+                    {
+                        textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
+                    }));
+                }
+                else
+                {
+                    textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
+                }
+
+                //if (namedPipeBrowserJob.LogElementGUID.Value.ToString().ToLower().IndexOf("f303") == 0)
+                //{
+                //    MessageBox.Show("!!!!");
+                //}
+
+                //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete1: {namedPipeBrowserJob.LogElementGUID.Value}");
                 var newEvent = eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.LogElementGUID.Value);
+                //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete2: {namedPipeBrowserJob.LogElementGUID.Value} : {newEvent}");
                 if (newEvent == EventsTable.NewEvent.None)
                 {
                     

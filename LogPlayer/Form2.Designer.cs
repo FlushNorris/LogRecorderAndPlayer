@@ -31,6 +31,7 @@
             this.eventsTable1 = new TestBrowser.EventsTable();
             this.txtBaseUrl = new System.Windows.Forms.TextBox();
             this.txtPath = new System.Windows.Forms.TextBox();
+            this.textBox1 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // eventsTable1
@@ -39,7 +40,8 @@
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.eventsTable1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.eventsTable1.Location = new System.Drawing.Point(12, 57);
+            this.eventsTable1.Location = new System.Drawing.Point(6, 257);
+            this.eventsTable1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.eventsTable1.Name = "eventsTable1";
             this.eventsTable1.PageElements = 100;
             this.eventsTable1.PageIndex = 0;
@@ -47,35 +49,47 @@
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.eventsTable1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.eventsTable1.Size = new System.Drawing.Size(751, 483);
+            this.eventsTable1.Size = new System.Drawing.Size(376, 251);
             this.eventsTable1.TabIndex = 0;
             // 
             // txtBaseUrl
             // 
-            this.txtBaseUrl.Location = new System.Drawing.Point(429, 12);
+            this.txtBaseUrl.Location = new System.Drawing.Point(214, 6);
+            this.txtBaseUrl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.txtBaseUrl.Name = "txtBaseUrl";
-            this.txtBaseUrl.Size = new System.Drawing.Size(334, 31);
+            this.txtBaseUrl.Size = new System.Drawing.Size(169, 20);
             this.txtBaseUrl.TabIndex = 3;
             this.txtBaseUrl.Text = "http://localhost:61027";
             // 
             // txtPath
             // 
-            this.txtPath.Location = new System.Drawing.Point(12, 12);
+            this.txtPath.Location = new System.Drawing.Point(6, 6);
+            this.txtPath.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.txtPath.Name = "txtPath";
-            this.txtPath.Size = new System.Drawing.Size(381, 31);
+            this.txtPath.Size = new System.Drawing.Size(192, 20);
             this.txtPath.TabIndex = 4;
             this.txtPath.Text = "c:\\WebApplicationJSON";
             // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(6, 31);
+            this.textBox1.Multiline = true;
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(377, 221);
+            this.textBox1.TabIndex = 5;
+            // 
             // Form2
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoScroll = true;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(841, 598);
+            this.ClientSize = new System.Drawing.Size(420, 525);
+            this.Controls.Add(this.textBox1);
             this.Controls.Add(this.txtPath);
             this.Controls.Add(this.txtBaseUrl);
             this.Controls.Add(this.eventsTable1);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "Form2";
             this.Text = "Form2";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form2_FormClosing);
@@ -91,5 +105,6 @@
         private EventsTable eventsTable1;
         private System.Windows.Forms.TextBox txtBaseUrl;
         private System.Windows.Forms.TextBox txtPath;
+        private System.Windows.Forms.TextBox textBox1;
     }
 }

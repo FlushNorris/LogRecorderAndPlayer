@@ -24,6 +24,50 @@ namespace LogRecorderAndPlayer
             context.EndRequest += Context_EndRequest; //After page
         }
 
+        private void Context_BeginRequest(object sender, EventArgs e)
+        {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+                return;
+
+            //var requestCallback = new Func<string, string>(content => {
+            //    throw new Exception("godt saa");
+            //});
+
+            //this.context.Request.Filter = new RequestFilter(this.context.Request.Filter, context.Request.ContentEncoding, requestCallback);
+
+            watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
+            this.context.Response.Filter = watcher;
+        }
+
+        private void Context_PostMapRequestHandler(object sender, EventArgs e)
+        {
+            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+                return;
+
+            HttpApplication app = (HttpApplication)sender;
+            HttpContext context = app.Context;
+            string filePath = context.Request.FilePath;
+            string fileExtension = VirtualPathUtility.GetExtension(filePath);
+
+            try
+            {
+                if (fileExtension.ToLower().Equals(".aspx"))
+                {
+                    var page = (Page)context.CurrentHandler;
+
+                    if (page != null)
+                    {
+                        SetupPageEvent(page, "PreLoad");
+                        SetupPageEvent(page, "InitComplete");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(filePath + " : " + ex.Message);
+            }
+        }
+
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
             if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
@@ -41,21 +85,36 @@ namespace LogRecorderAndPlayer
             var handler = context?.CurrentHandler as IHttpHandler;
             if (page != null || handler != null)
             {
-                LoggingHelper.SetupSession(context, page);
-                LoggingHelper.SetupPage(context, page);
-            }
+                //https://github.com/snives/HttpModuleRewrite
+                bool requestCallbackExecuted = false;
+                var requestCallback = new Func<string, string>(content =>
+                {
+                    requestCallbackExecuted = true;
+                    var requestForm = content != null ? HttpUtility.ParseQueryString(content) : null;
 
-            if (page != null)
-            {
-                LoggingPage.LogSession(context, page, before: true);
-                LoggingPage.LogRequest(context, page);
+                    LoggingHelper.SetupSession(context, page, requestForm);
+                    LoggingHelper.SetupPage(context, page, requestForm);
 
-                //context.Request.ContentType
-            }
-            else if (handler != null)
-            {
-                LoggingHandler.LogSession(context, before: true);
-                LoggingHandler.LogRequest(context);
+                    if (page != null)
+                    {
+                        LoggingPage.LogSession(context, page, requestForm, before: true);
+                        LoggingPage.LogRequest(context, page, requestForm);
+                    }
+                    else if (handler != null)
+                    {
+                        LoggingHandler.LogSession(context, requestForm, before: true);
+                        LoggingHandler.LogRequest(context, requestForm);
+                    }
+
+
+                    return requestForm?.ToString();
+                });
+                this.context.Request.Filter = new RequestFilter(this.context.Request.Filter, context.Request.ContentEncoding, requestCallback);
+
+                if (this.context.Request.Form == null || !requestCallbackExecuted)
+                {
+                    requestCallback(null);
+                }
             }
         }
 
@@ -77,37 +136,8 @@ namespace LogRecorderAndPlayer
                 if (page != null)
                 {
                     LoggingPage.LogViewState(context, page, before: false);
-                    LoggingPage.LogSession(context, page, before: false);
+                    LoggingPage.LogSession(context, page, requestForm: null, before: false);
                 }
-            }
-        }
-
-        private void Context_PostMapRequestHandler(object sender, EventArgs e)
-        {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
-                return;
-
-            HttpApplication app = (HttpApplication) sender;
-            HttpContext context = app.Context;
-            string filePath = context.Request.FilePath;
-            string fileExtension = VirtualPathUtility.GetExtension(filePath);
-
-            try
-            {
-                if (fileExtension.ToLower().Equals(".aspx"))
-                {
-                    var page = (Page) context.CurrentHandler;
-
-                    if (page != null)
-                    {
-                        SetupPageEvent(page, "PreLoad");
-                        SetupPageEvent(page, "InitComplete");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(filePath + " : " + ex.Message);
             }
         }
 
@@ -132,16 +162,7 @@ namespace LogRecorderAndPlayer
 
             eventInfo.RemoveEventHandler(page, d);
             eventInfo.AddEventHandler(page, d);
-        }
-
-        private void Context_BeginRequest(object sender, EventArgs e)
-        {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
-                return;
-
-            watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
-            this.context.Response.Filter = watcher;
-        }
+        }        
 
         private void Context_EndRequest(object sender, EventArgs e)
         {

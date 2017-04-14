@@ -34,6 +34,7 @@
             this.lstPages = new System.Windows.Forms.ListBox();
             this.txtSession = new System.Windows.Forms.TextBox();
             this.refreshTimer = new System.Windows.Forms.Timer(this.components);
+            this.textBox1 = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // label1
@@ -63,10 +64,10 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstPages.FormattingEnabled = true;
             this.lstPages.Location = new System.Drawing.Point(56, 25);
-            this.lstPages.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.lstPages.Margin = new System.Windows.Forms.Padding(2);
             this.lstPages.Name = "lstPages";
             this.lstPages.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.lstPages.Size = new System.Drawing.Size(529, 433);
+            this.lstPages.Size = new System.Drawing.Size(698, 212);
             this.lstPages.TabIndex = 2;
             // 
             // txtSession
@@ -74,10 +75,10 @@
             this.txtSession.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtSession.Location = new System.Drawing.Point(56, 7);
-            this.txtSession.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtSession.Margin = new System.Windows.Forms.Padding(2);
             this.txtSession.Name = "txtSession";
             this.txtSession.ReadOnly = true;
-            this.txtSession.Size = new System.Drawing.Size(529, 20);
+            this.txtSession.Size = new System.Drawing.Size(698, 20);
             this.txtSession.TabIndex = 3;
             // 
             // refreshTimer
@@ -86,16 +87,25 @@
             this.refreshTimer.Interval = 1000;
             this.refreshTimer.Tick += new System.EventHandler(this.refreshTimer_Tick);
             // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(56, 242);
+            this.textBox1.Multiline = true;
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(690, 495);
+            this.textBox1.TabIndex = 4;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(589, 470);
+            this.ClientSize = new System.Drawing.Size(758, 749);
+            this.Controls.Add(this.textBox1);
             this.Controls.Add(this.txtSession);
             this.Controls.Add(this.lstPages);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "MainForm";
             this.Text = "MainForm";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
@@ -112,5 +122,6 @@
         private System.Windows.Forms.ListBox lstPages;
         private System.Windows.Forms.TextBox txtSession;
         private System.Windows.Forms.Timer refreshTimer;
+        private System.Windows.Forms.TextBox textBox1;
     }
 }

@@ -83,6 +83,11 @@ namespace LogBrowser
 
         private NamedPipeServerResponse ServiceInstanse_OnBrowserJob(LogElementDTO logElement)
         {
+            //if (logElement.GUID.ToString().ToLower().IndexOf("caa1") == 0)
+            //{
+            //    MessageBox.Show("what?");
+            //}
+
             switch (logElement.LogType)
             {
                 case LogType.OnPageSessionBefore: //Burde jeg slå alle disse page pagerequest-events sammen?... nej, da der kan være event kald imellem eventsene
@@ -124,7 +129,20 @@ namespace LogBrowser
 
         private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate
+                {
+                    textBox1.AppendText(logElementGUID.ToString()+Environment.NewLine);
+                }));
+            }
+            else
+            {
+                textBox1.AppendText(logElementGUID.ToString() + Environment.NewLine);
+            }
+
             //MessageBox.Show("Send BrowserJobComplete to player");
+            //MessageBox.Show($"jobcomplete: logElementGUID={logElementGUID}");
             NamedPipeHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
 
 //            NamedPipeHelper.SendBrowserJobComplete(ServerGUID.Value, new NamedPipeBrowserJob() { PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
