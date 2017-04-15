@@ -13,6 +13,11 @@
     Client textbox with no id and no class, but with type: <input type="text"/><br/>
     <br/>
     <br/>
+    <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/>
+    Input for generic handler: <input id="inputValueForGenericHandler" style="width:300px"/><br/>
+    Output for generic handler: <input id="outputValueForGenericHandler" style="width:300px"/><br/>
+    <br/>
+    <br/>
     <a href="http://www.google.dk">Google default</a><br/>
     <a href="http://www.google.dk" target="_blank">Google _blank</a><br/>
     <a href="http://www.google.dk" target="_self">Google _self</a><br/>
@@ -737,14 +742,25 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
             counter++;
         });
 
-        $document.on('submit', 'form', function (e) {
-            //alert('submit');
-            //alert(e);
+        $("#btncallgenerichandler").on('click', function () {
+            var request = {
+                SomeValue: $("#inputValueForGenericHandler").val()
+            };
+            //alert('firstpage ajax send first');
+            $.ajax({
+                url: "/TestHandler.ashx",
+                data: {
+                    'request': JSON.stringify(request)
+                },
+                success: function (data) {
+                    $("#outputValueForGenericHandler").val(data.SomeValue);
+                },
+                error: function (data) {
+                    $.alert("Error occured while calling TestHandler.ashx", "Error");
+                }
+            });
         });
 
-        $("#ContentPlaceHolder1_serverButton2").on('click', function() {
-            alert(1337);
-        });
 
 
         //Event.prototype.stopImmediatePropagation = function () { alert('abc'); }
@@ -752,6 +768,31 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
         //$('input').on('click', function (e) {
         //    e.stopPropagation();
         //})
+
+        $.extend({
+            alert: function (message, title, closeFn) {
+                $("<div></div>").dialog({
+                    buttons: { "Ok": function () { $(this).dialog("close"); } },
+                    close: function (event, ui) {
+                        $(this).remove();
+                        if (closeFn) closeFn();
+                    },
+                    resizable: false,
+                    title: title,
+                    modal: true
+                }).text(message);
+            }
+        });
+
+        //$.ajaxSetup({
+        //    beforeSend: function () {
+        //        alert('test before send');
+        //    },
+        //    success: function () {
+        //        //$(".button").button("enable");
+        //    }
+        //});
+
 
     </script>
 

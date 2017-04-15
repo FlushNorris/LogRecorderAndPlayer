@@ -186,13 +186,21 @@
             if (options.LRAPCall) { //To avoid recurrency when logging via LRAP
                 return;
             }
+
             options.lrapSessionGUID = getSessionGUID();
             options.lrapPageGUID = getPageGUID();
             options.lrapBundleGUID = generateGUID();
             options.lrapOrigURL = options.url;
 
             logElement(options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, null, unixTimestamp(), LogType.OnHandlerRequestSend, options.lrapOrigURL, JSON.stringify(options.data));
-            options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID);
+            handleLogElements(false);
+            options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, getServerGUID());
+
+            if (window.external && window.external.SetLogElementAsDone) {
+                window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
+            }
+
+            //window.external.SetLogElementAsDone(logElement.GUID, false, null);
 
             //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
         });
@@ -213,6 +221,11 @@
                 LogType.OnHandlerResponseReceived,
                 options.lrapOrigURL,
                 JSON.stringify(xhr));
+            handleLogElements(false);
+
+            if (window.external && window.external.SetLogElementAsDone) {
+                window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
+            }
 
             //handleLogElements();
             //Because this global ajaxComplete is called after the $.ajax-instance's success/complete/error which could do a redirect of the page, we are called.. but so late that the logelement-timer is no longer active, therefore
@@ -805,7 +818,9 @@
             success: function (data) {
                 var clientTimeEnd = unixTimestamp();
                 var ntpR = ntp(clientTimeStart, data.ServerTimeStart, data.ServerTimeEnd, clientTimeEnd);
-                clientTimeOffset = ntpR.offset;
+                clientTimeOffset = ntpR.offset+1; //FUCK Network Time Protocol!!!
+
+                //alert(clientTimeOffset);
 
                 if (fSuccess)
                     fSuccess();
@@ -1130,11 +1145,22 @@
         return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
 
-    function getHandlerUrlForLogging(url, sessionGUID, pageGUID, bundleGUID) {
-        url = addQryStrElement(removeQryStrElement(url, GUIDTag), GUIDTag, generateGUID());
-        url = addQryStrElement(removeQryStrElement(url, SessionGUIDTag), SessionGUIDTag, sessionGUID);
-        url = addQryStrElement(removeQryStrElement(url, PageGUIDTag), PageGUIDTag, pageGUID);
-        url = addQryStrElement(removeQryStrElement(url, BundleGUIDTag), BundleGUIDTag, bundleGUID);
+    function stripLRAPFromUrl(url) {
+        url = removeQryStrElement(url, GUIDTag);
+        url = removeQryStrElement(url, SessionGUIDTag);
+        url = removeQryStrElement(url, PageGUIDTag);
+        url = removeQryStrElement(url, BundleGUIDTag);
+        url = removeQryStrElement(url, ServerGUIDTag);
+        return url;
+    }
+
+    function getHandlerUrlForLogging(url, sessionGUID, pageGUID, bundleGUID, serverGUID) {
+        url = stripLRAPFromUrl(url);
+        url = addQryStrElement(url, GUIDTag, generateGUID());
+        url = addQryStrElement(url, SessionGUIDTag, sessionGUID);
+        url = addQryStrElement(url, PageGUIDTag, pageGUID);
+        url = addQryStrElement(url, BundleGUIDTag, bundleGUID);
+        url = addQryStrElement(url, ServerGUIDTag, serverGUID);
         return url;
     }
 

@@ -203,16 +203,21 @@ namespace LogRecorderAndPlayer
                 //return defaultValue != null ? defaultValue() : null;
             }
 
-            var viewState = WebHelper.GetViewState(page);
+            if (page != null)
+            {
+                var viewState = WebHelper.GetViewState(page);
 
-            v = viewState[Consts.SessionGUIDTag] as Guid?;
-            if (v != null)
-                return v;
+                v = viewState[Consts.SessionGUIDTag] as Guid?;
+                if (v != null)
+                    return v;
 
-            var sessionGUID = page.Session[Consts.SessionGUIDTag] as Guid?;
-            if (sessionGUID == null)
-                return defaultValue != null ? defaultValue() : null;
-            return sessionGUID;
+                var sessionGUID = page.Session[Consts.SessionGUIDTag] as Guid?;
+                if (sessionGUID == null)
+                    return defaultValue != null ? defaultValue() : null;
+                return sessionGUID;
+            }
+
+            return null;
         }
 
         public static bool SetSessionGUID(HttpSessionState session, Guid sessionGUID)
@@ -248,11 +253,22 @@ namespace LogRecorderAndPlayer
             };
 
             var logElementResponse = new LogElementResponse();
-            foreach (var logElement in request.LogElements)
+            if (request.LogElements.Length > 0)
             {
-                logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
-                logElement.Value = logElement.Value != null ? HttpUtility.HtmlDecode(logElement.Value) : null; //Has to be encoded when sending from client to server, due to asp.net default security
-                logElementResponse += LogElement(logElement);
+                var maxClientUnixTimestamp = request.LogElements.Max(x => x.UnixTimestamp);
+                var serverUnixTimestamp = TimeHelper.UnixTimestamp();
+                var diffUnixTimestamp = maxClientUnixTimestamp - serverUnixTimestamp;
+                if (diffUnixTimestamp > 0)
+                {
+                    request.LogElements.ToList().ForEach(x => x.UnixTimestamp -= diffUnixTimestamp);
+                }
+
+                foreach (var logElement in request.LogElements)
+                {
+                    logElement.Element = HttpUtility.HtmlDecode(logElement.Element); //Has to be encoded when sending from client to server, due to asp.net default security
+                    logElement.Value = logElement.Value != null ? HttpUtility.HtmlDecode(logElement.Value) : null; //Has to be encoded when sending from client to server, due to asp.net default security
+                    logElementResponse += LogElement(logElement);
+                }
             }
 
             logHandlerResponse.Success = logElementResponse.Success;
@@ -267,6 +283,13 @@ namespace LogRecorderAndPlayer
             try
             {
                 var config = ConfigurationHelper.GetConfigurationSection();
+
+                if (TimeHelper.UnixTimestamp() < logElement.UnixTimestamp)
+                {
+                    logElement.Element = "ARGHARGH";
+                    logElement.Value = "ARGHARGH";
+                }
+
                 GetLoggingPersister(config.LogType).LogElement(config.FilePath, logElement);
 
                 return new LogElementResponse() {Success = true};

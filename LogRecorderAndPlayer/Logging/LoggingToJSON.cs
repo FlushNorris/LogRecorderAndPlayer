@@ -71,9 +71,10 @@ namespace LogRecorderAndPlayer
 
         public void LogElement(string filePath, LogElementDTO logElement)
         {
-            return;
+            //return;
             var fileName = BuildFilePath(logElement, filePath);
 
+            Console.WriteLine(fileName);
             var f = File.CreateText(fileName);
             try
             {

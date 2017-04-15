@@ -229,24 +229,54 @@ namespace ConsoleApp2
 
             /////////////////////////////////////////////////////
 
-            var nvc1 = new NameValueCollection();
-            nvc1["rip"] = "and";
-            nvc1["rap"] = "and";
-            nvc1["rup"] = "and";
+            //var nvc1 = new NameValueCollection();
+            //nvc1["rip"] = "and";
+            //nvc1["rap"] = "and";
+            //nvc1["rup"] = "and";
 
-            var nvc2 = new NameValueCollection();
-            nvc2["super"] = "mand";
-            nvc2["bat"] = "mand";
-            nvc2["spider"] = "mand";
+            //var nvc2 = new NameValueCollection();
+            //nvc2["super"] = "mand";
+            //nvc2["bat"] = "mand";
+            //nvc2["spider"] = "mand";
 
-            var nvc3 = new NameValueCollection();
-            nvc3.Add(nvc1);
-            nvc3.Add(nvc2);
+            //var nvc3 = new NameValueCollection();
+            //nvc3.Add(nvc1);
+            //nvc3.Add(nvc2);
 
-            Console.WriteLine(string.Join(" ", nvc3.AllKeys));
+            //Console.WriteLine(string.Join(" ", nvc3.AllKeys));
+
+            //////////////////////////////////////////////////
+
+            var u1 = TimeHelper.UnixTimestamp();
+            var dt1 = TimeHelper.UnixTimeStampToDateTime(u1).ToString("yyyyMMddHHmmssffffff");
+            var u2 = TimeHelper.UnixTimestamp();
+            var dt2 = TimeHelper.UnixTimeStampToDateTime(u2).ToString("yyyyMMddHHmmssffffff");
+
+            Console.WriteLine(u1);
+            Console.WriteLine(dt1);
+            Console.WriteLine(u2);
+            Console.WriteLine(dt2);
 
             Console.ReadKey(true);
 
+        }
+
+        public static class TimeHelper
+        {
+            public static double UnixTimestamp(DateTime? dt = null) //Unix timestamp is seconds past epoch
+            {
+                if (dt == null)
+                    dt = DateTime.Now;
+
+                return (double)(dt.Value - new DateTime(1970, 1, 1)).TotalMilliseconds / 1000.0;
+            }
+
+            public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+            {
+                var dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);                
+                dtDateTime = dtDateTime.AddSeconds(unixTimeStamp); //.ToLocalTime();                
+                return dtDateTime;
+            }
         }
 
         private static void ExecuteViewStateValueMatchesOrdered(string html, Action<Match> f)

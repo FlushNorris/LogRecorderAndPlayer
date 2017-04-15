@@ -352,7 +352,12 @@ namespace LogBrowser
             ////MessageBox.Show("XXXXX");
 
             //OnJobCompleted?.Invoke(logElementGUID);
-        }        
+        }
+
+        public void SetHandlerLogElementAsDone(string sessionGUID, string pageGUID, string handlerUrl, bool error, string errorMessage)
+        {
+            
+        }
     }
 
 }
