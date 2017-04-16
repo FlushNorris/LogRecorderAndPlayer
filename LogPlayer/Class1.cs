@@ -425,7 +425,7 @@ namespace TestBrowser
             throw new NotImplementedException();
         }
 
-        public LogElementDTO FetchLogElement(Guid pageGUID, LogType logType, int? currentIndex = null)
+        public LogElementDTO FetchLogElement(Guid pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
         {
             currentIndex = currentIndex ?? CurrentIndex;
 
@@ -438,11 +438,18 @@ namespace TestBrowser
             {
                 case SessionElementState.Played:
                     //Look at the next event if it matches the LogType for the current PageGUID
-                    return FetchLogElement(pageGUID, logType, currentIndex.Value + 1);
+                    return FetchLogElement(pageGUID, logType, handlerUrl, currentIndex.Value + 1);
                 case SessionElementState.Playing:
                     if (sessionElement.LogElementInfo.LogType == logType)
                     {
                         var logElementDTO = OnLoadLogElement?.Invoke(sessionElement);
+
+                        //"Element":"/TestHandler.ashx?request=%7B%22SomeValue%22%3A%22andersand%22%7D"
+                        if (handlerUrl != null && logElementDTO.Element != handlerUrl)
+                        {
+                            throw new Exception($"LogType({logType}) was located, but with invalid url ({logElementDTO.Element}), should have been ({handlerUrl})");
+                        }
+
                         sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
                         return logElementDTO;
                     }

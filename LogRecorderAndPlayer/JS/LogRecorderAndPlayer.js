@@ -196,8 +196,8 @@
             handleLogElements(false);
             options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, getServerGUID());
 
-            if (window.external && window.external.SetLogElementAsDone) {
-                window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
+            if (isPlaying() && window.external) {
+                window.external.SetHandlerLogElementAsDone(LogType.OnHandlerRequestSend, stripLRAPFromUrl(options.url), false, null);
             }
 
             //window.external.SetLogElementAsDone(logElement.GUID, false, null);
@@ -223,8 +223,8 @@
                 JSON.stringify(xhr));
             handleLogElements(false);
 
-            if (window.external && window.external.SetLogElementAsDone) {
-                window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
+            if (isPlaying() && window.external) {
+                window.external.SetHandlerLogElementAsDone(LogType.OnHandlerRequestSend, stripLRAPFromUrl(options.url), false, null);
             }
 
             //handleLogElements();

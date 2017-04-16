@@ -23,6 +23,10 @@ namespace LogBrowser
 
         public event JobCompleted OnJobCompleted = null;
 
+        public delegate void HandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus);
+
+        public event HandlerJobCompleted OnHandlerJobCompleted = null;
+
         public Guid ServerGUID { get; set; }
         public Guid PageGUID { get; set; }
         private string StartingURL { get; set; }
@@ -65,7 +69,13 @@ namespace LogBrowser
             webBrowser.Url = new Uri(StartingURL);
             var scriptManager = new ScriptManager(this);
             scriptManager.OnJobCompleted += ScriptManager_OnJobCompleted;
+            scriptManager.OnHandlerJobCompleted += ScriptManager_OnHandlerJobCompleted;
             webBrowser.ObjectForScripting = scriptManager;
+        }
+
+        private void ScriptManager_OnHandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus)
+        {
+            OnHandlerJobCompleted?.Invoke(this, logType, handlerUrl, jobStatus);
         }
 
         private void ScriptManager_OnJobCompleted(Guid? logElementGUID, JobStatus jobStatus)
@@ -307,6 +317,9 @@ namespace LogBrowser
         public delegate void JobCompleted(Guid? logElementGUID, JobStatus jobStatus);
         public event JobCompleted OnJobCompleted = null;
 
+        public delegate void HandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus);
+        public event HandlerJobCompleted OnHandlerJobCompleted = null;
+
         BrowserForm _form;
         public ScriptManager(BrowserForm form)
         {
@@ -354,9 +367,14 @@ namespace LogBrowser
             //OnJobCompleted?.Invoke(logElementGUID);
         }
 
-        public void SetHandlerLogElementAsDone(string sessionGUID, string pageGUID, string handlerUrl, bool error, string errorMessage)
+        public void SetHandlerLogElementAsDone(int logTypeValue, string handlerUrl, bool error, string errorMessage)
         {
-            
+            var logType = (LogType) logTypeValue;
+
+            MessageBox.Show("SetHandlerLogElementAsDone called");
+            //window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
+
+            OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });
         }
     }
 

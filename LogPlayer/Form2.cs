@@ -41,33 +41,51 @@ namespace TestBrowser
         private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob)
         {            
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
-            if (namedPipeBrowserJob.LogElementGUID.HasValue) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
+            Guid? logElementGUID = namedPipeBrowserJob.LogElementGUID;
+            if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
             {
-                if (this.InvokeRequired)
-                {
-                    this.Invoke(new MethodInvoker(delegate
-                    {
-                        textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
-                    }));
-                }
-                else
-                {
-                    textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
-                }
+                var logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl);
+                logElementGUID = logElementDTO?.GUID;
+                if (logElementGUID == null)
+                    return new NamedPipeServerResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};
+            }
 
-                //if (namedPipeBrowserJob.LogElementGUID.Value.ToString().ToLower().IndexOf("f303") == 0)
-                //{
-                //    MessageBox.Show("!!!!");
-                //}
-
-                //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete1: {namedPipeBrowserJob.LogElementGUID.Value}");
-                var newEvent = eventsTable1.SetSessionElementAsDone(namedPipeBrowserJob.LogElementGUID.Value);
+            if (logElementGUID != null) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
+            {
+                var newEvent = eventsTable1.SetSessionElementAsDone(logElementGUID.Value);
                 //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete2: {namedPipeBrowserJob.LogElementGUID.Value} : {newEvent}");
                 if (newEvent == EventsTable.NewEvent.None)
                 {
-                    
+
                 }
             }
+
+
+            //if (namedPipeBrowserJob.LogElementGUID.HasValue) 
+            //{
+            //    //if (this.InvokeRequired)
+            //    //{
+            //    //    this.Invoke(new MethodInvoker(delegate
+            //    //    {
+            //    //        textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
+            //    //    }));
+            //    //}
+            //    //else
+            //    //{
+            //    //    textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
+            //    //}
+
+            //    //if (namedPipeBrowserJob.LogElementGUID.Value.ToString().ToLower().IndexOf("f303") == 0)
+            //    //{
+            //    //    MessageBox.Show("!!!!");
+            //    //}
+
+            //    //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete1: {namedPipeBrowserJob.LogElementGUID.Value}");
+            //}
+
+
+
+
             return new NamedPipeServerResponse() { Success = true };
         }
 
@@ -135,7 +153,7 @@ namespace TestBrowser
             }
             else
             {
-                if (LogTypeHelper.IsClientsideEvent(logElement.LogType))
+                if (LogTypeHelper.IsClientsideUserEvent(logElement.LogType))
                 {
                     NamedPipeHelper.SendBrowserJob_ASYNC(session, logElement);
                 }

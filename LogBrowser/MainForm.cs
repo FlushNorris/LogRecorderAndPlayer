@@ -122,9 +122,15 @@ namespace LogBrowser
                 browser = new BrowserForm(ServerGUID.Value, ProcessGUID.Value, pageGUID, url);
                 browser.FormClosing += Browser_FormClosing;
                 browser.OnJobCompleted += Browser_OnJobCompleted;
+                browser.OnHandlerJobCompleted += Browser_OnHandlerJobCompleted;
                 Browsers.Add(browser);
                 browser.Show();
             }
+        }
+
+        private void Browser_OnHandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus)
+        {
+            NamedPipeHelper.SetHandlerLogElementAsDone(ServerGUID.Value, browser.PageGUID, logType, handlerUrl, jobStatus); //, async: false); 
         }
 
         private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus)

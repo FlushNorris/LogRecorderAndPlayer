@@ -14,12 +14,18 @@ namespace LogRecorderAndPlayer
         public Guid PageGUID { get; set; }
 
         [DataMember]
-        public Guid? LogElementGUID { get; set; } 
+        public Guid? LogElementGUID { get; set; } //Either this is used to locate a logElement ...
+
+        [DataMember]
+        public LogType? LogType { get; set; } //...or Both LogType and HandlerUrl is used to locate a logElement at a given time
+
+        [DataMember]
+        public string HandlerUrl { get; set; }
 
         [DataMember]
         public JobStatus JobStatus { get; set; }
 
         [DataMember]
-        public LogElementDTO LogElement { get; set; } //Only available when launching browserJob
+        public LogElementDTO LogElement { get; set; } //Only available when launching browserJob 
     }
 }

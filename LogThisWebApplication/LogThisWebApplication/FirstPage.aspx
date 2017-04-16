@@ -13,7 +13,7 @@
     Client textbox with no id and no class, but with type: <input type="text"/><br/>
     <br/>
     <br/>
-    <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/>
+    <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler2" onclick="console.log('1111')"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler3"/><br/>
     Input for generic handler: <input id="inputValueForGenericHandler" style="width:300px"/><br/>
     Output for generic handler: <input id="outputValueForGenericHandler" style="width:300px"/><br/>
     <br/>
@@ -761,6 +761,131 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
             });
         });
 
+        function staticFunc() {
+            console.log('staticFunc');
+        }
+
+        $(document).on('mousedown', 'input', function() {
+            var $this = $(this);
+
+            var onClickProp = $this.prop('onclick');
+            if (onClickProp) {
+                console.log('directly onclick event found');
+                console.log(onClickProp);
+
+                var f = function (event) {
+                    someClickFunction();
+                    return onClickProp(event);
+                };
+
+                if ($this.data('lrapOnClick') != onClickProp) {
+                    console.log('setting lrap method');
+                    console.log($this.prop('lrapOnClick'));
+                    console.log(onClickProp);
+                    //$this.click(f);
+                    //$this.prop('onclick', null); //.off('click'); //off disables jQuery-click events 
+                    this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
+                    //$this.bind('click', function() { console.log('1337') });
+                    //$this.prop('onclick', 
+                    //moveLastEventToFirst(this, 'click');
+                    $this.data('lrapOnClick', f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
+                    console.log('checking!!!');
+                    console.log($this.data('lrapOnClick'));
+                }
+
+                var onClickProp2 = $this.prop('onclick');
+
+                //Mangler stadig at undersøge om det dom-event der er nu... er det et event brugeren har kastet på eller er det min function? Det kan jeg jo ikke bruge specielle properties til at bestemme
+
+                removeLRAPEvent(this, 'click', someClickFunction);
+
+                //Onclick eventet kunne være tilføjet senere... dvs someClickFunction kunne have været tilføjet via jQuery også, forsøg på at fjerne det!
+                //Løsning = Clear them
+
+                //1. OnClick event eksisterer og bliver erstattet af f
+                //2. OnClick event bliver fjernet i løsningen (selvom det faktisk er væk... nej, virker nu da jeg ikke fjerner dom-click eventet, men blot erstatter det med et andet dom-event)
+
+            } else {
+                //console.log('no directly onclick event found');
+                //console.log(onClickProp);
+
+                if (!getLRAPEvent(this, 'click', someClickFunction)) {
+                    $this.on('click', someClickFunction);
+                    moveLastEventToFirst(this, 'click');
+                }
+            }
+        });
+
+
+
+        $("#btncallgenerichandler3").on('click', function() {
+            var $two = $("#btncallgenerichandler2");
+            var two = $two[0];
+
+            //$two.prop('onclick', null);
+            two.onclick = function() { console.log('noget nyt og spændende!!'); };
+        });
+
+        function getLRAPEvent(that, eventType, lrapFn) {
+            var events = $._data(that, 'events');
+            if (events) {
+                var typeEvents = events[eventType];
+                if (typeEvents) {
+                    var handlerInfo = $.findFirst(typeEvents,
+                        function(v, i) {
+                            return v.handler === lrapFn;
+                        });
+                    if (handlerInfo)
+                        return handlerInfo;
+                }
+            }
+
+            return null;
+        }
+
+        function removeEventByIndex(that, eventType, index) {
+            var events = $._data(that, 'events');
+            if (events) {
+                var typeEvents = events[eventType];
+                if (typeEvents) {
+                    typeEvents.splice(index, 1);
+                }
+            }
+        }
+
+        function removeLRAPEvent(that, eventType, lrapFn) {
+            var handlerInfo = getLRAPEvent(that, eventType, lrapFn);
+            if (handlerInfo) {
+                removeEventByIndex(that, eventType, handlerInfo.index);
+            }
+        }
+
+        function moveLastEventToFirst(elm, action) {
+            var handlers = $._data(elm, 'events')[action];
+            if (!handlers)
+                return;
+            var handler = handlers.pop();
+            handlers.splice(0, 0, handler);
+        }
+
+        function someClickFunction() {
+            console.log('first one to rule em all!!!');
+        }
+
+        $("#btncallgenerichandler2").on('click', function() {
+            console.log(2222);
+        });
+
+        $.extend({
+            findFirst: function (elems, validateCb) {
+                var i;
+                for (i = 0 ; i < elems.length ; ++i) {
+                    if (validateCb(elems[i], i))
+                        return { index: i, value: elems[i] };
+                }
+                return undefined;
+            }
+        });
 
 
         //Event.prototype.stopImmediatePropagation = function () { alert('abc'); }

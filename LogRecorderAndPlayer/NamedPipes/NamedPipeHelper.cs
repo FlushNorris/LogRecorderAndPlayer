@@ -36,11 +36,31 @@ namespace LogRecorderAndPlayer
             return (LogElementDTO)serverResponse.Data;
         }
 
+        public static void SetHandlerLogElementAsDone(Guid serverGUID, Guid pageGUID, LogType logType, string handlerUrl, JobStatus jobStatus) //, bool async)
+        {
+            var async = false;
+
+            var data = new NamedPipeBrowserJob() { PageGUID = pageGUID, LogType = logType, HandlerUrl = handlerUrl, JobStatus = jobStatus };
+
+            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJobComplete, Data = data };
+            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            string error;
+            var serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
+            if (async && serverResponseJSON == null)
+                return;
+            NamedPipeServerResponse serverResponse = null;
+            if (error == null)
+                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+
+            if (error != null || !serverResponse.Success)
+                throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
+        }
+
         public static void SetLogElementAsDone(Guid serverGUID, Guid pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)
         {
             var async = false;
 
-            var data = new NamedPipeBrowserJob() {PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
+            var data = new NamedPipeBrowserJob() { PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
 
             var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJobComplete, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);

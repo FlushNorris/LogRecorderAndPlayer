@@ -129,12 +129,15 @@ namespace LogRecorderAndPlayer
 
     public static class LogTypeHelper
     {
+        public static bool IsClientsideUserEvent(LogType logType)
+        {
+            return IsClientsideEvent(logType) && logType != LogType.OnHandlerRequestSend && logType != LogType.OnHandlerResponseReceived;
+        }
+
         public static bool IsClientsideEvent(LogType logType)
         {
             switch (logType)
             {
-                case LogType.OnHandlerRequestSend:
-                case LogType.OnHandlerResponseReceived:
                 case LogType.OnBlur:
                 case LogType.OnFocus:
                 case LogType.OnChange:
@@ -158,6 +161,8 @@ namespace LogRecorderAndPlayer
                 case LogType.OnScroll:
                 case LogType.OnSubmit:
                 case LogType.OnReset:
+                case LogType.OnHandlerRequestSend: 
+                case LogType.OnHandlerResponseReceived: 
                     return true;
                 case LogType.OnHandlerRequestReceived:
                 case LogType.OnHandlerResponseSend:
