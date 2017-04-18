@@ -418,8 +418,10 @@ namespace LogRecorderAndPlayer
         {
             WebHelper.SetSessionValues(page, nvc);
         }
-
-//        context.Request.Form.Add("asdas", "asdas");
+        public static void SetSessionValues(HttpContext context, NameValueCollection nvc)
+        {
+            WebHelper.SetSessionValues(context, nvc);
+        }
 
         public static void SetRequestValues(HttpContext context, NameValueCollection newRequestFormValues, NameValueCollection requestForm)
         {
@@ -467,6 +469,33 @@ namespace LogRecorderAndPlayer
                 return false;
             Guid g;
             return Guid.TryParse(r, out g) && !g.Equals(new Guid());
+        }
+
+        public static bool FetchAndExecuteLogElement(Guid serverGUID, Guid pageGUID, LogType logType, Action<LogElementDTO> action, int timeoutInSeconds = 10)
+        {
+            var timeout = DateTime.Now.AddSeconds(timeoutInSeconds);
+
+            var continueFlag = true;
+            FetchLogElementResponse fetchLogElement = null;
+            do
+            {
+                fetchLogElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+                continueFlag = fetchLogElement.Type == FetchLogElementResponseType.IncorrectLogType;
+                if (continueFlag)
+                {
+                    System.Threading.Thread.Sleep(1000);
+                }
+            } while (continueFlag && DateTime.Now < timeout); //Means that the serverside event is executing faster than the clientside, wait for the correct time
+            if (fetchLogElement.Type == FetchLogElementResponseType.IncorrectLogType)
+            {
+                throw new Exception("Failed to fetch event");
+            }
+            if (fetchLogElement.Type == FetchLogElementResponseType.OK)
+            {
+                action(fetchLogElement.LogElementDTO);
+                return true;
+            }
+            return false;
         }
     }
 

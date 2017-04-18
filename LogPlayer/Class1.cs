@@ -192,22 +192,49 @@ namespace TestBrowser
                         //if (!CheckIfOrdered(lstOrderedByTimestamp))
                         //    throw new Exception("GRRR");
 
+                        //int debug;
                         var idx = BinaryFindClosestIndex(lstOrderedByTimestamp, sessionElement.LogElementInfo.Timestamp);
                         if (idx == -1)
+                        {
                             lstOrderedByTimestamp.Add(sessionElement);
+                            //debug = lstOrderedByTimestamp.Count - 1;
+                        }
                         else
                         {
                             var otherSessionElement = lstOrderedByTimestamp[idx];
                             if (otherSessionElement.LogElementInfo.Timestamp > sessionElement.LogElementInfo.Timestamp)
+                            {
                                 lstOrderedByTimestamp.Insert(idx, sessionElement);
+                                //debug = idx;
+                            }
                             else
                             {
                                 if (idx == lstOrderedByTimestamp.Count - 1)
+                                {
                                     lstOrderedByTimestamp.Add(sessionElement);
+                                    //debug = lstOrderedByTimestamp.Count - 1;
+                                }
                                 else
+                                {
                                     lstOrderedByTimestamp.Insert(idx + 1, sessionElement);
+                                    //debug = idx + 1;
+                                }
                             }
                         }
+
+                        //if (lstOrderedByTimestamp.Count > 1)
+                        //{
+                        //    LRAPSessionElement seBefore = debug - 1 >= 0 ? lstOrderedByTimestamp[debug - 1] : null;
+                        //    LRAPSessionElement seAfter = debug + 1 < lstOrderedByTimestamp.Count ? lstOrderedByTimestamp[debug + 1] : null;
+                        //    if (seBefore != null && seBefore.LogElementInfo.Timestamp > lstOrderedByTimestamp[debug].LogElementInfo.Timestamp)
+                        //    {
+                        //        MessageBox.Show("hmm before?");
+                        //    }
+                        //    if (seAfter != null && seAfter.LogElementInfo.Timestamp < lstOrderedByTimestamp[debug].LogElementInfo.Timestamp)
+                        //    {
+                        //        MessageBox.Show("hmm after?");
+                        //    }
+                        //}
                     }
                 }
             }
@@ -268,7 +295,7 @@ namespace TestBrowser
             var newTicks0 = Math.Abs(orderedLst[m].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
             if (newTicks0 < newTicksNext) 
             {
-                if (newTicks0 < newTicksPrev || start == m) //Found the smallest in an ordered list
+                if (newTicks0 <= newTicksPrev || start == m) //Found the smallest in an ordered list
                     return m;
                 return BinaryFindClosestIndex(orderedLst, timestamp, start, m - 1, newTicks0);
             }
@@ -423,14 +450,14 @@ namespace TestBrowser
         private void StopPlayer()
         {
             throw new NotImplementedException();
-        }
+        }        
 
-        public LogElementDTO FetchLogElement(Guid pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
+        public FetchLogElementResponse FetchLogElement(Guid pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
         {
             currentIndex = currentIndex ?? CurrentIndex;
 
             if (SessionElementOrderedList.Count <= currentIndex.Value)
-                return null;
+                return new FetchLogElementResponse() {Type = FetchLogElementResponseType.NoMore};
 
             var lst = SessionElementOrderedList[currentIndex.Value];
             var sessionElement = lst.First(x => x.LogElementInfo.PageGUID.Equals(pageGUID)); //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
@@ -451,9 +478,10 @@ namespace TestBrowser
                         }
 
                         sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
-                        return logElementDTO;
+                        return new FetchLogElementResponse() {Type = FetchLogElementResponseType.OK, LogElementDTO = logElementDTO};
                     }
-                    throw new Exception("Shouldn't happen, unless the running events are in a different order now");
+                    return new FetchLogElementResponse() {Type = FetchLogElementResponseType.IncorrectLogType};
+                    //throw new Exception("Shouldn't happen, unless the running events are in a different order now");
                 case SessionElementState.Waiting:
                     throw new Exception("Shouldn't happen");
                 default:

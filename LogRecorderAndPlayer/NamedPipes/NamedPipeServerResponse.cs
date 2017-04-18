@@ -10,6 +10,7 @@ namespace LogRecorderAndPlayer
     [DataContract]
     [KnownType(typeof(LogElementDTO))]
     [KnownType(typeof(NamedPipeBrowserJob))]
+    [KnownType(typeof(FetchLogElementResponse))]
     public class NamedPipeServerResponse
     {
         [DataMember]

@@ -371,7 +371,7 @@ namespace LogBrowser
         {
             var logType = (LogType) logTypeValue;
 
-            MessageBox.Show("SetHandlerLogElementAsDone called");
+            //MessageBox.Show("SetHandlerLogElementAsDone called"); //
             //window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
 
             OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });

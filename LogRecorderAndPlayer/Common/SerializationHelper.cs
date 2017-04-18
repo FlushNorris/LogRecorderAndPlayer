@@ -84,6 +84,9 @@ namespace LogRecorderAndPlayer
 
         public static NameValueCollection DeserializeNameValueCollection(string data, SerializationType serializationType)
         {
+            if (data == null)
+                return null;
+
             var dict = Deserialize<Dictionary<string, object>>(data, serializationType);
             var nvc = new NameValueCollection();
             foreach (var key in dict.Keys)
@@ -95,6 +98,9 @@ namespace LogRecorderAndPlayer
 
         public static string SerializeNameValueCollection(NameValueCollection nvc, SerializationType serializationType)
         {
+            if (nvc == null)
+                return null;
+
             var dict = new Dictionary<string, object>();
             foreach (var key in nvc.AllKeys)
             {

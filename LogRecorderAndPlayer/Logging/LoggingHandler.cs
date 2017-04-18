@@ -9,9 +9,28 @@ using System.Web;
 namespace LogRecorderAndPlayer
 {
     public static class LoggingHandler
-    {
+    {        
         public static void LogRequest(HttpContext context, NameValueCollection requestForm)
         {
+            var logType = LogType.OnHandlerRequestReceived;
+
+            if (LoggingHelper.IsPlaying(context, requestForm))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, null, () => { throw new Exception(); }, requestForm).Value;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+
+                    LoggingHelper.SetRequestValues(context, requestFormValues, requestForm);
+
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
+
+            }
+
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: LoggingHelper.GetInstanceGUID(context, () => new Guid(), requestForm).GetValueOrDefault(),
                 sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid(), requestForm).GetValueOrDefault(),
@@ -19,7 +38,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid(), requestForm).GetValueOrDefault(),
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnHandlerRequestReceived,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: null,
                 value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
@@ -30,6 +49,27 @@ namespace LogRecorderAndPlayer
 
         public static string LogResponse(HttpContext context, string response)
         {
+            var logType = LogType.OnHandlerResponseSend;
+
+            if (LoggingHelper.IsPlaying(context, requestForm: null))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, null, () => { throw new Exception(); }).Value;
+
+                string newResponse = null;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    newResponse = logElement.Value;
+
+                    context.Response.Clear();
+                    context.Response.Write(newResponse);
+
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return newResponse;
+            }
+
             //Need to parse info from request to response... in this case where ashx is called from a external website
             var requestContainsInstanceGuid = context.Request.Params[Consts.GUIDTag] != null;
 
@@ -40,7 +80,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: LoggingHelper.GetBundleGUID(context, () => new Guid()).GetValueOrDefault(),
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnHandlerResponseSend,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: !requestContainsInstanceGuid ? SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json) : null,
                 value: response,
@@ -53,10 +93,31 @@ namespace LogRecorderAndPlayer
 
         public static void LogSession(HttpContext context, NameValueCollection requestForm, bool before)
         {
+            var logType = before ? LogType.OnHandlerSessionBefore : LogType.OnHandlerSessionAfter;
             var sessionValues = LoggingHelper.GetSessionValues(context);
-            if (sessionValues == null)
-                return;
 
+            if (LoggingHelper.IsPlaying(context, requestForm))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, null, () => { throw new Exception(); }, requestForm).Value;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    if (logElement.Value != null)
+                    {
+                        var loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        LoggingHelper.SetSessionValues(context, loggedSessionValues);
+                    }
+                    else if (sessionValues != null)
+                    {
+                        throw new Exception("Session difference");
+                    }
+
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
+            }
+            
             LoggingHelper.LogElement(new LogElementDTO(
                 guid: Guid.NewGuid(),
                 sessionGUID: LoggingHelper.GetSessionGUID(context, null, () => new Guid(), requestForm).Value,
@@ -64,10 +125,10 @@ namespace LogRecorderAndPlayer
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: before ? LogType.OnHandlerSessionBefore : LogType.OnHandlerSessionAfter,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: null,
-                value: SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json),
+                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null
             ));

@@ -34,17 +34,17 @@ namespace TestBrowser
 
         private NamedPipeServerResponse ServiceInstanse_OnFetchLogElement(NamedPipeFetchLogElement fetchLogElement)
         {
-            var logElementDTO = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
-            return new NamedPipeServerResponse() {Success = true, Data = logElementDTO};
+            var fetchLogElementResponse = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
+            return new NamedPipeServerResponse() {Success = true, Data = fetchLogElementResponse };
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob)
+        private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob) //For clientside-events
         {            
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             Guid? logElementGUID = namedPipeBrowserJob.LogElementGUID;
             if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
             {
-                var logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl);
+                var logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
                 logElementGUID = logElementDTO?.GUID;
                 if (logElementGUID == null)
                     return new NamedPipeServerResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};

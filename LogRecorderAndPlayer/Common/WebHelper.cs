@@ -77,10 +77,23 @@ namespace LogRecorderAndPlayer
 
             foreach (var key in nvcSession.AllKeys)
             {
-                var jsonSerialized = nvcSession[key]; 
+                var jsonSerialized = nvcSession[key];
                 var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
                 var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
                 page.Session[key] = v;
+            }
+        }
+        public static void SetSessionValues(HttpContext context, NameValueCollection nvcSession)
+        {
+            if (context == null || context.Session == null)
+                return;
+
+            foreach (var key in nvcSession.AllKeys)
+            {
+                var jsonSerialized = nvcSession[key];
+                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
+                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                context.Session[key] = v;
             }
         }
 

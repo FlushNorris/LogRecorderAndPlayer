@@ -23,7 +23,7 @@ namespace LogRecorderAndPlayer
             return !serverResponse.Success;
         }
 
-        public static LogElementDTO FetchLogElementFromPlayer(Guid serverGUID, Guid pageGUID, LogType logType)
+        public static FetchLogElementResponse FetchLogElementFromPlayer(Guid serverGUID, Guid pageGUID, LogType logType)
         {
             var fetchLogElement = new NamedPipeFetchLogElement() { PageGUID = pageGUID, LogType = logType };
             var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.FetchLogElement, Data = fetchLogElement };
@@ -33,7 +33,7 @@ namespace LogRecorderAndPlayer
             if (!String.IsNullOrWhiteSpace(error))
                 throw new Exception(error);
             var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
-            return (LogElementDTO)serverResponse.Data;
+            return (FetchLogElementResponse)serverResponse.Data;
         }
 
         public static void SetHandlerLogElementAsDone(Guid serverGUID, Guid pageGUID, LogType logType, string handlerUrl, JobStatus jobStatus) //, bool async)

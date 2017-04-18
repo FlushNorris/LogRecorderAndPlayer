@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -188,5 +189,22 @@ namespace LogRecorderAndPlayer
     public static class ContentType //https://msdn.microsoft.com/en-us/library/ms775147.aspx
     {
         public const string TextHtml = "text/html";
+    }
+
+    public enum FetchLogElementResponseType
+    {
+        OK = 0,
+        IncorrectLogType = 1,
+        NoMore = 2
+    }
+
+    [DataContract]
+    public class FetchLogElementResponse
+    {
+        [DataMember]
+        public FetchLogElementResponseType Type { get; set; }
+
+        [DataMember]
+        public LogElementDTO LogElementDTO { get; set; }
     }
 }

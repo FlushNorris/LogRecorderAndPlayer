@@ -14,6 +14,7 @@
     <br/>
     <br/>
     <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler2" onclick="console.log('1111')"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler3"/><br/>
+    <input type="button" value="Call generic handler4 no click event" id="btncallgenerichandler4noclickevent"/><br/>
     Input for generic handler: <input id="inputValueForGenericHandler" style="width:300px"/><br/>
     Output for generic handler: <input id="outputValueForGenericHandler" style="width:300px"/><br/>
     <br/>
@@ -92,6 +93,8 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
     }
     </style>
     <script type="text/javascript">
+        
+
         $("#clientTextboxWithID").on('select', function (event) {
             console.log('select!');
         });
@@ -765,74 +768,21 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
             console.log('staticFunc');
         }
 
-        $(document).on('mousedown', 'input', function() {
-            var $this = $(this);
-
-            var onClickProp = $this.prop('onclick');
-            if (onClickProp) {
-                console.log('directly onclick event found');
-                console.log(onClickProp);
-
-                var f = function (event) {
-                    someClickFunction();
-                    return onClickProp(event);
-                };
-
-                if ($this.data('lrapOnClick') != onClickProp) {
-                    console.log('setting lrap method');
-                    console.log($this.prop('lrapOnClick'));
-                    console.log(onClickProp);
-                    //$this.click(f);
-                    //$this.prop('onclick', null); //.off('click'); //off disables jQuery-click events 
-                    this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
-                    //$this.bind('click', function() { console.log('1337') });
-                    //$this.prop('onclick', 
-                    //moveLastEventToFirst(this, 'click');
-                    $this.data('lrapOnClick', f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
-                    console.log('checking!!!');
-                    console.log($this.data('lrapOnClick'));
-                }
-
-                var onClickProp2 = $this.prop('onclick');
-
-                //Mangler stadig at undersøge om det dom-event der er nu... er det et event brugeren har kastet på eller er det min function? Det kan jeg jo ikke bruge specielle properties til at bestemme
-
-                removeLRAPEvent(this, 'click', someClickFunction);
-
-                //Onclick eventet kunne være tilføjet senere... dvs someClickFunction kunne have været tilføjet via jQuery også, forsøg på at fjerne det!
-                //Løsning = Clear them
-
-                //1. OnClick event eksisterer og bliver erstattet af f
-                //2. OnClick event bliver fjernet i løsningen (selvom det faktisk er væk... nej, virker nu da jeg ikke fjerner dom-click eventet, men blot erstatter det med et andet dom-event)
-
-            } else {
-                //console.log('no directly onclick event found');
-                //console.log(onClickProp);
-
-                if (!getLRAPEvent(this, 'click', someClickFunction)) {
-                    $this.on('click', someClickFunction);
-                    moveLastEventToFirst(this, 'click');
-                }
-            }
-        });
-
-
-
-        $("#btncallgenerichandler3").on('click', function() {
-            var $two = $("#btncallgenerichandler2");
-            var two = $two[0];
-
-            //$two.prop('onclick', null);
-            two.onclick = function() { console.log('noget nyt og spændende!!'); };
-        });
+        var funcCompareThingy = null;
 
         function getLRAPEvent(that, eventType, lrapFn) {
             var events = $._data(that, 'events');
+            //console.log('getLRAPEvent 1');
             if (events) {
+                //console.log('getLRAPEvent 2');
                 var typeEvents = events[eventType];
+                //console.log(events);
                 if (typeEvents) {
+                    //console.log('getLRAPEvent 3');
+
                     var handlerInfo = $.findFirst(typeEvents,
-                        function(v, i) {
+                        function (v, i) {
+                            //console.log('getLRAPEvent loop ' + i);
                             return v.handler === lrapFn;
                         });
                     if (handlerInfo)
@@ -868,9 +818,271 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
             handlers.splice(0, 0, handler);
         }
 
-        function someClickFunction() {
-            console.log('first one to rule em all!!!');
-        }
+        var testClass = (function () {
+            function someClickFunction() {
+                console.log('first one to rule em all!!!444');
+            }
+
+            function setupLRAPEvent(that, eventType/*e.g. 'click'*/, eventMethod) {
+                var $that = $(that);
+                var onEventProp = $that.prop('on' + eventType);                
+                if (onEventProp) {
+                    var f = function (event) {
+                        eventMethod(that, eventType);
+                        return onEventProp(event);
+                    };
+
+                    if ($that.data('lrapOn' + eventType) !== onEventProp) {
+                        console.log('is not the same method');
+                        eval("that.on" + eventType + "=f");
+                        //this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
+                        $that.data('lrapOn' + eventType, f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
+                    } else {
+                        console.log('is the same method');
+                    }
+                    removeLRAPEvent(that, eventType, eventMethod);
+                } else {
+                    if (!getLRAPEvent(that, eventType, eventMethod)) {
+                        console.log('setup ' + eventType);
+                        $that.on(eventType, eventMethod);
+                        moveLastEventToFirst(this, eventType);
+
+                        //console.log(getLRAPEvent(that, eventType, eventMethod));
+
+                    } else {
+                        console.log('found lrap method!!!');
+                    }
+                }
+            }            
+
+            function setupInputEvents() {
+                function embeddedClickFunction() {
+                    console.log('embedded click function also works!');
+                }
+
+                //$(document).on('mousedown', 'input', function () {
+                //    var $this = $(this);
+                //    console.log('orig mousedown ' + $this.prop("id"));
+                //});
+
+                //$(document).on('mouseenter mousedown', 'input', function () {
+                //    var $this = $(this);
+                //    console.log('orig mouseenter mousedown' + $this.prop("id"));
+                //});
+
+                //$(document).on('keydown', 'input', function () {
+                //    var $this = $(this);
+                //    console.log('orig keydown '+$this.prop("id"));
+                //});
+
+                //$(document).on('mouseenter', 'input', function () {
+                //    alert('mouseenter');
+                //    console.log('mouseenter');
+                //});
+
+                $(document).on('beforeactivate', 'input', function () {
+                    var $this = $(this);
+                    console.log('orig beforeactivate ' + $this.prop("id"));
+                    //var $this = $(this);
+                    if (funcCompareThingy === embeddedClickFunction) {
+                        console.log('TRUE-TRUE-TRUE-TRUE-TRUE-TRUE-TRUE-TRUE-TRUE-TRUE');
+                    } else {
+                        console.log('FALSE-FALSE-FALSE-FALSE-FALSE-FALSE-FALSE-FALSE');
+                    }
+                    funcCompareThingy = embeddedClickFunction;
+
+                    setupLRAPEvent(this, 'click', embeddedClickFunction);
+                    //setupLRAPEvent(this, 'click', function () {
+                    //    console.log('anonymous function also works?!');
+                    //    //console.log('lrap click event');
+                    //    //console.log(event);
+                    //});
+                    
+                    //var onClickProp = $this.prop('onclick');
+                    //if (onClickProp) {
+                    //    var f = function (event) {
+                    //        someClickFunction();
+                    //        return onClickProp(event);
+                    //    };
+
+                    //    if ($this.data('lrapOnClick') != onClickProp) {
+                    //        this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
+                    //        $this.data('lrapOnClick', f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
+                    //    }
+                    //    removeLRAPEvent(this, 'click', someClickFunction);
+                    //} else {
+                    //    if (!getLRAPEvent(this, 'click', someClickFunction)) {
+                    //        $this.on('click', someClickFunction);
+                    //        moveLastEventToFirst(this, 'click');
+                    //    }
+                    //}
+                });
+            }
+
+            var api = {};
+            api.setupInputEvents = setupInputEvents;
+
+            return api;
+        }());
+
+        testClass.setupInputEvents();
+
+        //var oldJQueryEventTrigger = jQuery.event.trigger;
+        //jQuery.event.trigger = function (event, data, elem, onlyHandlers) {
+        //    console.log(event); //, data, elem, onlyHandlers);
+        //    oldJQueryEventTrigger(event, data, elem, onlyHandlers);
+        //}
+
+        ////////////////////////////////////////////////////////////////////////
+
+        //var Wiretap = (function () {
+        //    "use strict";
+
+        //    function defaults(settings) {
+        //        var d = Wiretap.defaultSettings,
+        //            i;
+        //        for (i in d) if (d.hasOwnProperty(i)) {
+        //            settings[i] = settings[i] !== undefined ? settings[i] : d[i];
+        //        }
+
+        //        return settings;
+        //    }
+
+        //    function Wiretap(settings) {
+        //        this.settings = settings = defaults(settings);
+
+        //        if (settings.add !== null) {
+        //            var aEL = HTMLElement.prototype.addEventListener,
+        //                add = settings.add;
+
+        //            HTMLElement.prototype.addEventListener = function (eventName, callback) {
+        //                add.apply(this, arguments);
+
+        //                aEL.apply(this, [eventName, function () {
+        //                    if (settings.before) {
+        //                        settings.before.apply(this, arguments);
+        //                    }
+
+        //                    callback.apply(this, arguments);
+
+        //                    if (settings.after) {
+        //                        settings.after.apply(this, arguments);
+        //                    }
+        //                }]);
+        //            };
+        //        }
+        //    }
+
+        //    Wiretap.prototype = {};
+
+        //    Wiretap.defaultSettings = {
+        //        add: null,
+        //        before: null,
+        //        after: null
+        //    };
+
+        //    return Wiretap;
+        //})();
+
+        //new Wiretap({
+        //    add: function () {
+        //        console.log('wiretap.add');
+        //        //fire when an event is bound to element
+        //    },
+        //    before: function () {
+        //        console.log('wiretap.before');
+        //        //fire just before an event executes, arguments are automatic
+        //    },
+        //    after: function () {
+        //        //fire just after an event executes, arguments are automatic
+        //        console.log('wiretap.after');
+        //    }
+        //});
+
+        ////////////////////////////////////////////////////////////////////////
+
+        //function setJQueryEventHandlersDebugHooks(bMonTrigger, bMonOn, bMonOff) {
+        //    jQuery.fn.___getHookName___ = function () {
+        //        // First, get object name
+        //        var sName = new String(this[0].constructor),
+        //        i = sName.indexOf(' ');
+        //        sName = sName.substr(i, sName.indexOf('(') - i);
+
+        //        // Classname can be more than one, add class points to all
+        //        if (typeof this[0].className === 'string') {
+        //            var sClasses = this[0].className.split(' ');
+        //            sClasses[0] = '.' + sClasses[0];
+        //            sClasses = sClasses.join('.');
+        //            sName += sClasses;
+        //        }
+        //        // Get id if there is one
+        //        sName += (this[0].id) ? ('#' + this[0].id) : '';
+        //        return sName;
+        //    };
+
+        //    var bTrigger = (typeof bMonTrigger !== "undefined") ? bMonTrigger : true,
+        //        bOn = (typeof bMonOn !== "undefined") ? bMonOn : true,
+        //        bOff = (typeof bMonOff !== "undefined") ? bMonOff : true,
+        //        fTriggerInherited = jQuery.fn.trigger,
+        //        fOnInherited = jQuery.fn.on,
+        //        fOffInherited = jQuery.fn.off;
+
+        //    if (bTrigger) {
+        //        jQuery.fn.trigger = function () {
+        //            console.log(this.___getHookName___() + ':trigger(' + arguments[0] + ')');
+        //            return fTriggerInherited.apply(this, arguments);
+        //        };
+        //    }
+
+        //    if (bOn) {
+        //        jQuery.fn.on = function () {
+        //            if (!this[0].__hooked__) {
+        //                this[0].__hooked__ = true; // avoids infinite loop!
+        //                console.log(this.___getHookName___() + ':on(' + arguments[0] + ') - binded');
+        //                $(this).on(arguments[0], function (e) {
+        //                    console.log($(this).___getHookName___() + ':' + e.type);
+        //                });
+        //            }
+        //            var uResult = fOnInherited.apply(this, arguments);
+        //            this[0].__hooked__ = false; // reset for another event
+        //            return uResult;
+        //        };
+        //    }
+
+        //    if (bOff) {
+        //        jQuery.fn.off = function () {
+        //            if (!this[0].__unhooked__) {
+        //                this[0].__unhooked__ = true; // avoids infinite loop!
+        //                console.log(this.___getHookName___() + ':off(' + arguments[0] + ') - unbinded');
+        //                $(this).off(arguments[0]);
+        //            }
+
+        //            var uResult = fOffInherited.apply(this, arguments);
+        //            this[0].__unhooked__ = false; // reset for another event
+        //            return uResult;
+        //        };
+        //    }
+        //}
+        //setJQueryEventHandlersDebugHooks(); //http://stackoverflow.com/questions/7439570/how-do-you-log-all-events-fired-by-an-element-in-jquery
+        ////////////////////////////////////////////////////////////////////////
+
+        $("#btncallgenerichandler3").on('click', function() {
+            //var $two = $("#btncallgenerichandler2");
+            //var two = $two[0];
+
+            ////$two.prop('onclick', null);
+            //two.onclick = function () { console.log('noget nyt og spændende!!'); };
+
+            console.log('new method!!!!!!!!!!!!!!!!!!!!!!!!!1111');
+
+            $(document).on('mousedown', 'input', function () {
+                console.log('orig mousedown 2');
+            });
+            console.log('new method!!!!!!!!!!!!!!!!!!!!!!!!!2222');
+
+        });
+
+        
 
         $("#btncallgenerichandler2").on('click', function() {
             console.log(2222);

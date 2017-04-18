@@ -18,26 +18,29 @@ namespace LogRecorderAndPlayer
         public static void LogViewState(HttpContext context, Page page, bool before)
         {
             var logType = before ? LogType.OnPageViewStateBefore : LogType.OnPageViewStateAfter;
-            NameValueCollection viewStateValues;
+            NameValueCollection viewStateValues = LoggingHelper.GetViewStateValues(page);
 
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
 
-                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    if (logElement.Value != null)
+                    {
+                        NameValueCollection loggedViewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        LoggingHelper.SetViewStateValues(page, loggedViewStateValues);
+                    }
+                    else if (viewStateValues != null)
+                    {
+                        throw new Exception("ViewState difference");
+                    }
 
-                viewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
-                LoggingHelper.SetViewStateValues(page, viewStateValues);
-
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() {Success = true}); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
-
-                return;
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() { Success = true }); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
+                }))
+                    return;
             }
-
-            viewStateValues = LoggingHelper.GetViewStateValues(page);
-            if (viewStateValues == null)
-                return;
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
 
@@ -51,7 +54,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json),
+                value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null
             ));
@@ -59,20 +62,22 @@ namespace LogRecorderAndPlayer
 
         public static void LogRequest(HttpContext context, Page page, NameValueCollection requestForm)
         {
+            var logType = LogType.OnPageRequest;
+
             if (LoggingHelper.IsPlaying(context, requestForm))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
 
-                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, LogType.OnPageRequest);
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
 
-                var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                    LoggingHelper.SetRequestValues(context, requestFormValues, requestForm);
 
-                LoggingHelper.SetRequestValues(context, requestFormValues, requestForm);
-
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
-
-                return;
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
             }
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
@@ -84,7 +89,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnPageRequest,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
                 value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
@@ -96,26 +101,29 @@ namespace LogRecorderAndPlayer
         public static void LogSession(HttpContext context, Page page, NameValueCollection requestForm, bool before)
         {
             var logType = before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter;
-            NameValueCollection sessionValues;
+            NameValueCollection sessionValues = LoggingHelper.GetSessionValues(page);
 
             if (LoggingHelper.IsPlaying(context, requestForm))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
 
-                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    if (logElement.Value != null)
+                    {
+                        NameValueCollection loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        LoggingHelper.SetSessionValues(page, loggedSessionValues);
+                    }
+                    else if (sessionValues != null)
+                    {
+                        throw new Exception("Session difference");
+                    }
 
-                sessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
-                LoggingHelper.SetSessionValues(page, sessionValues);
-
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
-
-                return;
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
             }
-
-            sessionValues = LoggingHelper.GetSessionValues(page);
-            if (sessionValues == null)
-                return;
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
            
@@ -129,7 +137,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json),
+                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null
             ));
@@ -137,23 +145,26 @@ namespace LogRecorderAndPlayer
 
         public static string LogResponse(HttpContext context, Page page, string response)
         {
+            var logType = LogType.OnPageResponse;
+
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
 
-                var logElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, LogType.OnPageResponse);
+                string newResponse = null;
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
+                    var responseViewState = WebHelper.GetResponseViewState(response);
+                    newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
 
-                //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
-                var responseViewState = WebHelper.GetResponseViewState(response);
-                var newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
+                    context.Response.Clear();
+                    context.Response.Write(newResponse);
 
-                context.Response.Clear();
-                context.Response.Write(newResponse);
-
-                NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
-
-                return newResponse;
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                }))
+                    return newResponse;
             }
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
@@ -165,7 +176,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnPageResponse,
+                logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
                 value: response,

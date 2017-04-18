@@ -11,18 +11,6 @@
     var PageGUIDTag = "lrap-pageguid";
     var BundleGUIDTag = "lrap-bundleguid";
     var ServerGUIDTag = "lrap-serverguid"; //For the namedpipe-connection to the LogPlayer
-//    var LogElementGUID = null;
-
-    //function pushLogElementGUID(logElementGUID) {
-    //    alert('pushing ' + logElementGUID);
-    //    LogElementGUID = logElementGUID;
-    //}
-
-    //function popLogElementGUID() {
-    //    var r = LogElementGUID;
-    //    LogElementGUID = null;
-    //    return r;
-    //}
 
     function unixTimestamp(dt) { //seconds since 1970/1/1
         if (typeof (dt) == "undefined" || dt == null)
@@ -224,7 +212,7 @@
             handleLogElements(false);
 
             if (isPlaying() && window.external) {
-                window.external.SetHandlerLogElementAsDone(LogType.OnHandlerRequestSend, stripLRAPFromUrl(options.url), false, null);
+                window.external.SetHandlerLogElementAsDone(LogType.OnHandlerResponseReceived, stripLRAPFromUrl(options.url), false, null);
             }
 
             //handleLogElements();
@@ -470,9 +458,69 @@
         }
     }
 
+    function setupLRAPEvent(that, eventType/*e.g. 'click'*/, eventMethod) {
+        var $that = $(that);
+        var onEventProp = $that.prop('on' + eventType);
+        if (onEventProp) {
+            var f = function (event) {
+                eventMethod(that, eventType);
+                return onEventProp(event);
+            };
+
+            if ($that.data('lrapOn' + eventType) !== onEventProp) {
+                //console.log('setupLRAPEvent : DOM-' + eventType);
+                eval("that.on" + eventType + "=f");
+                //this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
+                $that.data('lrapOn' + eventType, f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
+            }
+            removeEventHandlerByFunction(that, eventType, eventMethod);
+        } else {
+            if (!getHandlerInfoByEventType(that, eventType, eventMethod)) {
+                //console.log('setupLRAPEvent : jQuery-' + eventType);
+                $that.on(eventType, eventMethod);
+                moveLastEventToFirst(that, eventType);
+            }
+        }
+    }
+
+    function getHandlerInfoByEventType(that, eventType, lrapFn) {
+        var events = $._data(that, 'events');
+        if (events) {
+            var typeEvents = events[eventType];
+            if (typeEvents) {
+                var handlerInfo = $.findFirst(typeEvents,
+                    function (v, i) {
+                        return v.handler === lrapFn;
+                    });
+                if (handlerInfo)
+                    return handlerInfo;
+            }
+        }
+
+        return null;
+    }
+
+    function removeEventByIndex(that, eventType, index) {
+        var events = $._data(that, 'events');
+        if (events) {
+            var typeEvents = events[eventType];
+            if (typeEvents) {
+                typeEvents.splice(index, 1);
+            }
+        }
+    }
+
+    function removeEventHandlerByFunction(that, eventType, lrapFn) {
+        var handlerInfo = getHandlerInfoByEventType(that, eventType, lrapFn);
+        if (handlerInfo) {
+            removeEventByIndex(that, eventType, handlerInfo.index);
+        }
+    }
+
     function setupBasicClientsideControlEvents(inputSelector) {
         var $document = $(document);
-        $document.on('mousedown', inputSelector, function (event) { //left click vs right click?
+
+        function mousedownEvent(event) {
             if (!event)
                 event = window.event;
 
@@ -480,13 +528,13 @@
                 button: event.button, //0=left 1=middle 2=right //The best supported
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey                
+                ctrlKey: event.ctrlKey
             };
 
             logEvent(this, v, 'mousedown', LogType.OnMouseDown, event);
-        });
+        }
 
-        $document.on('mouseup', inputSelector, function (event) { //left click vs right click?
+        function mouseupEvent(event) { //left click vs right click?
             if (!event)
                 event = window.event;
 
@@ -494,31 +542,31 @@
                 button: event.button,
                 shiftKey: event.shiftKey,
                 altKey: event.altKey,
-                ctrlKey: event.ctrlKey                
+                ctrlKey: event.ctrlKey
             };
 
             logEvent(this, v, 'mouseup', LogType.OnMouseUp, event);
-        });        
+        };
 
-        $document.on('click', inputSelector, function(event) { //Only elements with onclick/click event attached will be logged
+        function clickEvent(event) { //Only elements with onclick/click event attached will be logged
             if (!event)
                 event = window.event;
 
             var v = {};
 
             logEvent(this, v, 'click', LogType.OnClick, event);
-        });
+        };
 
-        $document.on('dblclick', inputSelector, function (event) {
+        function dblclickEvent(event) {
             if (!event)
                 event = window.event;
 
             var v = {};
 
             logEvent(this, v, 'dblclick', LogType.OnDblClick, event);
-        });
+        };
 
-        $document.on('dragstart', inputSelector, function (event) {            
+        function dragstartEvent(event) {
             var target = event.target ? event.target : event.srcElement;
 
             var v = {
@@ -526,42 +574,79 @@
             };
 
             logEvent(target, v, 'dragstart', LogType.OnDragStart, event);
-        });
+        };
 
-        $document.on('dragend', inputSelector, function (event) {
+        function dragendEvent(event) {
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
 
             logEvent(target, v, 'dragend', LogType.OnDragEnd, event);
-        });
+        };
 
-        $document.on('dragover', inputSelector, function (event) { //To tell if it is allowed
+        function dragoverEvent(event) { //To tell if it is allowed
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
 
             logEvent(target, v, 'dragover', LogType.OnDragOver, event);
-        });
+        };
 
-        $document.on('drop', inputSelector, function (event) {
+        function dropEvent(event) {
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
 
             logEvent(target, v, 'drop', LogType.OnDrop, event);
-        });
+        };
 
-        $document.on('scroll', inputSelector, function (event) {
+        function scrollEvent(event) {
             var $this = $(this);
 
             var v = {
                 top: $this.scrollTop(),
-                left: $this.scrollLeft()                
+                left: $this.scrollLeft()
             };
 
             logEvent(this, v, 'scroll', LogType.OnScroll, event, compareLogElementsNoValue);
+        };
+
+        //Ved drag af div/span/p: (activate/domactivate is not called, mouseenter is not called on destination)
+        //mouseenter(src) -> mousedown(src) -> dragstart(src) -> dragover(src/dst) -> drop(dst) -> dragend(dst)
+
+        //Ved click i div/span/p:
+        //mouseenter(dst) -> mousedown(dst) -> blur(src if any) -> mouseup(dst) -> click(dst) -> activate(dst)
+
+        //Ved click i input/select/textarea:
+        //mouseenter(dst) -> mousedown(dst) -> blur(src if any) -> focusout(src if any) -> focusin(dst) -> focus(dst) -> mouseup(dst) -> click(dst) -> activate(dst)
+
+        //Ved tab til input/select/textarea:
+        //keydown(src if any) -> blur(src if any) -> focusout(src if any) -> focusin(dst) -> focus(dst) -> select(dst) -> keyup(dst)
+
+        function setupElement(that, forMouseEnter) {
+            if (forMouseEnter) {
+                setupLRAPEvent(that, 'mousedown', mousedownEvent); //Cannot be a anonymous function, because setupLRAPEvent must be able to locate the event/handler-method by something static like the method itself... could it be something else?
+                setupLRAPEvent(that, 'scroll', scrollEvent);
+            } else {
+                setupLRAPEvent(that, 'dragstart', dragstartEvent);
+                setupLRAPEvent(that, 'dragover', dragoverEvent);
+                setupLRAPEvent(that, 'click', clickEvent);
+                setupLRAPEvent(that, 'dblclick', dblclickEvent);
+                setupLRAPEvent(that, 'mouseup', mouseupEvent);
+                setupLRAPEvent(that, 'drop', dropEvent);
+                setupLRAPEvent(that, 'dragend', dragendEvent);
+            }
+        }
+
+        //In Firefox, Google Chrome and Safari, use the DOMActivate event instead of the onactivate event. (activate is no go!)
+
+        $document.on('mousedown', inputSelector, function () { //mousedown is called before activate, could use mouseenter... apparently it works on iPad, mouseenter-event is called when pressing a button. 
+            setupElement(this, false);
         });
+
+        $document.on('mouseenter', inputSelector, function () { //mousedown is called before activate, could use mouseenter... apparently it works on iPad, mouseenter-event is called when pressing a button. 
+            setupElement(this, true);
+        });        
     }
 
     function logInputClientsideControlEvent(that, logType, value, event, compareFn, combineFn) {
@@ -590,15 +675,15 @@
 
         var $document = $(document);
 
-        $document.on('blur', inputSelector, function (event) {
+        function blurEvent(event) { //after focusin
             logInputClientsideControlEvent(this, LogType.OnBlur, null, JSONEvent(event));
-        });
+        };
 
-        $document.on('focus', inputSelector, function (event) {
+        function focusEvent(event) { //after focusin
             logInputClientsideControlEvent(this, LogType.OnFocus, null, JSONEvent(event));
-        });
+        };
 
-        $document.on('change', inputSelector, function (event) {
+        function changeEvent(event) { //after focusin
             var $this = $(this);
             var type = $this.prop('type').toUpperCase();
             var v;
@@ -608,25 +693,25 @@
                 v = $this.val();
 
             logInputClientsideControlEvent(this, LogType.OnChange, v, JSONEvent(event));
-        });
+        };
 
-        $document.on('select', inputSelector, function (event) { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs
+        function selectEvent(event) { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs    //after focusin
             logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionInfo(this), JSONEvent(event));
-        });
+        };
 
-        $document.on('copy', inputSelector, function (event) {
+        function copyEvent(event) { //after focusin
             logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionInfo(this), JSONEvent(event));
-        });
+        };
 
-        $document.on('cut', inputSelector, function (event) {
+        function cutEvent(event) { //after focusin
             logInputClientsideControlEvent(this, LogType.OnCut, getSelectionInfo(this), JSONEvent(event));
-        });
+        };
 
-        $document.on('paste', inputSelector, function (event) {
+        function pasteEvent(event) { //after focusin 
             logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val(), JSONEvent(event));
-        });
+        };
 
-        $document.on('keydown', inputSelector, function (event) {
+        function keydownEvent(event) { //after focusin
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -642,9 +727,9 @@
             };
 
             logInputClientsideControlEvent(this, LogType.OnKeyDown, v, JSONEvent(event));
-        });
+        };
 
-        $document.on('keyup', inputSelector, function (event) { //keyCode is incase-sensative
+        function keyupEvent(event) { //keyCode is incase-sensative   //after focusin
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -660,9 +745,9 @@
             };
 
             logInputClientsideControlEvent(this, LogType.OnKeyUp, v, JSONEvent(event), compareLogElementsKeyup, combineLogElementsKeyup);
-        });
+        };
 
-        $document.on('keypress', inputSelector, function (event) { //keyCode is case-sensative
+        function keypressEvent(event) { //keyCode is case-sensative    //after focusin
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -678,18 +763,27 @@
             };
             
             logInputClientsideControlEvent(this, LogType.OnKeyPress, v, JSONEvent(event), compareLogElementsKeypress, combineLogElementsKeypress);
-        });        
+        };
+
+        function setupElement(that) {
+            setupLRAPEvent(that, 'keydown', keydownEvent);
+            setupLRAPEvent(that, 'keypress', keypressEvent);
+            setupLRAPEvent(that, 'keyup', keyupEvent);
+            setupLRAPEvent(that, 'copy', copyEvent);
+            setupLRAPEvent(that, 'cut', cutEvent);
+            setupLRAPEvent(that, 'paste', pasteEvent);
+            setupLRAPEvent(that, 'focus', focusEvent);
+            setupLRAPEvent(that, 'blur', blurEvent);
+            setupLRAPEvent(that, 'change', changeEvent);
+            setupLRAPEvent(that, 'select', selectEvent);                       
+        }
+
+        $document.on('focusin', inputSelector, function () { 
+            setupElement(this);
+        });
     }
 
     function logWindowScroll() {
-        //if (isPlaying()) {
-        //    var logElementGUID = popLogElementGUID();
-        //    if (logElementGUID != null) {
-        //        window.external.SetLogElementAsDone(logElementGUID);
-        //    }
-        //    return;
-        //}
-
         var $this = $(window);
 
         var v = {
@@ -841,6 +935,9 @@
         logElement(getSessionGUID(), getPageGUID(), null, null, unixTimestamp(), logType, element, value, compareFn, combineFn);
     }
 
+    var lastUnixTimestamp = undefined;
+    var equalUnixTimestampCounter = 1;
+
     function logElement(sessionGUID, pageGUID, bundleGUID, progressGUID, unixTimestamp, logType, element, value, compareFn, combineFn) {
         if (element == null || isPlaying())
             return;
@@ -850,6 +947,16 @@
 
         if (typeof (combineFn) == "undefined")
             combineFn = combineLogElements;
+
+        if (lastUnixTimestamp)
+        {
+            if (unixTimestamp == lastUnixTimestamp) {
+                unixTimestamp += equalUnixTimestampCounter++ / 1000000.0; //store counter in nanoseconds area, nanoseconds are not supported in javascript
+            } else {
+                equalUnixTimestampCounter = 1;
+            }
+        }
+        lastUnixTimestamp = unixTimestamp;
 
         var request = {
             GUID: generateGUID(),
@@ -1572,11 +1679,13 @@
                 //alert("playLogElement condition2: " + logElement.Element + " : " + logElement.LogType);
                 return rx;
             },
+            function () { //prepare
+                return doPrepareEventFor($elm, logElement);
+            },
             function () { //execute
                 //alert("playLogElement execute1: " + logElement.Element + " : " + logElement.LogType);
-                var rx = doPlayEventFor($elm, logElement);
-                //alert("playLogElement execute2: " + logElement.Element + " : " + logElement.LogType);
-                return rx;
+                doPlayEventFor($elm, logElement);
+                //alert("playLogElement execute2: " + logElement.Element + " : " + logElement.LogType);                
             },
             function (loopCounter/*n-1..0*/) { //progress                             
             },
@@ -1594,11 +1703,11 @@
         //alert("playLogElement called3: " + logElement.Element + " : " + logElement.LogType + " : loopTotal=" + loopTotal);
     }
 
-    function playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
-        if (loopCounter <= 0) {
-            doneFunc(false);
-            return;
-        }
+    function playLoop(loopCounter, conditionFunc, prepareExecuteFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
+        //if (loopCounter <= 0) {
+        //    doneFunc(false);
+        //    return;
+        //}
 
         if (!roundStart)
             roundStart = unixTimestamp();
@@ -1609,20 +1718,57 @@
         }
 
         setTimeout(function () {
-            if (conditionFunc(loopCounter)) {
-                var r = executeFunc(loopCounter);
+            if (conditionFunc()) {
+                var r = prepareExecuteFunc();
                 if (r && !r.Success) {
                     doneFunc(true, r.Message ? r.Message : 'Error occured');
                     return;
                 }
-                if (progressFunc)
-                    progressFunc(loopCounter);
-                playLoop(loopCounter - 1, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, undefined);
+                doneFunc(false);
+                while (loopCounter > 0) {
+                    executeFunc(loopCounter);
+
+                    if (progressFunc)
+                        progressFunc(loopCounter);
+
+                    loopCounter--;
+                }
             } else {
-                playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart);
-            }            
+                playLoop(loopCounter, conditionFunc, prepareExecuteFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart);
+            }
         }, 100);
     }
+
+    //Før jeg behøvede at kalde done før selve eksveringen af eventet
+    //function playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart/*internal/optional*/) {
+    //    if (loopCounter <= 0) {
+    //        doneFunc(false);
+    //        return;
+    //    }
+
+    //    if (!roundStart)
+    //        roundStart = unixTimestamp();
+
+    //    if (timeoutInSec && unixTimestamp() - roundStart > timeoutInSec) {
+    //        doneFunc(true, 'Timeout occured');
+    //        return;
+    //    }
+
+    //    setTimeout(function () {
+    //        if (conditionFunc(loopCounter)) {               
+    //            var r = executeFunc(loopCounter);
+    //            if (r && !r.Success) {
+    //                doneFunc(true, r.Message ? r.Message : 'Error occured');
+    //                return;
+    //            }
+    //            if (progressFunc)
+    //                progressFunc(loopCounter);
+    //            playLoop(loopCounter - 1, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, undefined);
+    //        } else {
+    //            playLoop(loopCounter, conditionFunc, executeFunc, progressFunc, doneFunc, timeoutInSec, roundStart);
+    //        }            
+    //    }, 100);
+    //}
 
     function scrollToElement($elm) {
         var elm = $elm[0];
@@ -1649,11 +1795,10 @@
     }
 
     function doPlayEventFor($elm, logElement) {
-        //alert(logElement.LogType);
         scrollToElement($elm);
 
         var logType = logElement.LogType;
-        var elementValue = JSON.parse(htmlDecode(logElement.Value));        
+        var elementValue = JSON.parse(htmlDecode(logElement.Value));
 
         var eventName = null;
 
@@ -1683,14 +1828,12 @@
         var preCombinedLogTypes = [];
         var postCombinedLogTypes = [];
 
-        switch(logType) {
+        switch (logType) {
             case LogType.OnFocus:
-                $elm.focus();
-                eventName = 'focus';
+                $elm.focus();                
                 break;
             case LogType.OnBlur:
-                $elm.blur();
-                eventName = 'blur';
+                $elm.blur();                
                 break;
             case LogType.OnChange:
                 var inputType = $elm.prop("type").toUpperCase();
@@ -1699,7 +1842,8 @@
                 } else {
                     $elm.val(elementValue.value);
                 }
-                eventName = 'change';
+                $elm.change();
+                //eventName = 'change';
                 //nye html5 elementer:
                 //Datalist https://www.w3schools.com/html/html_form_elements.asp
                 //Keygen
@@ -1714,7 +1858,7 @@
                 //alert(JSON.stringify(elementValue));               
 
                 setSelectionText($elm[0], elementValue.value.startPos, elementValue.value.endPos);
-                
+
                 var selectionInfo = getSelectionInfo($elm[0]);
                 if (selectionInfo.text != elementValue.value.text) {
                     alert(selectionInfo.text);
@@ -1739,11 +1883,11 @@
                 break;
             case LogType.OnKeyDown:
                 //The value is not changed yet
-                eventName = 'keydown';                
+                eventName = 'keydown';
                 break;
-            case LogType.OnKeyPress: 
+            case LogType.OnKeyPress:
                 eventName = 'keypress';
-                
+
                 preCombinedLogTypes = $.grep(logElement.CombinedRequestsWithDifferentLogType, function (c) {
                     return c.LogType == LogType.OnKeyDown;
                 });
@@ -1802,7 +1946,7 @@
                 //Perform.scroll
                 eventName = 'scroll';
                 //alert('scroll top=' + elementValue.top);
-                $elm[0].scrollTo(elementValue.left, elementValue.top);                
+                $elm[0].scrollTo(elementValue.left, elementValue.top);
                 break;
             case LogType.OnSubmit:
                 //eventName = 'submit'; //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
@@ -1855,6 +1999,42 @@
         $.each(postCombinedLogTypes, function (preIdx, postCombinedLogType) {
             doPlayEventFor($elm, postCombinedLogType);
         });
+
+        return { Success: true };
+    }
+   
+    function doPrepareEventFor($elm, logElement) {        
+
+        var logType = logElement.LogType;
+
+        switch(logType) {
+            case LogType.OnFocus:
+            case LogType.OnBlur:
+            case LogType.OnChange:
+            case LogType.OnSelect: //selected text
+            case LogType.OnCopy:
+            case LogType.OnCut:
+            case LogType.OnPaste:
+            case LogType.OnKeyDown:
+            case LogType.OnKeyPress: 
+            case LogType.OnKeyUp:
+            case LogType.OnMouseDown:
+            case LogType.OnMouseUp:
+            case LogType.OnClick:
+            case LogType.OnDblClick:
+            case LogType.OnSearch:
+            case LogType.OnResize:
+            case LogType.OnDragStart:
+            case LogType.OnDragEnd:
+            case LogType.OnDragOver:
+            case LogType.OnDrop:
+            case LogType.OnScroll:
+            case LogType.OnSubmit:
+            case LogType.OnReset:
+                break;
+            default:
+                return { Success: false, Message: "LogType (" + logType + ") is not supported" };
+        }        
 
         return { Success: true };
     }

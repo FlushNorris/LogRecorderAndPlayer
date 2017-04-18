@@ -17,7 +17,7 @@ namespace LogRecorderAndPlayer
         private string BuildFilePath(LogElementDTO logElement, string filePath)
         {
             var timestamp = TimeHelper.UnixTimeStampToDateTime(logElement.UnixTimestamp);
-            var fileName = $"{timestamp.ToString("yyyyMMddHHmmssfff")}_{logElement.SessionGUID}__{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";
+            var fileName = $"{timestamp.ToString("yyyyMMddHHmmssffffff")}_{logElement.SessionGUID}__{logElement.PageGUID}_{logElement.LogType}_{prepareElementForIO(logElement.Element)}";
 
             var filePathAndName = filePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar + fileName;
             var fileExtension = ".json";
@@ -39,7 +39,7 @@ namespace LogRecorderAndPlayer
             var m = r.Match(fileName);
             if (m.Success)
             {
-                var timestamp = DateTime.ParseExact(m.Groups[1].Value, "yyyyMMddHHmmssfff", null);
+                var timestamp = DateTime.ParseExact(m.Groups[1].Value, "yyyyMMddHHmmssffffff", null);
                 var sessionGUID = new Guid(m.Groups[2].Value);
                 var pageGUID = new Guid(m.Groups[3].Value);
 
