@@ -471,12 +471,16 @@
                 //console.log('setupLRAPEvent : DOM-' + eventType);
                 eval("that.on" + eventType + "=f");
                 //this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
-                $that.data('lrapOn' + eventType, f); //Kan ikke anvende prop til functions... åbenbart... men derimod data kan jeg anvende!
+                $that.data('lrapOn' + eventType, f); //Kan ikke anvende prop til function-pointers... men derimod data kan jeg anvende!
             }
             removeEventHandlerByFunction(that, eventType, eventMethod);
         } else {
-            if (!getHandlerInfoByEventType(that, eventType, eventMethod)) {
-                //console.log('setupLRAPEvent : jQuery-' + eventType);
+            var handlerInfo = getHandlerInfoByEventType(that, eventType, eventMethod);
+            if (handlerInfo != null) {
+                if (handlerInfo.index != 0) {
+                    moveEventToFirst(that, eventType, handlerInfo.index);
+                }
+            } else {
                 $that.on(eventType, eventMethod);
                 moveLastEventToFirst(that, eventType);
             }
@@ -1330,12 +1334,24 @@
         });
     }
 
-    function moveLastEventToFirst(elm, action) {
+    function moveEventToFirst(elm, action, index) {
         var handlers = $._data(elm, 'events')[action];
         if (!handlers)
             return;
-        var handler = handlers.pop();
+        index = typeof (index) == "undefined" ? handlers.length - 1 : index;
+        var handler = handlers[index];
+        handlers.splice(index, 1);
         handlers.splice(0, 0, handler);
+    }
+
+    function moveLastEventToFirst(elm, action) {
+        moveEventToFirst(elm, action, undefined);
+
+        //var handlers = $._data(elm, 'events')[action];
+        //if (!handlers)
+        //    return;
+        //var handler = handlers.pop();
+        //handlers.splice(0, 0, handler);
     }
 
     function getQryStrElement(url, tag) {
@@ -1390,23 +1406,23 @@
         return elem.value.length - pos;
     }
 
-    function setCaretPositionRelativeToEnd(elem, caretPos) {
-        caretPos = elem.value.length - caretPos;
+    //function setCaretPositionRelativeToEnd(elem, caretPos) {
+    //    caretPos = elem.value.length - caretPos;
 
-        if (elem.createTextRange) {
-            var range = elem.createTextRange();
-            range.move('character', caretPos);
-            range.select();
-        }
-        else {
-            if (elem.selectionStart) {
-                elem.focus();
-                elem.setSelectionRange(caretPos, caretPos);
-            }
-            else
-                elem.focus();
-        }
-    }
+    //    if (elem.createTextRange) {
+    //        var range = elem.createTextRange();
+    //        range.move('character', caretPos);
+    //        range.select();
+    //    }
+    //    else {
+    //        if (elem.selectionStart) {
+    //            elem.focus();
+    //            elem.setSelectionRange(caretPos, caretPos);
+    //        }
+    //        else
+    //            elem.focus();
+    //    }
+    //}
 
     function validateSelectorAgainstElement(selector, $elm) {
         var id = $elm.prop("id");
