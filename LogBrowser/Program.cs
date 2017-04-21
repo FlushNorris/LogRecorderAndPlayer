@@ -17,10 +17,16 @@ namespace LogBrowser
         [STAThread]
         static void Main(string[] args)
         {
+            //var server = new WCFServer(new Guid());
+            //Console.WriteLine("!!!!");
+            //Console.WriteLine($"Connected to : {server.ServerState} : {server.ServiceURL}");
+            //Console.ReadKey(true);
+            //return;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm(args));
-            //Application.Run(new BrowserForm(new Guid(), new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
+            //Application.Run(new MainForm(args));
+            Application.Run(new BrowserForm(new Guid(), new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
         }
     }
 }

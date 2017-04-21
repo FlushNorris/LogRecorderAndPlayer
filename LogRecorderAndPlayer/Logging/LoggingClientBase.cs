@@ -10,7 +10,7 @@ using System.Web.UI;
 
 namespace LogRecorderAndPlayer
 {
-    public static class LoggingWCF
+    public static class LoggingClientBase
     {
         public static void SetupClientBase<T>(System.ServiceModel.ClientBase<T> client, HttpContext httpContext) where T : class
         {
@@ -31,6 +31,10 @@ namespace LogRecorderAndPlayer
             eab.Headers.Add(AddressHeader.CreateAddressHeader(Consts.BundleGUIDTag,
                                                     string.Empty,
                                                     LoggingHelper.GetBundleGUID(httpContext, () => new Guid()).GetValueOrDefault().ToString()));
+
+            eab.Headers.Add(AddressHeader.CreateAddressHeader(Consts.ServerGUIDTag,
+                                                    string.Empty,
+                                                    LoggingHelper.GetServerGUID(httpContext, () => new Guid()).GetValueOrDefault().ToString()));
 
             client.Endpoint.Address = eab.ToEndpointAddress();
         }

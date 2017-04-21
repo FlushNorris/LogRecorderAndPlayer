@@ -278,17 +278,49 @@ namespace LogRecorderAndPlayer
             return logHandlerResponse;
         }
 
+        private static Dictionary<Guid, LogElementDTO> dictLastLogElementPerPage = new Dictionary<Guid, LogElementDTO>();
+        private static double unixTimestampForwardAdjuster = 0.001*0.001; //1 ns
+        private static double cleanupAfterLastLogElementsAfterSeconds = 100.0; //just any number of seconds which the NTP-algorithm at least would be within precision-wise
+
         public static LogElementResponse LogElement(LogElementDTO logElement)
         {
             try
             {
                 var config = ConfigurationHelper.GetConfigurationSection();
 
-                if (TimeHelper.UnixTimestamp() < logElement.UnixTimestamp)
+                var unixNow = TimeHelper.UnixTimestamp();
+
+                LogElementDTO lastLogElement = null;
+                //Cleanup old entries in dictionary
+                dictLastLogElementPerPage.Where(x => x.Value.UnixTimestamp < unixNow - cleanupAfterLastLogElementsAfterSeconds).Select(x => x.Key).ToList().ForEach(x => dictLastLogElementPerPage.Remove(x));
+
+                if (dictLastLogElementPerPage.TryGetValue(logElement.PageGUID, out lastLogElement))
                 {
-                    logElement.Element = "ARGHARGH";
-                    logElement.Value = "ARGHARGH";
+                    if (lastLogElement.UnixTimestamp >= logElement.UnixTimestamp)
+                    {
+                        //Correct logElement, it must be placed after lastLogElement
+                        var diffAdjust = (lastLogElement.UnixTimestamp + unixTimestampForwardAdjuster) - logElement.UnixTimestamp;
+                        logElement.UnixTimestamp += diffAdjust;
+
+                        if (logElement.UnixTimestampEnd.HasValue)
+                        {
+                            logElement.UnixTimestampEnd += diffAdjust;
+                        }
+                    }
                 }
+                else
+                {
+                    //This is the first registered logElement for this pageGUID, nothing to correct against
+                }
+
+                if (unixNow < logElement.UnixTimestamp) //Get server back on right track if the logElement.UnixTimestamp is ahead of time, which it could be if the logElement was transfered from e.g. the clientside(browser)
+                {
+                    var diffSeconds = logElement.UnixTimestamp - unixNow;
+                    var diffMS = (int)Math.Ceiling(diffSeconds*1000.0);
+                    System.Threading.Thread.Sleep(diffMS);
+                }
+                
+                dictLastLogElementPerPage[logElement.PageGUID] = logElement;
 
                 GetLoggingPersister(config.LogType).LogElement(config.FilePath, logElement);
 

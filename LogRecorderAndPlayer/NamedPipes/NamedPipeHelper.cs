@@ -11,28 +11,28 @@ namespace LogRecorderAndPlayer
     {
         public static bool SendClosingSession(Guid serverGUID, Guid processGUID, int processId)
         {
-            var session = new NamedPipeSession() { ProcessGUID = processGUID, ProcessId = processId };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.ClosingSession, Data = session };
+            var session = new TransferElementSession() { ProcessGUID = processGUID, ProcessId = processId };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.ClosingSession, Data = session };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             if (!String.IsNullOrWhiteSpace(error))
                 throw new Exception(error);
 
-            var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+            var serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
             return !serverResponse.Success;
         }
 
         public static FetchLogElementResponse FetchLogElementFromPlayer(Guid serverGUID, Guid pageGUID, LogType logType)
         {
-            var fetchLogElement = new NamedPipeFetchLogElement() { PageGUID = pageGUID, LogType = logType };
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.FetchLogElement, Data = fetchLogElement };
+            var fetchLogElement = new TransferElementFetchLogElement() { PageGUID = pageGUID, LogType = logType };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.FetchLogElement, Data = fetchLogElement };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             string serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             if (!String.IsNullOrWhiteSpace(error))
                 throw new Exception(error);
-            var serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+            var serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
             return (FetchLogElementResponse)serverResponse.Data;
         }
 
@@ -40,17 +40,17 @@ namespace LogRecorderAndPlayer
         {
             var async = false;
 
-            var data = new NamedPipeBrowserJob() { PageGUID = pageGUID, LogType = logType, HandlerUrl = handlerUrl, JobStatus = jobStatus };
+            var data = new TransferElementBrowserJob() { PageGUID = pageGUID, LogType = logType, HandlerUrl = handlerUrl, JobStatus = jobStatus };
 
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJobComplete, Data = data };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJobComplete, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
             if (async && serverResponseJSON == null)
                 return;
-            NamedPipeServerResponse serverResponse = null;
+            TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
@@ -60,33 +60,33 @@ namespace LogRecorderAndPlayer
         {
             var async = false;
 
-            var data = new NamedPipeBrowserJob() { PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
+            var data = new TransferElementBrowserJob() { PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
 
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJobComplete, Data = data };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJobComplete, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
             if (async && serverResponseJSON == null)
                 return;
-            NamedPipeServerResponse serverResponse = null;
+            TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
         }
 
-        public static void SendBrowserJob_ASYNC(NamedPipeSession session, LogElementDTO logElement)
+        public static void SendBrowserJob_ASYNC(TransferElementSession session, LogElementDTO logElement)
         {
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.BrowserJob, Data = logElement };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJob, Data = logElement };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;            
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(session.ProcessGUID, serverRequestJSON, out error, async:true);
             if (serverResponseJSON == null)
                 return;
-            NamedPipeServerResponse serverResponse = null;
+            TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while sending starting browser job ({error ?? serverResponse.Message})");
@@ -94,15 +94,15 @@ namespace LogRecorderAndPlayer
 
         public static void SendSyncSession(Guid serverGUID, Guid sessionGUID, int processId) //Process.GetCurrentProcess().Id
         {
-            var data = new NamedPipeSession() { ProcessGUID = sessionGUID, ProcessId = processId };
+            var data = new TransferElementSession() { ProcessGUID = sessionGUID, ProcessId = processId };
 
-            var serverRequest = new NamedPipeServerRequest() { Type = NamedPipeServerRequestType.SyncSession, Data = data };
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.SyncSession, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
             var serverResponseJSON = NamedPipeClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
-            NamedPipeServerResponse serverResponse = null;
+            TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<NamedPipeServerResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");

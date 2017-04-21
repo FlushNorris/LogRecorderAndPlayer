@@ -11,15 +11,15 @@ namespace LogRecorderAndPlayer
     public class NamedPipeService : INamedPipeService
     {
         //Session/Browser to Server/Player
-        public delegate NamedPipeServerResponse SyncSession(NamedPipeSession namedPipeSession); 
-        public delegate NamedPipeServerResponse ClosingSession(NamedPipeSession namedPipeSession);
-        public delegate NamedPipeServerResponse BrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob);
+        public delegate TransferElementResponse SyncSession(TransferElementSession namedPipeSession); 
+        public delegate TransferElementResponse ClosingSession(TransferElementSession namedPipeSession);
+        public delegate TransferElementResponse BrowserJobComplete(TransferElementBrowserJob namedPipeBrowserJob);
 
         //Server/Player to Session/Browser
-        public delegate NamedPipeServerResponse BrowserJob(LogElementDTO logElement); 
+        public delegate TransferElementResponse BrowserJob(LogElementDTO logElement); 
 
         //Webservice to Player
-        public delegate NamedPipeServerResponse FetchLogElement(NamedPipeFetchLogElement fetchLogElement);
+        public delegate TransferElementResponse FetchLogElement(TransferElementFetchLogElement fetchLogElement);
 
         public event SyncSession OnSyncSession = null;
         public event ClosingSession OnClosingSession = null;
@@ -34,39 +34,39 @@ namespace LogRecorderAndPlayer
             //HttpModule -> Player: For at hente information om hvilket data der skal anvendes 
             //LRAPCommand/LRAPDataReader -> Player: For igen at hente hvilket data der skal anvendes i Requestet og/eller Responset
 
-            var serverRequest = SerializationHelper.Deserialize<NamedPipeServerRequest>(value, SerializationType.Json);
-            NamedPipeServerResponse serverResponse = new NamedPipeServerResponse() {Success = true};
+            var serverRequest = SerializationHelper.Deserialize<TransferElementRequest>(value, SerializationType.Json);
+            var serverResponse = new TransferElementResponse() {Success = true};
             switch (serverRequest.Type)
             {
-                case NamedPipeServerRequestType.SyncSession:
+                case TransferElementRequestType.SyncSession:
                 {
-                    var session = (NamedPipeSession) serverRequest.Data;
+                    var session = (TransferElementSession) serverRequest.Data;
                     if (OnSyncSession != null)
                         serverResponse = OnSyncSession(session);
                     break;
                 }
-                case NamedPipeServerRequestType.ClosingSession:
+                case TransferElementRequestType.ClosingSession:
                 {
-                    var session = (NamedPipeSession) serverRequest.Data;
+                    var session = (TransferElementSession) serverRequest.Data;
                     if (OnClosingSession != null)
                         serverResponse = OnClosingSession(session);
                     break;
                 }
-                case NamedPipeServerRequestType.FetchLogElement:
+                case TransferElementRequestType.FetchLogElement:
                 {
-                    var fetchLogElement = (NamedPipeFetchLogElement)serverRequest.Data;
+                    var fetchLogElement = (TransferElementFetchLogElement)serverRequest.Data;
                     if (OnFetchLogElement != null)
                         serverResponse = OnFetchLogElement(fetchLogElement);
                     break;
                 }
-                case NamedPipeServerRequestType.BrowserJobComplete:
+                case TransferElementRequestType.BrowserJobComplete:
                 {
-                    var browserJob = (NamedPipeBrowserJob)serverRequest.Data;
+                    var browserJob = (TransferElementBrowserJob)serverRequest.Data;
                     if (OnBrowserJobComplete != null)
                         serverResponse = OnBrowserJobComplete(browserJob);
                     break;
                 }
-                case NamedPipeServerRequestType.BrowserJob:
+                case TransferElementRequestType.BrowserJob:
                 {                        
                     var logElement = (LogElementDTO) serverRequest.Data;
                     if (OnBrowserJob != null)

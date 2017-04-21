@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace LogRecorderAndPlayer
 {
     [DataContract]
-    public class NamedPipeBrowserJob
+    public class TransferElementBrowserJob
     {       
         [DataMember]
         public Guid PageGUID { get; set; }

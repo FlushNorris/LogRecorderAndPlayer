@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 namespace LogRecorderAndPlayer
 {
     [DataContract]
-    public class NamedPipeFetchLogElement
+    public class TransferElementSession
     {
         [DataMember]
-        public Guid PageGUID { get; set; }
+        public Guid ProcessGUID { get; set; }
 
         [DataMember]
-        public LogType LogType { get; set; }
+        public int ProcessId { get; set; }        
     }
 }

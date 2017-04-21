@@ -679,9 +679,9 @@ namespace TestBrowser
                     return Color.Green;
                 case LogType.OnWCFServiceResponse:
                     return Color.DarkGreen;
-                case LogType.OnDatabaseRequest:
+                case LogType.OnPersistenceRequest:
                     return Color.Yellow;
-                case LogType.OnDatabaseResponse:
+                case LogType.OnPersistenceResponse:
                     return Color.YellowGreen;
                 case LogType.OnHandlerSessionBefore:
                     return Color.Purple;

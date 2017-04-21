@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    public class WCFEndPointBehavior : IEndpointBehavior, IServiceBehavior
+    public class ClientMessageEndPointBehavior : IEndpointBehavior, IServiceBehavior
     {
         #region IEndpointBehavior Members
 
@@ -21,7 +21,7 @@ namespace LogRecorderAndPlayer
 
         public void ApplyClientBehavior(ServiceEndpoint endpoint, ClientRuntime clientRuntime)
         {
-            clientRuntime.MessageInspectors.Add(new WCFClientMessageInspector());            
+            clientRuntime.MessageInspectors.Add(new ClientMessageInspector());            
             //clientRuntime.ClientOperations.Add(new ());
         }
 
@@ -32,7 +32,7 @@ namespace LogRecorderAndPlayer
             {
                 foreach (EndpointDispatcher ed in channelDispatcher.Endpoints)
                 {
-                    ed.DispatchRuntime.MessageInspectors.Add(new WCFMessageInspector());
+                    ed.DispatchRuntime.MessageInspectors.Add(new ClientMessageMessageInspector());
                 }
             }
         }

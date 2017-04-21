@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.ServiceModel;
+using System.Text;
 using System.Web;
 using System.Web.SessionState;
 using System.Web.UI;
@@ -29,13 +30,7 @@ namespace LogRecorderAndPlayer
             if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
                 return;
 
-            //var requestCallback = new Func<string, string>(content => {
-            //    throw new Exception("godt saa");
-            //});
-
-            //this.context.Request.Filter = new RequestFilter(this.context.Request.Filter, context.Request.ContentEncoding, requestCallback);
-
-            watcher = new StreamWatcher(this.context.Response.Filter); //Man in the middle... alike
+            watcher = new StreamWatcher(this.context.Response.Filter); 
             this.context.Response.Filter = watcher;
         }
 
@@ -188,6 +183,14 @@ namespace LogRecorderAndPlayer
             if (watcher == null)
                 return; //e.g. Invalid web.config setting
             string response = watcher.ToString();
+            //int xlen = (int)watcher.Length;
+            //var xbuf = new byte[xlen];
+            //watcher.Read(xbuf, 0, xlen);
+            //string response2 = Encoding.UTF8.GetString(xbuf);
+            //int xlen2 = (int)watcher.Length;
+            //var xbuf2 = new byte[xlen2];
+            //watcher.Read(xbuf2, 0, xlen2);
+            //string response3 = Encoding.UTF8.GetString(xbuf);
 
             HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
@@ -227,23 +230,6 @@ namespace LogRecorderAndPlayer
             var handler = context?.CurrentHandler as IHttpHandler;
             if (page != null || handler != null)
             {
-                try
-                {
-                    var pageType = context?.CurrentHandler.GetType();
-
-                    var viewStatePropertyDescriptor = pageType.GetProperty("Page"); //, BindingFlags.Instance | BindingFlags.NonPublic);
-                    var anotherPage = (Page)viewStatePropertyDescriptor.GetValue(context?.CurrentHandler);
-
-                    if (anotherPage != null)
-                    {
-                        throw new Exception("WAUW");
-                    }
-                }
-                catch (Exception)
-                {
-                }
-
-                //TransferRequestHandler... hvad i alverden anvendes den til???
                 var sessionGUID = LoggingHelper.GetSessionGUID(context, page, () => new Guid());
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => null); //or perhaps should be renamed to playerGUID

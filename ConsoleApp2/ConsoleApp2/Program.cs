@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -248,37 +249,50 @@ namespace ConsoleApp2
 
             //////////////////////////////////////////////////
 
-            var u1 = TimeHelper.UnixTimestamp();
-            var dt1a = TimeHelper.UnixTimeStampToDateTime(u1).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //var u1 = TimeHelper.UnixTimestamp();
+            //var dt1a = TimeHelper.UnixTimeStampToDateTime(u1).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //var dt1b = TimeHelper.UnixTimeStampToDateTime2(u1).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //var u2 = TimeHelper.UnixTimestamp();
+            //var dt2a = TimeHelper.UnixTimeStampToDateTime(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //var dt2b = TimeHelper.UnixTimeStampToDateTime2(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+
+            //Console.WriteLine(u1);
+            //Console.WriteLine(dt1a);
+            //Console.WriteLine(dt1b);
+            //Console.WriteLine(u2);
+            //Console.WriteLine(dt2a);
+            //Console.WriteLine(dt2b);
+
+            //DateTime dt2bx;
+            //if (DateTime.TryParseExact(dt2b, "yyyy-MM-dd HH:mm:ss:ffffff", null, DateTimeStyles.None, out dt2bx))
+            //{
+            //    var dt2bx2 = TimeHelper.UnixTimeStampToDateTime2(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //    Console.WriteLine(dt2bx2);
+            //}
+            //else
+            //{
+            //    Console.WriteLine("hmm?");
+            //}
+
+            //var xxx = 1492517655.068; //XXX
+            //var dtxxx = TimeHelper.UnixTimeStampToDateTime2(xxx).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //Console.WriteLine(dtxxx);
+            //var yyy = 1492517655.068001; //XXX
+            //var dtyyy = TimeHelper.UnixTimeStampToDateTime2(yyy).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            //Console.WriteLine(dtyyy);
+
+            //////////////////////////////////////////////////
+
+
+            var u1 = TimeHelper.UnixTimestamp(DateTime.Now);
             var dt1b = TimeHelper.UnixTimeStampToDateTime2(u1).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
-            var u2 = TimeHelper.UnixTimestamp();
-            var dt2a = TimeHelper.UnixTimeStampToDateTime(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
+            var u2 = u1 + (0.001*0.001);
             var dt2b = TimeHelper.UnixTimeStampToDateTime2(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
 
             Console.WriteLine(u1);
-            Console.WriteLine(dt1a);
             Console.WriteLine(dt1b);
             Console.WriteLine(u2);
-            Console.WriteLine(dt2a);
             Console.WriteLine(dt2b);
-
-            DateTime dt2bx;
-            if (DateTime.TryParseExact(dt2b, "yyyy-MM-dd HH:mm:ss:ffffff", null, DateTimeStyles.None, out dt2bx))
-            {
-                var dt2bx2 = TimeHelper.UnixTimeStampToDateTime2(u2).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
-                Console.WriteLine(dt2bx2);
-            }
-            else
-            {
-                Console.WriteLine("hmm?");
-            }
-
-            var xxx = 1492517655.068; //XXX
-            var dtxxx = TimeHelper.UnixTimeStampToDateTime2(xxx).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
-            Console.WriteLine(dtxxx);
-            var yyy = 1492517655.068001; //XXX
-            var dtyyy = TimeHelper.UnixTimeStampToDateTime2(yyy).ToString("yyyy-MM-dd HH:mm:ss:ffffff");
-            Console.WriteLine(dtyyy);
 
             Console.ReadKey(true);
 

@@ -1,0 +1,128 @@
+clientTickInSeconds: <span id="clientTime"></span><br/>
+<br/>
+serverTickInSeconds: <span id="serverTime"/></span><br/>
+<br/>
+Afvigelse = <span id="afvigelse"/></span><br/>
+<br/>
+ClientToServerInSeconds = <input id="txtClientToServerInSeconds" value="3.000"/><br/>
+<br/>
+ServerOperationInSeconds = <input id="txtServerOperationInSeconds" value="1.000"/><br/>
+<br/>
+ServerToClientInSeconds = <input id="txtServerToClientInSeconds" value="3.000"/><br/>
+<br/>
+Result from NTP algorithm: <span id="ntpResult"/></span><br/>
+<br/>
+<input type="button" value="Sync test" onclick="syncTime()" id="btn" />
+
+<script language="javascript">
+	var clientTickInSeconds = 1492807636.2254005; //"2017-04-21 20:47:16:225400"
+	var serverTickInSeconds = 1492894036.2294109; //"2017-04-22 20:47:16:229410"
+	
+	// the NTP algorithm
+	// t0 is the client's timestamp of the request packet transmission,
+	// t1 is the server's timestamp of the request packet reception,
+	// t2 is the server's timestamp of the response packet transmission and
+	// t3 is the client's timestamp of the response packet reception.
+	function ntp(t0, t1, t2, t3) {
+		return {
+			roundtripdelay: (t3 - t0) - (t2 - t1),
+			offset: ((t1 - t0) + (t2 - t3)) / 2
+		};
+	}
+
+	function updateStatus(s)
+	{
+		var btn = document.getElementById('btn');
+		switch(s)
+		{
+			case 0:
+				btn.value = 'Start sync';
+				btn.disabled = false;
+				break;
+			case 1:
+				btn.value = 'Client sends request';
+				btn.disabled = true;
+				break;
+			case 2:
+				btn.value = 'Server receives request';
+				btn.disabled = true;
+				break;
+			case 3:
+				btn.value = 'Server sends response';
+				btn.disabled = true;
+				break;
+			case 4:
+				btn.value = 'Client receives response';
+				btn.disabled = true;
+				break;
+		}
+	}	
+
+	function getSecondsByInputId(id){
+		var obj = document.getElementById(id);
+		return parseFloat(obj.value, 10);
+	}
+	
+	function syncTime()
+	{
+		var clientToServerInSeconds = getSecondsByInputId("txtClientToServerInSeconds");
+		var serverOperationInSeconds = getSecondsByInputId("txtServerOperationInSeconds");
+		var serverToClientInSeconds = getSecondsByInputId("txtServerToClientInSeconds");
+
+		document.getElementById('ntpResult').innerHTML = '';
+		//server called from client
+		var tmpClientTimeRequest = clientTickInSeconds;
+		updateStatus(1);
+		setTimeout(function(){
+			//server called
+			var tmpServerTime1 = serverTickInSeconds;
+			updateStatus(2);
+			setTimeout(function() {
+				//server done
+				var tmpServerTime2 = serverTickInSeconds;
+				
+				updateStatus(3);
+				setTimeout(function(){
+					//client receives result
+					var tmpClientTimeResponse = clientTickInSeconds;
+					
+					var v = ntp(tmpClientTimeRequest, tmpServerTime1, tmpServerTime2, tmpClientTimeResponse)
+					
+					document.getElementById('ntpResult').innerHTML = 'offset='+v.offset+'  roundtripdelay='+v.roundtripdelay;
+					clientTickInSeconds = v.offset + tmpClientTimeResponse;					
+					updateStatus(0);
+				}, serverToClientInSeconds * 1000.0); 
+			}, serverOperationInSeconds * 1000.0); 
+		}, clientToServerInSeconds * 1000.0); 
+	}
+
+	function updateClientTime()
+	{
+		document.getElementById('clientTime').innerHTML = clientTickInSeconds;
+	}
+	
+	function updateServerTime()
+	{
+		document.getElementById('serverTime').innerHTML = serverTickInSeconds;
+	}
+	
+	function updateAfvigelse()
+	{
+		document.getElementById('afvigelse').innerHTML = 100.0-(serverTickInSeconds > 0 && clientTickInSeconds > 0 ? (serverTickInSeconds / clientTickInSeconds) * 100.0 : "?");
+		document.getElementById('afvigelse').innerHTML += "% (difference i enheder "+Math.abs(serverTickInSeconds-clientTickInSeconds)+")";
+	}	
+	
+	var intervalInMS = 50.0;
+	setInterval(function(){
+		clientTickInSeconds += intervalInMS / 1000;
+		serverTickInSeconds += intervalInMS / 1000;
+		updateClientTime();
+		updateServerTime();
+		updateAfvigelse();
+	}, intervalInMS);
+	updateClientTime();
+	updateServerTime();
+	updateAfvigelse();
+	updateStatus(0);
+</script>
+

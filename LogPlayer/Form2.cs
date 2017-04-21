@@ -18,7 +18,7 @@ namespace TestBrowser
     {
         private NamedPipeServer Server { get; set; } = null;
         private Guid ServerGUID { get; set; }
-        private List<NamedPipeSession> Sessions { get; set; } = new List<NamedPipeSession>();
+        private List<TransferElementSession> Sessions { get; set; } = new List<TransferElementSession>();
 
         public Form2()
         {
@@ -32,13 +32,13 @@ namespace TestBrowser
             Server.ServiceInstanse.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnFetchLogElement(NamedPipeFetchLogElement fetchLogElement)
+        private TransferElementResponse ServiceInstanse_OnFetchLogElement(TransferElementFetchLogElement fetchLogElement)
         {
             var fetchLogElementResponse = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
-            return new NamedPipeServerResponse() {Success = true, Data = fetchLogElementResponse };
+            return new TransferElementResponse() {Success = true, Data = fetchLogElementResponse };
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnBrowserJobComplete(NamedPipeBrowserJob namedPipeBrowserJob) //For clientside-events
+        private TransferElementResponse ServiceInstanse_OnBrowserJobComplete(TransferElementBrowserJob namedPipeBrowserJob) //For clientside-events
         {            
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             Guid? logElementGUID = namedPipeBrowserJob.LogElementGUID;
@@ -47,7 +47,7 @@ namespace TestBrowser
                 var logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
                 logElementGUID = logElementDTO?.GUID;
                 if (logElementGUID == null)
-                    return new NamedPipeServerResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};
+                    return new TransferElementResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};
             }
 
             if (logElementGUID != null) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url
@@ -60,53 +60,22 @@ namespace TestBrowser
                 }
             }
 
-
-            //if (namedPipeBrowserJob.LogElementGUID.HasValue) 
-            //{
-            //    //if (this.InvokeRequired)
-            //    //{
-            //    //    this.Invoke(new MethodInvoker(delegate
-            //    //    {
-            //    //        textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
-            //    //    }));
-            //    //}
-            //    //else
-            //    //{
-            //    //    textBox1.AppendText(namedPipeBrowserJob.LogElementGUID.Value.ToString() + Environment.NewLine);
-            //    //}
-
-            //    //if (namedPipeBrowserJob.LogElementGUID.Value.ToString().ToLower().IndexOf("f303") == 0)
-            //    //{
-            //    //    MessageBox.Show("!!!!");
-            //    //}
-
-            //    //MessageBox.Show($"ServiceInstanse_OnBrowserJobComplete1: {namedPipeBrowserJob.LogElementGUID.Value}");
-            //}
-
-
-
-
-            return new NamedPipeServerResponse() { Success = true };
+            return new TransferElementResponse() { Success = true };
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnClosingSession(NamedPipeSession namedPipeSession)
+        private TransferElementResponse ServiceInstanse_OnClosingSession(TransferElementSession namedPipeSession)
         {
             var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID));
             Sessions.Remove(browser);
-            return new NamedPipeServerResponse() { Success = true };
+            return new TransferElementResponse() { Success = true };
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnSyncSession(NamedPipeSession namedPipeSession)
+        private TransferElementResponse ServiceInstanse_OnSyncSession(TransferElementSession namedPipeSession)
         {
             var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID) && x.ProcessId == -1);
             browser.ProcessId = namedPipeSession.ProcessId;                        
 
-            return new NamedPipeServerResponse() {Success = true};
-        }
-
-        private void SendSessionJob(Guid processGUID)
-        {
-            //NamedPipeClient.SendRequest_Threading(namedPipeSession.ProcessGUID, ) //Problemet er jo lidt at spawnsession sker pga en url... 
+            return new TransferElementResponse() {Success = true};
         }
 
         private void Form2_FormClosing(object sender, FormClosingEventArgs e)
@@ -125,12 +94,7 @@ namespace TestBrowser
 
         private void Form2_Load(object sender, EventArgs e)
         {
-//            var elementsInfo = LoggingHelper.LoadElementsInfo(@"c:\LogRecorderAndPlayerJSONBAK\02 Kundesøgningsside load", LRAPLogType.JSON);
             var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
-
-            //Burde kunne starte fra OnPageSesssionBefore-event
-
-            //var xx = elementsInfo.LogElementInfos.Where(x => x.LogType == LogType.OnPageSessionBefore).ToList();
 
             DoubleBuffered = true;
             eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
@@ -169,7 +133,7 @@ namespace TestBrowser
 
         private void SpawnSession(Guid processGUID, Guid pageGUID, string url)
         {
-            var session = new NamedPipeSession() { ProcessGUID = processGUID, ProcessId = -1 };
+            var session = new TransferElementSession() { ProcessGUID = processGUID, ProcessId = -1 };
 
             Sessions.Add(session);
 

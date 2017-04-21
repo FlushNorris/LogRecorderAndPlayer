@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    class WCFMessageInspector : IDispatchMessageInspector
+    class ClientMessageMessageInspector : IDispatchMessageInspector
     {
         public object AfterReceiveRequest(ref System.ServiceModel.Channels.Message request, IClientChannel channel, InstanceContext instanceContext)
         {

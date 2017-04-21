@@ -9,9 +9,9 @@ namespace LogRecorderAndPlayer
 {
     [DataContract]
     [KnownType(typeof(LogElementDTO))]
-    [KnownType(typeof(NamedPipeBrowserJob))]
+    [KnownType(typeof(TransferElementBrowserJob))]
     [KnownType(typeof(FetchLogElementResponse))]
-    public class NamedPipeServerResponse
+    public class TransferElementResponse
     {
         [DataMember]
         public bool Success { get; set; }

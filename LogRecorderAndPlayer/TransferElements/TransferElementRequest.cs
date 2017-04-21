@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    public enum NamedPipeServerRequestType
+    public enum TransferElementRequestType
     {
         SyncSession = 0,
         ClosingSession = 1,
@@ -17,14 +17,14 @@ namespace LogRecorderAndPlayer
     }
 
     [DataContract]
-    [KnownType(typeof(NamedPipeSession))]
+    [KnownType(typeof(TransferElementSession))]
     [KnownType(typeof(LogElementDTO))]
-    [KnownType(typeof(NamedPipeBrowserJob))]
-    [KnownType(typeof(NamedPipeFetchLogElement))]
-    public class NamedPipeServerRequest
+    [KnownType(typeof(TransferElementBrowserJob))]
+    [KnownType(typeof(TransferElementFetchLogElement))]
+    public class TransferElementRequest
     {
         [DataMember]
-        public NamedPipeServerRequestType Type { get; set; }
+        public TransferElementRequestType Type { get; set; }
         
         [DataMember]        
         public object Data { get; set; }

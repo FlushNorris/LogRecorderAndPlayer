@@ -271,6 +271,12 @@ namespace LogBrowser
             IsNavigating = true;
         }
 
+        private void button1_Click_2(object sender, EventArgs e)
+        {
+            var server = new PlayerCommunicationServer(new Guid());
+            MessageBox.Show($"Connected to : {server.ServerState} : {server.ServiceURL}");
+        }
+
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
         //{
         //    var link = (HtmlElement)sender;

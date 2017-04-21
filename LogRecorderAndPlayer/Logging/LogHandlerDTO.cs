@@ -120,8 +120,8 @@ namespace LogRecorderAndPlayer
         OnPageViewStateAfter = 30,
         OnWCFServiceRequest = 31,
         OnWCFServiceResponse = 32,
-        OnDatabaseRequest = 33,
-        OnDatabaseResponse = 34,
+        OnPersistenceRequest = 33,
+        OnPersistenceResponse = 34,
         OnHandlerSessionBefore = 35,
         OnHandlerSessionAfter = 36,
         OnSubmit = 37,
@@ -175,8 +175,8 @@ namespace LogRecorderAndPlayer
                 case LogType.OnPageViewStateAfter:
                 case LogType.OnWCFServiceRequest:
                 case LogType.OnWCFServiceResponse:
-                case LogType.OnDatabaseRequest:
-                case LogType.OnDatabaseResponse:
+                case LogType.OnPersistenceRequest:
+                case LogType.OnPersistenceResponse:
                 case LogType.OnHandlerSessionBefore:
                 case LogType.OnHandlerSessionAfter:
                     return false;

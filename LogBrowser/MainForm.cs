@@ -44,14 +44,14 @@ namespace LogBrowser
                 startingUrl = Arguments[3];
             }
 
-            MessageBox.Show($"ServerGUID = {ServerGUID}");
-
             if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || startingUrl == null)
             {
                 MessageBox.Show("Invalid arguments");
                 Close();
                 return;
             }
+
+            refreshTimer.Enabled = true;
 
             //Send back process id related to guid
             NamedPipeHelper.SendSyncSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id);
@@ -81,7 +81,7 @@ namespace LogBrowser
             RefreshUI();
         }
 
-        private NamedPipeServerResponse ServiceInstanse_OnBrowserJob(LogElementDTO logElement)
+        private TransferElementResponse ServiceInstanse_OnBrowserJob(LogElementDTO logElement)
         {
             //if (logElement.GUID.ToString().ToLower().IndexOf("caa1") == 0)
             //{
@@ -102,7 +102,7 @@ namespace LogBrowser
                     break;
             }
 
-            return new NamedPipeServerResponse() {Success = true};
+            return new TransferElementResponse() {Success = true};
         }
 
         private void FindBrowserAndExec(Guid pageGUID, Action<BrowserForm> fn)

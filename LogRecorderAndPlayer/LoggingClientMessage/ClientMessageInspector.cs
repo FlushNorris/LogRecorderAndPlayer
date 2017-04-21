@@ -15,7 +15,7 @@ using System.Xml;
 
 namespace LogRecorderAndPlayer
 {
-    public class WCFClientMessageInspector : IClientMessageInspector
+    public class ClientMessageInspector : IClientMessageInspector
     {
         private class LoggingState
         {
@@ -25,6 +25,11 @@ namespace LogRecorderAndPlayer
             public Guid BundleGUID { get; set; }
             public string Url { get; set; }
             public string Action { get; set; }
+
+            public bool Valid
+            {
+                get { return !SessionGUID.Equals(new Guid()); }
+            }
         }
 
         public object BeforeSendRequest(ref System.ServiceModel.Channels.Message request, IClientChannel channel)
@@ -44,7 +49,7 @@ namespace LogRecorderAndPlayer
                 BundleGUID = LoggingHelper.GetBundleGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
                 Url = LoggingHelper.StripUrlForLRAP(channel.Via.ToString()),
                 Action = request.Headers.Action
-            };            
+            };
 
             string messageBody = GetMessageBody(request);
 
@@ -113,6 +118,8 @@ namespace LogRecorderAndPlayer
         {
             // change the message body
             //messageBodyString = messageBodyString.Replace("<HelloWorldResult>Hello World 1337</HelloWorldResult>", "<HelloWorldResult>Hello World HIJACKED!</HelloWorldResult>");
+
+            //messageBody.
 
             Encoding encoding = Encoding.UTF8;
             MemoryStream ms = new MemoryStream(encoding.GetBytes(messageBody));

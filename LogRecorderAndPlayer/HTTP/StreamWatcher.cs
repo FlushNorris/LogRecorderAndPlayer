@@ -23,7 +23,7 @@ namespace LogRecorderAndPlayer
         }
 
         public override int Read(byte[] buffer, int offset, int count)
-        {
+        {            
             return _base.Read(buffer, offset, count);
         }
 
@@ -66,7 +66,7 @@ namespace LogRecorderAndPlayer
 
         public override long Length
         {
-            get { throw new NotImplementedException(); }
+            get { return _base.Length; }
         }
 
         public override long Position

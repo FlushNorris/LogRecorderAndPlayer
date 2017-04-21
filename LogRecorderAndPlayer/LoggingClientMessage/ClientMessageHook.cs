@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    public class WCFLoggerAndPlayer : BehaviorExtensionElement
+    public class ClientMessageLoggerAndPlayer : BehaviorExtensionElement
     {
         protected override object CreateBehavior()
         {
-            return new WCFEndPointBehavior();
+            return new ClientMessageEndPointBehavior();
         }
 
         public override Type BehaviorType
         {
             get
             {
-                return typeof(WCFEndPointBehavior);
+                return typeof(ClientMessageEndPointBehavior);
             }
         }
     }
