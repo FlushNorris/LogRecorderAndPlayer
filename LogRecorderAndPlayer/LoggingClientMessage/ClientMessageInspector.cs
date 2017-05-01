@@ -65,7 +65,8 @@ namespace LogRecorderAndPlayer
                 element2: null,
                 value: messageBody,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
 
             request = BuildMessage(messageBody, request);
@@ -92,7 +93,8 @@ namespace LogRecorderAndPlayer
                     element2: null,
                     value: messageBody,
                     times: 1,
-                    unixTimestampEnd: null
+                    unixTimestampEnd: null,
+                    instanceTime: DateTime.Now
                 ));
 
                 reply = BuildMessage(messageBody, reply);

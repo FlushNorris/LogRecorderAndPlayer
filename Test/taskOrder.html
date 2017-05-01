@@ -1,0 +1,50 @@
+<div id="output" />
+
+<script>
+
+var group = 0;
+var inProgressWithElements = 0;
+
+function callGenericHandler(group, element) {
+	document.getElementById('output').innerHTML += group + ' : ' + element + '<br/>';
+
+	if (element == 2 && inProgressWithElements > 0)
+	{
+		//If we got another task running and we are done with element 2, it must mean element hasn't completed yet
+		alert('2 ended before 1');
+	}	
+
+	if (inProgressWithElements == 0)
+	{
+		//callDoIt();
+	}
+}
+
+function doIt() {	
+	inProgressWithElements = 2;
+
+	setTimeout(function executeK2(){
+		inProgressWithElements--;
+		callGenericHandler(group, 2);
+	}, 100);
+
+	for(var i=0;i<10000000;i++)
+	{	
+		var obj = document.getElementById('output'+i);
+	}
+
+	setTimeout(function executeK1(){
+		inProgressWithElements--;
+		callGenericHandler(group, 1);
+	}, 50);
+
+	group++;
+}
+
+function callDoIt() {
+	setTimeout(doIt, 100);
+}
+
+callDoIt();
+
+</script>

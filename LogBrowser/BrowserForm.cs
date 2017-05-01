@@ -241,7 +241,7 @@ namespace LogBrowser
 
             //            var result = webBrowser.Document.InvokeScript("testInvokeScript", new object[] { "hest" });
 //            var result = webBrowser.Document.InvokeScript("logRecorderAndPlayer_PlayEvent", new object[] { "hest" });
-            var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null);
+            var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null, DateTime.Now);
 //            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
 
             var leJSON = "null"; //SerializationHelper.Serialize(lst[0], SerializationType.Json);

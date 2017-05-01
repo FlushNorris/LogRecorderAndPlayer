@@ -56,7 +56,8 @@ namespace LogRecorderAndPlayer
                 element2: postBackControlClientId,
                 value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
         }
 
@@ -94,7 +95,8 @@ namespace LogRecorderAndPlayer
                 element2: postBackControlClientId,
                 value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
         }        
 
@@ -139,7 +141,8 @@ namespace LogRecorderAndPlayer
                 element2: postBackControlClientId,
                 value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
         }
 
@@ -181,7 +184,8 @@ namespace LogRecorderAndPlayer
                 element2: postBackControlClientId,
                 value: response,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
 
             return response;

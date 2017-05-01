@@ -80,7 +80,8 @@ namespace LogRecorderAndPlayer
                 element2: null,
                 value: SerializationHelper.Serialize(cmdDTO, SerializationType.Json),
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
 
             result.Object = cmdDTO;
@@ -102,7 +103,8 @@ namespace LogRecorderAndPlayer
                 element2: null,
                 value: value != null ? SerializationHelper.Serialize(value, SerializationType.Json) : null,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));            
         }
 

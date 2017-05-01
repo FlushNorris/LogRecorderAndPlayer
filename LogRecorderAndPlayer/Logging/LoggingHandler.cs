@@ -43,7 +43,8 @@ namespace LogRecorderAndPlayer
                 element2: null,
                 value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
         }
 
@@ -85,7 +86,8 @@ namespace LogRecorderAndPlayer
                 element2: !requestContainsInstanceGuid ? SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json) : null,
                 value: response,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
 
             return response;
@@ -130,7 +132,8 @@ namespace LogRecorderAndPlayer
                 element2: null,
                 value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
                 times: 1,
-                unixTimestampEnd: null
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
             ));
         }
     }

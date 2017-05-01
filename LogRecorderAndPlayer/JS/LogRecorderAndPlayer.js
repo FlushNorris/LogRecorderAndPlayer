@@ -28,7 +28,7 @@
         var v = ignoreCache ? null : getPageGUID();
         if (v == null) {
             pageGUIDCache = _pageGUID;
-            var $frm = getPrimaryForm();
+            var $frm = getLocationForLRAPValues();
             $("<input type='hidden' />")
                 .attr("class", PageGUIDTag)
                 .attr("name", PageGUIDTag)
@@ -41,7 +41,7 @@
         if (pageGUIDCache != null)
             return pageGUIDCache;
 
-        var $frm = getPrimaryForm();
+        var $frm = getLocationForLRAPValues();
         var $pageGUID = $frm.find("." + PageGUIDTag);
         if ($pageGUID.size() != 0)
             pageGUIDCache = $pageGUID.val();
@@ -52,7 +52,7 @@
         var v = ignoreCache ? null : getServerGUID();
         if (v == null) {
             serverGUIDCache = _serverGUID;
-            var $frm = getPrimaryForm();
+            var $frm = getLocationForLRAPValues();
             $("<input type='hidden' />")
                 .attr("class", ServerGUIDTag)
                 .attr("name", ServerGUIDTag)
@@ -65,7 +65,7 @@
         if (serverGUIDCache != null)
             return serverGUIDCache;
 
-        var $frm = getPrimaryForm();
+        var $frm = getLocationForLRAPValues();
         var $serverGUID = $frm.find("." + ServerGUIDTag);
         if ($serverGUID.size() != 0)
             serverGUIDCache = $serverGUID.val();
@@ -81,7 +81,7 @@
         var v = ignoreCache ? null : getSessionGUID();
         if (v == null) {
             sessionGUIDCache = _sessionGUID;
-            var $frm = getPrimaryForm();
+            var $frm = getLocationForLRAPValues();
             $("<input type='hidden' />")
                 .attr("class", SessionGUIDTag)
                 .attr("name", SessionGUIDTag)
@@ -94,15 +94,15 @@
         if (sessionGUIDCache != null)
             return sessionGUIDCache;
 
-        var $frm = getPrimaryForm();
+        var $frm = getLocationForLRAPValues();
         var $sessionGUID = $frm.find("." + SessionGUIDTag);
         if ($sessionGUID.size() != 0) 
             sessionGUIDCache = $sessionGUID.val();        
         return sessionGUIDCache;
     }    
 
-    function getPrimaryForm() {
-        return $(".aspNetHidden").closest("form");
+    function getLocationForLRAPValues() {
+        return $(".aspNetHidden").first();
     }
 
     var LogType =
@@ -443,9 +443,6 @@
         if (typeof (event.pageX) != "undefined")
         {
             if (event.pageX != 0 && event.pageY != 0) {
-                //Hvis nu jeg ikke finder f.eks. en checkbox her pga margin/padding har ændret det clickable area, så får jeg underliggende element via elementFromPoint.
-                //Og hvis det sker, så kunne jeg vel undersøge om that er placeret z-index-wise over det fundne element elmP og give det en godkendelse via det check?
-                //Så undgår jeg også at checke margin osv osv for at finde det area for 'that' man faktisk kan hente kontrollen udfra 
                 var elmP = document.elementFromPoint(Math.ceil(event.pageX - window.pageXOffset), Math.ceil(event.pageY - window.pageYOffset));
                 if (that == elmP) {                
                     logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
@@ -457,6 +454,36 @@
             logElementEx(logType, getElementPath(that), JSON.stringify(v), compareFn);
         }
     }
+
+    function convertPropertyToPixels($elm, property) {
+        return parseInt($elm.css(property).slice(0, -2));
+    };
+
+    function getElementCenterPosition($elm) {
+        var mLeft = convertPropertyToPixels($elm, 'margin-left');
+        var mTop = convertPropertyToPixels($elm, 'margin-top');
+
+        var bLeft = convertPropertyToPixels($elm, 'border-left');
+        var bTop = convertPropertyToPixels($elm, 'border-top');
+
+        var pLeft = convertPropertyToPixels($elm, 'padding-left');
+        var pTop = convertPropertyToPixels($elm, 'padding-top');
+
+        var width = convertPropertyToPixels($elm, 'width');
+        var height = convertPropertyToPixels($elm, 'height');
+
+        var position = $elm.position();
+
+        return {
+            left: position.left + mLeft + bLeft + pLeft + width / 2,
+            top: position.top + mTop + bTop + pTop + height / 2
+        };
+    }
+
+    function isElementOnTop(elm) {
+        var p = getElementCenterPosition($(elm));
+        return (elm == document.elementFromPoint(Math.ceil(p.left), Math.ceil(p.top)));
+    };
 
     function setupLRAPEvent(that, eventType/*e.g. 'click'*/, eventMethod) {
         var $that = $(that);
@@ -521,7 +548,9 @@
         }
     }
 
-    function setupBasicClientsideControlEvents(inputSelector) {
+    function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus) {
+        ableToGainFocus = typeof (ableToGainFocus) != "undefined" && ableToGainFocus;
+
         var $document = $(document);
 
         function mousedownEvent(event) {
@@ -644,7 +673,7 @@
 
         //In Firefox, Google Chrome and Safari, use the DOMActivate event instead of the onactivate event. (activate is no go!)
 
-        $document.on('mousedown', inputSelector, function () { //mousedown is called before activate, could use mouseenter... apparently it works on iPad, mouseenter-event is called when pressing a button. 
+        $document.on('mousedown' + (ableToGainFocus ? " focusin" : ""), inputSelector, function () { //mousedown is called before activate, could use mouseenter... apparently it works on iPad, mouseenter-event is called when pressing a button. 
             setupElement(this, false);
         });
 
@@ -817,7 +846,7 @@
         //    logElementEx(LogType.OnReset, getElementPath(this), "");
         //});
 
-        setupBasicClientsideControlEvents("a");
+        setupBasicClientsideControlEvents("a", true);
         setupBasicClientsideControlEvents("p");
         setupBasicClientsideControlEvents("div");
         setupBasicClientsideControlEvents("span");
@@ -931,10 +960,6 @@
         });
     }
 
-    function parseJsonDate(jsonDateString) {
-        return new Date(parseInt(jsonDateString.replace('/Date(', '')));
-    }
-
     function logElementEx(logType, element, value, compareFn, combineFn) {
         logElement(getSessionGUID(), getPageGUID(), null, null, unixTimestamp(), logType, element, value, compareFn, combineFn);
     }
@@ -961,7 +986,6 @@
             }
         }
         lastUnixTimestamp = unixTimestamp;
-
         var request = {
             GUID: generateGUID(),
             SessionGUID: sessionGUID,
@@ -977,12 +1001,13 @@
             UnixTimestampEnd: null,
             CombinedRequestsWithDifferentLogType: [],
             CompareFn: compareFn,
-            CombineFn: combineFn
+            CombineFn: combineFn,
+            InstanceTime: convertToJsonDate(new Date())
         };
         logElements.push(request);
 
         compactLogElementList();
-    }
+    }    
 
     function compactLogElementList() {
         var requestIdx = logElements.length - 1;
@@ -1219,24 +1244,12 @@
 			
     //}
 
-    function convertStringToDateObject(dateStr) {
-        var dateObj = null;
-        if (this.isDate(dateStr)) {
-            var rxDatePattern = /^(\d{1,2})(\/|-)(\d{1,2})(\/|-)(\d{4})$/;
-            var dtArray = dateStr.match(rxDatePattern); // is format OK?
-
-            dateObj = new Date(+dtArray[5], +dtArray[3] - 1, +dtArray[1]);
-        }
-        return dateObj;
+    function convertToJsonDate(d) {
+        return '/Date(' + Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes() + d.getTimezoneOffset(), d.getSeconds(), d.getMilliseconds()) + ')/';
     }
 
-    function getDataMemberDate(dateStr) {
-        var dateObj = undefined;
-        if (typeof dateStr === 'string' || dateStr instanceof String)
-            dateObj = convertStringToDateObject(dateStr);
-        else
-            dateObj = dateStr;
-        return dateObj ? '/Date(' + Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), dateObj.getHours(), dateObj.getMinutes(), dateObj.getSeconds(), dateObj.getMilliseconds()) + ')/' : null;
+    function parseJsonDate(jsonDateString) { 
+        return new Date(parseInt(jsonDateString.replace('/Date(', '')));
     }
 
     function htmlEncode(value) {
@@ -2077,17 +2090,11 @@
 
     var publicMethods = {};
 
-    publicMethods.getPrimaryForm = getPrimaryForm;
     publicMethods.preInit = preInit;
     publicMethods.postInit = postInit;
     publicMethods.getPageGUID = getPageGUID;
     publicMethods.getSessionGUID = getSessionGUID;
     publicMethods.now = now;
-//    publicMethods.pushLogElementGUID = pushLogElementGUID;
-    publicMethods.testmethod = function() {
-        alert('weeehoooo');
-        return 1337;
-    }
     publicMethods.getSelectionInfo = getSelectionInfo;
     publicMethods.playLogElement = playLogElement; 
     publicMethods.LogType = LogType;
