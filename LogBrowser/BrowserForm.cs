@@ -15,7 +15,7 @@ using System.Windows.Forms;
 using LogRecorderAndPlayer;
 using Microsoft.Win32;
 
-namespace LogBrowser
+namespace LogSession
 {
     public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
     {

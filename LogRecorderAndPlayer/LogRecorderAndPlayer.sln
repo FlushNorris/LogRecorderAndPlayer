@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogRecorderAndPlayer", "Log
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogPlayer", "..\LogPlayer\LogPlayer.csproj", "{B360E69A-2FA8-4C39-AF1D-AD014E87C94C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogBrowser", "..\LogBrowser\LogBrowser.csproj", "{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogSession", "..\LogBrowser\LogSession.csproj", "{84AECC5B-4C04-499F-B2C3-3FE92BD218DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

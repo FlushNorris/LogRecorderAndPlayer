@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.Script.Serialization;
 using System.Xml;
 using System.Xml.Serialization;
@@ -101,13 +102,24 @@ namespace LogRecorderAndPlayer
             if (nvc == null)
                 return null;
 
-            var dict = new Dictionary<string, object>();
-            foreach (var key in nvc.AllKeys)
-            {
-                dict.Add(key, nvc[key]);
-            }
-            return Serialize(dict, serializationType);
+            return Serialize(NameValueCollectionToDictionary(nvc), serializationType);
             //return new JavaScriptSerializer().Serialize(dict);
+        }
+
+        public static Dictionary<string, string> NameValueCollectionToDictionary(NameValueCollection nvc)
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var key in nvc.AllKeys)
+                dict.Add(key, nvc[key]);
+            return dict;
+        }
+
+        public static Dictionary<string, string> HttpCookieCollectionToDictionary(HttpCookieCollection nvc)
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var key in nvc.AllKeys)
+                dict.Add(key, nvc[key].Value);
+            return dict;
         }
 
         //For Request.Params.. but we got way too much info for logging

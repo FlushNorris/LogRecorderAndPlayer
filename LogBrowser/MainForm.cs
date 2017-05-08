@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
 
-namespace LogBrowser
+namespace LogSession
 {
     public partial class MainForm : Form
     {

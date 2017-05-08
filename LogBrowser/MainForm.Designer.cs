@@ -1,4 +1,4 @@
-﻿namespace LogBrowser
+﻿namespace LogSession
 {
     partial class MainForm
     {

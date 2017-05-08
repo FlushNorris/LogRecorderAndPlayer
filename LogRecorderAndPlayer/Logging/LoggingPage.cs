@@ -13,12 +13,38 @@ using Page = System.Web.UI.Page;
 
 namespace LogRecorderAndPlayer
 {
+    public class RequestParams
+    {
+        public Dictionary<string, string> Form { get; set; }
+        public Dictionary<string, string> QueryString { get; set; }
+        public Dictionary<string, string> Cookies { get; set; }
+        public Dictionary<string, string> ServerVariables { get; set; }
+    }
+
     public static class LoggingPage
     {
         public static void LogViewState(HttpContext context, Page page, bool before)
-        {
+        {           
             var logType = before ? LogType.OnPageViewStateBefore : LogType.OnPageViewStateAfter;
             NameValueCollection viewStateValues = LoggingHelper.GetViewStateValues(page);
+
+            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
+
+            var newLogElement = new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: logType,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
+                times: 1,
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
+            );
 
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
@@ -42,48 +68,22 @@ namespace LogRecorderAndPlayer
                     return;
             }
 
-            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
+            LoggingHelper.LogElement(newLogElement);
+        }
 
-            LoggingHelper.LogElement(new LogElementDTO(
-                guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
-                bundleGUID: null,
-                progressGUID: null,
-                unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: logType,
-                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
-                element2: postBackControlClientId,
-                value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
-                times: 1,
-                unixTimestampEnd: null,
-                instanceTime: DateTime.Now
-            ));
+        public static RequestParams DeserializeRequestValue(LogElementDTO logElement)
+        {
+            return SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
         }
 
         public static void LogRequest(HttpContext context, Page page, NameValueCollection requestForm)
         {
             var logType = LogType.OnPageRequest;
-
-            if (LoggingHelper.IsPlaying(context, requestForm))
-            {
-                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
-
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
-                {
-                    var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
-
-                    LoggingHelper.SetRequestValues(context, requestFormValues, requestForm);
-
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
-                }))
-                    return;
-            }
+            RequestParams requestParams = null;
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
 
-            LoggingHelper.LogElement(new LogElementDTO(
+            var newLogElement = new LogElementDTO(
                 guid: Guid.NewGuid(),
                 sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid(), requestForm).Value,
                 pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid(), requestForm).Value,
@@ -93,17 +93,60 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.SerializeNameValueCollection(requestForm ?? context.Request.Form, SerializationType.Json),
+                value: SerializationHelper.Serialize(requestParams, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now
-            ));
+            );
+
+            if (LoggingHelper.IsPlaying(context, requestForm))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    //var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                    requestParams = DeserializeRequestValue(logElement);
+
+                    LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);
+                    //Der mangler da at blive sat nogle request-værdier.. f.eks useragent?
+
+                    //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
+
+
+                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
+            }
+
+            requestParams = WebHelper.BuildRequestParams(context, requestForm);
+
+            LoggingHelper.LogElement(newLogElement);
         }        
 
         public static void LogSession(HttpContext context, Page page, NameValueCollection requestForm, bool before)
         {
             var logType = before ? LogType.OnPageSessionBefore : LogType.OnPageSessionAfter;
             NameValueCollection sessionValues = LoggingHelper.GetSessionValues(page);
+
+            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
+
+            var newLogElement = new LogElementDTO(
+                guid: Guid.NewGuid(),
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid(), requestForm).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid(), requestForm).Value,
+                bundleGUID: null,
+                progressGUID: null,
+                unixTimestamp: TimeHelper.UnixTimestamp(),
+                logType: logType,
+                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
+                element2: postBackControlClientId,
+                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
+                times: 1,
+                unixTimestampEnd: null,
+                instanceTime: DateTime.Now
+            );
 
             if (LoggingHelper.IsPlaying(context, requestForm))
             {
@@ -126,29 +169,31 @@ namespace LogRecorderAndPlayer
                 }))
                     return;
             }
-
-            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
            
-            LoggingHelper.LogElement(new LogElementDTO(
+            LoggingHelper.LogElement(newLogElement);
+        }
+
+        public static string LogResponse(HttpContext context, Page page, string response)
+        {
+            var logType = LogType.OnPageResponse;
+
+            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
+
+            var newLogElement = new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid(), requestForm).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid(), requestForm).Value,
+                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
+                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
                 bundleGUID: null,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
+                value: response,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now
-            ));
-        }
-
-        public static string LogResponse(HttpContext context, Page page, string response)
-        {
-            var logType = LogType.OnPageResponse;
+            );
 
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
@@ -170,23 +215,7 @@ namespace LogRecorderAndPlayer
                     return newResponse;
             }
 
-            var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm: null);
-
-            LoggingHelper.LogElement(new LogElementDTO(
-                guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(context, page, () => new Guid()).Value,
-                pageGUID: LoggingHelper.GetPageGUID(context, page, () => new Guid()).Value,
-                bundleGUID: null,
-                progressGUID: null,
-                unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: logType,
-                element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
-                element2: postBackControlClientId,
-                value: response,
-                times: 1,
-                unixTimestampEnd: null,
-                instanceTime: DateTime.Now
-            ));
+            LoggingHelper.LogElement(newLogElement);
 
             return response;
         }

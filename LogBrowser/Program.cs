@@ -7,7 +7,7 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
 
-namespace LogBrowser
+namespace LogSession
 {
     static class Program
     {

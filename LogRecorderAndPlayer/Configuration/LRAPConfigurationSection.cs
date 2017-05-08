@@ -45,5 +45,20 @@ namespace LogRecorderAndPlayer
                 this["filePath"] = value;
             }
         }
+
+        [ConfigurationProperty("solutionAssembly", DefaultValue = null)]
+        public string SolutionAssembly
+        {
+            get
+            {
+                var v = (string)this["solutionAssembly"];
+                return v;
+            }
+            set
+            {
+                this["solutionAssembly"] = value;
+            }
+        }
+
     }
 }

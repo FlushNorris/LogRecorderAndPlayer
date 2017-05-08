@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogBrowser
+namespace LogSession
 {
     public class BrowserResize
     {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.ServiceModel;
 using System.Text;
@@ -14,9 +15,21 @@ namespace LogRecorderAndPlayer
     {
         private StreamWatcher watcher;
         private HttpApplication context;
+        private ILoggingPlayer solutionLoggingPlayer;
 
         public void Init(HttpApplication context)
         {
+            var config = ConfigurationHelper.GetConfigurationSection();
+
+            if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
+            {
+                solutionLoggingPlayer = DynamicAssembly.LoadAssemblyInstances<ILoggingPlayer>(config.SolutionAssembly).FirstOrDefault();    
+            }
+
+
+            //var ost = weee.DoStuff(6, 10);
+
+
             this.context = context;
             context.BeginRequest += Context_BeginRequest; //beforepage
             context.PostMapRequestHandler += Context_PostMapRequestHandler; //Before page
@@ -88,25 +101,25 @@ namespace LogRecorderAndPlayer
                     var requestForm = content != null ? HttpUtility.ParseQueryString(content) : null;
 
                     LoggingHelper.SetupSession(context, page, requestForm);
-                    LoggingHelper.SetupPage(context, page, requestForm);
+                    LoggingHelper.SetupPage(context, page, requestForm);                    
 
                     if (page != null)
                     {
-                        LoggingPage.LogSession(context, page, requestForm, before: true);
                         LoggingPage.LogRequest(context, page, requestForm);
+                        LoggingPage.LogSession(context, page, requestForm, before: true);
                     }
                     else if (handler != null)
                     {
-                        LoggingHandler.LogSession(context, requestForm, before: true);
                         LoggingHandler.LogRequest(context, requestForm);
+                        LoggingHandler.LogSession(context, requestForm, before: true);
                     }
-
+                    
 
                     return requestForm?.ToString();
                 });
                 this.context.Request.Filter = new RequestFilter(this.context.Request.Filter, context.Request.ContentEncoding, requestCallback);
 
-                if (this.context.Request.Form == null || !requestCallbackExecuted)
+                if (this.context.Request.Form == null || !requestCallbackExecuted) //Ensure requestCallback is being called to log session and request etc
                 {
                     requestCallback(null);
                 }
@@ -248,6 +261,12 @@ namespace LogRecorderAndPlayer
                     context.Response.Clear();
                     context.Response.Write(newResponse);
                 }
+            }
+
+            if (String.IsNullOrWhiteSpace(context.Request.Params["hejhej"]))
+            {
+                context.Response.Clear();
+                context.Response.Redirect(context.Request.RawUrl + (context.Request.RawUrl.IndexOf('?') == -1 ? '?' : '&') + "hejhej=1234");
             }
         }
 

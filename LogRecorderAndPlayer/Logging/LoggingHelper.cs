@@ -455,9 +455,9 @@ namespace LogRecorderAndPlayer
             WebHelper.SetSessionValues(context, nvc);
         }
 
-        public static void SetRequestValues(HttpContext context, NameValueCollection newRequestFormValues, NameValueCollection requestForm)
-        {
-            foreach (var key in newRequestFormValues.AllKeys)
+        public static void SetRequestValues(HttpContext context, Dictionary<string, string> newRequestFormValues, NameValueCollection requestForm)
+        {            
+            foreach (var key in newRequestFormValues.Keys)
             {
                 if (Consts.ViewStateFormFields.Contains(key))
                     continue;

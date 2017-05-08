@@ -192,26 +192,7 @@ namespace LogRecorderAndPlayer
                 nvc[tagName] = value;
             });
 
-            return nvc;
-            
-            //var doc1 = new HTMLDocument();
-            //var doc2 = (IHTMLDocument2)doc1;
-            //doc2.write(new object[] { html });
-
-
-            //var enu = doc2.all.GetEnumerator();
-            //while (enu.MoveNext())
-            //{
-            //    var elm = enu.Current;
-            //    if (elm is mshtml.HTMLInputElement)
-            //    {
-            //        var input = (mshtml.HTMLInputElement)elm;
-            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
-            //        {
-            //            nvc[input.name] = input.value;
-            //        }
-            //    }
-            //}
+            return nvc;            
         }
 
         public static string SetResponseViewState(string html, NameValueCollection nvc)
@@ -228,55 +209,12 @@ namespace LogRecorderAndPlayer
                     sb.Append(html.Substring(currPosition, valueObj.Index - currPosition));
                     sb.Append(value);
                     currPosition = valueObj.Index + valueObj.Length;
-
-                    //html = html.Substring(0, valueObj.Index);
                 }
             });
             if (currPosition < html.Length)
                 sb.Append(html.Substring(currPosition));
 
-            return sb.ToString();
-
-            //var rViewState = new Regex("<input.+\"(__VIEWSTATE)\".*value=\"(.*)\".*/>");
-            //var rViewStateGenerator = new Regex("<input.+\"(__VIEWSTATEGENERATOR)\".*value=\"(.*)\".*/>");
-            //var rEventValidation = new Regex("<input.+\"(__EVENTVALIDATION)\".*value=\"(.*)\".*/>");
-
-            //var lst = new List<Match>();
-            //lst.Add(rViewState.Match(html));
-            //lst.Add(rViewStateGenerator.Match(html));
-            //lst.Add(rEventValidation.Match(html));
-
-            //lst = lst.Where(x => x.Success).OrderByDescending(x => x.Index).ToList();
-
-            //var nvc = new NameValueCollection();
-
-            //lst.ForEach(m =>
-            //{
-            //    var tagName = m.Groups[1].Value;
-            //    var value = m.Groups[2].Value;
-            //    nvc[tagName] = value;
-            //});
-
-            //var doc1 = new HTMLDocument();
-            //var doc2 = (IHTMLDocument2)doc1;
-            //doc2.write(new object[] { html });
-
-            //var enu = doc2.all.GetEnumerator();
-            //while (enu.MoveNext())
-            //{
-            //    var elm = enu.Current;
-            //    if (elm is mshtml.HTMLInputElement)
-            //    {
-            //        var input = (mshtml.HTMLInputElement)elm;
-            //        if (input.name == "__VIEWSTATE" || input.name == "__VIEWSTATEGENERATOR" || input.name == "__EVENTVALIDATION")
-            //        {
-            //            input.value = nvc[input.name];
-            //        }
-            //    }
-            //}
-
-            //var r = doc1.documentElement.outerHTML; //strips hopefully unnecessary quotes
-            //return r;
+            return sb.ToString();            
         }
 
         //https://msdn.microsoft.com/en-us/library/system.web.httprequest.params(v=vs.110).aspx
@@ -306,6 +244,19 @@ namespace LogRecorderAndPlayer
             }
 
             return nvc;
+        }
+
+        public static RequestParams BuildRequestParams(HttpContext context, NameValueCollection requestForm)
+        {
+            var requestParamsForm = requestForm != null ? requestForm : context.Request.Form;            
+            var requestParams = new RequestParams()
+            {
+                Form = SerializationHelper.NameValueCollectionToDictionary(requestParamsForm),
+                Cookies = SerializationHelper.HttpCookieCollectionToDictionary(context.Request.Cookies),
+                QueryString = SerializationHelper.NameValueCollectionToDictionary(context.Request.QueryString),
+                ServerVariables = SerializationHelper.NameValueCollectionToDictionary(context.Request.ServerVariables)
+            };
+            return requestParams;
         }
     }
 }

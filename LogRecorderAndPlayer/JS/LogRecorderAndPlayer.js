@@ -548,12 +548,27 @@
         }
     }
 
+    var eventIndent = 0;
+
+    function preEvent() {
+        eventIndent++;
+        setTimeout(postEvent, 0); //Call postEvent as soon as possible, when there is no other code on the stack.
+        return eventIndent == 1; //No other event is calling this event, which means it must be manually called
+    }
+
+    function postEvent() {
+        eventIndent--;
+    }
+
     function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus) {
         ableToGainFocus = typeof (ableToGainFocus) != "undefined" && ableToGainFocus;
 
         var $document = $(document);
 
         function mousedownEvent(event) {
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
 
@@ -568,6 +583,9 @@
         }
 
         function mouseupEvent(event) { //left click vs right click?
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
 
@@ -582,6 +600,9 @@
         };
 
         function clickEvent(event) { //Only elements with onclick/click event attached will be logged
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
 
@@ -591,6 +612,9 @@
         };
 
         function dblclickEvent(event) {
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
 
@@ -600,6 +624,9 @@
         };
 
         function dragstartEvent(event) {
+            if (!preEvent())
+                return;
+
             var target = event.target ? event.target : event.srcElement;
 
             var v = {
@@ -610,6 +637,9 @@
         };
 
         function dragendEvent(event) {
+            if (!preEvent())
+                return;
+
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
@@ -618,6 +648,9 @@
         };
 
         function dragoverEvent(event) { //To tell if it is allowed
+            if (!preEvent())
+                return;
+
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
@@ -626,6 +659,9 @@
         };
 
         function dropEvent(event) {
+            if (!preEvent())
+                return;
+
             var target = event.target ? event.target : event.srcElement;
 
             var v = {};
@@ -634,6 +670,9 @@
         };
 
         function scrollEvent(event) {
+            if (!preEvent())
+                return;
+
             var $this = $(this);
 
             var v = {
@@ -709,14 +748,23 @@
         var $document = $(document);
 
         function blurEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnBlur, null, JSONEvent(event));
         };
 
         function focusEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnFocus, null, JSONEvent(event));
         };
 
         function changeEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             var $this = $(this);
             var type = $this.prop('type').toUpperCase();
             var v;
@@ -729,22 +777,37 @@
         };
 
         function selectEvent(event) { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs    //after focusin
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionInfo(this), JSONEvent(event));
         };
 
         function copyEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionInfo(this), JSONEvent(event));
         };
 
         function cutEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnCut, getSelectionInfo(this), JSONEvent(event));
         };
 
         function pasteEvent(event) { //after focusin 
+            if (!preEvent())
+                return;
+
             logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val(), JSONEvent(event));
         };
 
         function keydownEvent(event) { //after focusin
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -763,6 +826,9 @@
         };
 
         function keyupEvent(event) { //keyCode is incase-sensative   //after focusin
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -781,6 +847,9 @@
         };
 
         function keypressEvent(event) { //keyCode is case-sensative    //after focusin
+            if (!preEvent())
+                return;
+
             if (!event)
                 event = window.event;
             var charCode = event.which || event.keyCode;
@@ -2124,3 +2193,14 @@ $.fn.size = function () {
         return $.fn.origSize();
     return this.length;
 };
+
+$.extend({
+    findFirst: function (elems, validateCb) {
+        var i;
+        for (i = 0 ; i < elems.length ; ++i) {
+            if (validateCb(elems[i], i))
+                return { index: i, value: elems[i] };
+        }
+        return undefined;
+    }
+});

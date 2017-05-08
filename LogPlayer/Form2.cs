@@ -123,7 +123,44 @@ namespace TestBrowser
                 }
                 else
                 {
-                    //Ignore serverside.. they are handled by the webserver
+                    if (logElement.LogType == LogType.OnPageRequest) // || logElement.LogType == LogType.OnHandlerRequestReceived)
+                    {
+                        var value = LoggingPage.DeserializeRequestValue(logElement);
+                        var requestMethod = value.ServerVariables["REQUEST_METHOD"].ToUpper();
+                        if (requestMethod == "POST")
+                        {
+                            //Ignore event
+                        }
+                    }
+
+                    //Ignore serverside.. they are handled by the webserver.... eh, this means we do no accept new pagerequests, we should only ignore postback events
+                    //Typer pagerequests:
+
+                    //Manuel url, tryk på anchor eller redirect via js-kode: !postback (burde jeg håndtere.. og checke om en af de allerede åbne browser sub-vinduer ikke længere har events, for ellers overtag en af disse)
+                    //ved html-event (f.eks. click) vil denne aktion blive udført automatisk, så hvordan undersøger jeg om et pagerequest sker af sig selv eller det er nået jeg skal ordne?
+                    //Skal jeg undersøge det via tid??
+                    //ved form-submit får jeg et form-submit-event (nej, form-submit-eventet er på nuværende tidspunkt undladt i loggen, da det sker automatisk som en del af et flow udfra et klik.. 
+                    //                                              men jeg kunne selvfølgelig logge at det er sket og hvis ikke, så er det jo noget logplayeren skal udføre? præcis samme problem... suk)
+
+                    //Så fremgangsmåden er måske at udvidde loggningen ikke med henblik på at afspille det igen direkte, men lade automatikken ordne det inden for rimelig tid.. dvs opsætning af logging skal også ske for LogPlayeren)
+                    //  Er det opsat i dag i Play-mode?
+                    //    Nu er jeg pludselig i tvivl om det er vigtigt eller ej, da f.eks. form-submit jo kun ............ om igen
+
+                    ///////////////////////////////
+
+                    //Manuel url, tryk på anchor eller redirect via js-kode: !postback (burde jeg håndtere.. og checke om en af de allerede åbne browser sub-vinduer ikke længere har events, for ellers overtag en af disse)
+                    //unload event (burde det også blive logget til information om siden er relevant?) Den får jeg jo både ved postback og url-redirect
+                    //
+
+                    //form-post via knap eller js-kode: postback
+
+                    /////////////////////////////////////////////////
+
+                    // Jeg får et page-request event her.. skal vide om jeg skal åbne nyt browser-vindue, overtage et eksisterende eller intet gøre da det er et form-post event, form-post event vil ALTID være i samme vindue.
+                    // REQUEST_METHOD er placeret i logElement.Value for pagerequest objektet.. "GET", "PUT", "POST", "PATCH", "DELETE"  (http://www.restapitutorial.com/lessons/httpmethods.html)
+                    // Burde jo være i første event, da vi har fingrene i OnPageSessionBefore med ret stor sikkerhed.. så det burde måske være det første event?
+                    //   OnPageRequest kommer nu før OnPageSession, giver mest mening.
+
                 }
 
                 //TODO Spawn this a spawn session/browser event occurs more than once?!

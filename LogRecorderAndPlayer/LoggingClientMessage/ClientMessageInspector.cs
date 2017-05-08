@@ -51,6 +51,8 @@ namespace LogRecorderAndPlayer
                 Action = request.Headers.Action
             };
 
+            //OperationContext.Current.SessionId
+
             string messageBody = GetMessageBody(request);
 
             LoggingHelper.LogElement(new LogElementDTO(

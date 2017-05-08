@@ -71,6 +71,7 @@
     <Compile Include="HTTP\ResponseFilter.cs" />
     <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILoggingPersister.cs" />
+    <Compile Include="Interfaces\ILoggingPlayer.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
     <Compile Include="Logging\LoggingPersistence.cs" />
     <Compile Include="Logging\LoggingHandler.cs" />
