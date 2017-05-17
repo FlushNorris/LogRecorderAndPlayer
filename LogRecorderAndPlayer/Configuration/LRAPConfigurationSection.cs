@@ -17,6 +17,19 @@ namespace LogRecorderAndPlayer
 
     public class LRAPConfigurationSection : ConfigurationSection
     {
+        [ConfigurationProperty("enabled", IsRequired = true)]
+        public bool Enabled
+        {
+            get
+            {
+                return (bool)this["enabled"];
+            }
+            set
+            {
+                this["enabled"] = value;
+            }
+        }        
+
         [ConfigurationProperty("logType", IsRequired = true)]
         public LRAPLogType LogType
         {

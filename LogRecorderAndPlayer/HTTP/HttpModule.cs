@@ -262,12 +262,11 @@ namespace LogRecorderAndPlayer
                     context.Response.Write(newResponse);
                 }
             }
-
-            if (String.IsNullOrWhiteSpace(context.Request.Params["hejhej"]))
-            {
-                context.Response.Clear();
-                context.Response.Redirect(context.Request.RawUrl + (context.Request.RawUrl.IndexOf('?') == -1 ? '?' : '&') + "hejhej=1234");
-            }
+            //if (String.IsNullOrWhiteSpace(context.Request.Params["hejhej"]))
+            //{
+            //    context.Response.Clear();
+            //    context.Response.Redirect(context.Request.RawUrl + (context.Request.RawUrl.IndexOf('?') == -1 ? '?' : '&') + "hejhej=1234");
+            //}
         }
 
         public void Dispose()

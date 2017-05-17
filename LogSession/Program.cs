@@ -25,8 +25,16 @@ namespace LogSession
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new MainForm(args));
-            Application.Run(new BrowserForm(new Guid(), new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
+            Application.Run(new MainForm(args));
+            //var serverGUID = new Guid("18e3f838-567e-4aaa-9b52-38587eabd579");
+            //var sessionGUID = new Guid();
+            //var pageGUID = new Guid();
+            //var url = "http://localhost:61027/FirstPage.aspx";
+
+            //var args2 = new string[] {serverGUID.ToString(), sessionGUID.ToString(), pageGUID.ToString(), url};            
+
+            //Application.Run(new BrowserForm(serverGUID, new Guid(), new Guid(), "http://localhost:61027/FirstPage.aspx"));
+            //Application.Run(new MainForm(args2));
         }
     }
 }

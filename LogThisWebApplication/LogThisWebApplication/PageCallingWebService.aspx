@@ -6,4 +6,15 @@
     <asp:Button runat="server" ID="btnCallWebService" OnClick="btnCallWebService_OnClick" Text="Call WebService"/><br/>
     Input: <asp:TextBox runat="server" ID="txtSomeInput" Width="400"></asp:TextBox><br/>
     Result: <asp:TextBox runat="server" ID="txtSomeResult" Width="400"></asp:TextBox><br/>
+   
+    <script>
+        //$(window).hashchange(function() {
+        //    alert('1234');
+        //});
+        //$(window).on('hashchange', function() {
+        //    alert('hello');
+        //});
+    </script> 
 </asp:Content>
+
+

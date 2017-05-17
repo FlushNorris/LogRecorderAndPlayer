@@ -63,7 +63,7 @@ namespace LogRecorderAndPlayer
                         throw new Exception("ViewState difference");
                     }
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() { Success = true }); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() { Success = true }); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
                 }))
                     return;
             }
@@ -79,9 +79,9 @@ namespace LogRecorderAndPlayer
         public static void LogRequest(HttpContext context, Page page, NameValueCollection requestForm)
         {
             var logType = LogType.OnPageRequest;
-            RequestParams requestParams = null;
 
             var postBackControlClientId = GetPostBackControlClientId(context, page, requestForm);
+            RequestParams requestParams = WebHelper.BuildRequestParams(context, requestForm);
 
             var newLogElement = new LogElementDTO(
                 guid: Guid.NewGuid(),
@@ -114,13 +114,10 @@ namespace LogRecorderAndPlayer
 
                     //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
 
-
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }
-
-            requestParams = WebHelper.BuildRequestParams(context, requestForm);
 
             LoggingHelper.LogElement(newLogElement);
         }        
@@ -165,7 +162,7 @@ namespace LogRecorderAndPlayer
                         throw new Exception("Session difference");
                     }
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }
@@ -210,7 +207,7 @@ namespace LogRecorderAndPlayer
                     context.Response.Clear();
                     context.Response.Write(newResponse);
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
                 }))
                     return newResponse;
             }

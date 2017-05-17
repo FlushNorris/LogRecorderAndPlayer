@@ -8,9 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
-using TestBrowser.Properties;
+using LogPlayer.Properties;
 
-namespace TestBrowser
+namespace LogPlayer
 {
     public enum LRAPSessionFlowType
     {
@@ -313,7 +313,7 @@ namespace TestBrowser
 
         private bool IsValidStartingEvent(LRAPSessionElement sessionElement)
         {
-            return sessionElement.LogElementInfo.LogType == LogType.OnPageSessionBefore;
+            return sessionElement.LogElementInfo.LogType == LogType.OnPageRequest;
         }
 
         public void Refresh()

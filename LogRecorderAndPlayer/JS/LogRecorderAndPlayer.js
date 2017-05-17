@@ -105,6 +105,52 @@
         return $(".aspNetHidden").first();
     }
 
+    function logTypeToString(logType) {
+        switch(logType) {
+            case LogType.OnHandlerRequestSend: return "OnHandlerRequestSend";
+            case LogType.OnHandlerRequestReceived: return "OnHandlerRequestReceived";
+            case LogType.OnHandlerResponseSend: return "OnHandlerResponseSend";
+            case LogType.OnHandlerResponseReceived: return "OnHandlerResponseReceived";
+            case LogType.OnBlur: return "OnBlur";
+            case LogType.OnFocus: return "OnFocus";
+            case LogType.OnChange: return "OnChange";
+            case LogType.OnSelect: return "OnSelect";
+            case LogType.OnCopy: return "OnCopy";
+            case LogType.OnCut: return "OnCut";
+            case LogType.OnPaste: return "OnPaste";
+            case LogType.OnKeyDown: return "OnKeyDown";
+            case LogType.OnKeyUp: return "OnKeyUp";
+            case LogType.OnKeyPress: return "OnKeyPress";
+            case LogType.OnMouseDown: return "OnMouseDown";
+            case LogType.OnMouseUp: return "OnMouseUp";
+            case LogType.OnClick: return "OnClick";
+            case LogType.OnDblClick: return "OnDblClick";
+            case LogType.OnSearch: return "OnSearch";
+            case LogType.OnResize: return "OnResize";
+            case LogType.OnDragStart: return "OnDragStart";
+            case LogType.OnDragEnd: return "OnDragEnd";
+            case LogType.OnDragOver: return "OnDragOver";
+            case LogType.OnDrop: return "OnDrop";
+            case LogType.OnScroll: return "OnScroll";
+            case LogType.OnPageRequest: return "OnPageRequest";
+            case LogType.OnPageResponse: return "OnPageResponse";
+            case LogType.OnPageSessionBefore: return "OnPageSessionBefore";
+            case LogType.OnPageSessionAfter: return "OnPageSessionAfter";
+            case LogType.OnPageViewStateBefore: return "OnPageViewStateBefore";
+            case LogType.OnPageViewStateAfter: return "OnPageViewStateAfter";
+            case LogType.OnWCFServiceRequest: return "OnWCFServiceRequest";
+            case LogType.OnWCFServiceResponse: return "OnWCFServiceResponse";
+            case LogType.OnPersistenceRequest: return "OnPersistenceRequest";
+            case LogType.OnPersistenceResponse: return "OnPersistenceResponse";
+            case LogType.OnHandlerSessionBefore: return "OnHandlerSessionBefore";
+            case LogType.OnHandlerSessionAfter: return "OnHandlerSessionAfter";
+            case LogType.OnSubmit: return "OnSubmit";
+            case LogType.OnReset: return "OnReset";
+            default:
+                return "Unknown";
+        }
+    }
+
     var LogType =
     {
         OnHandlerRequestSend: 0,
@@ -550,14 +596,20 @@
 
     var eventIndent = 0;
 
-    function preEvent() {
+    function preEvent(logType) {
         eventIndent++;
-        setTimeout(postEvent, 0); //Call postEvent as soon as possible, when there is no other code on the stack.
+        logType = typeof (logType) == "undefined" ? -1 : logType;
+        console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
+        setTimeout(function() {
+            postEvent(logType);
+        }, 0); //Call postEvent as soon as possible, when there is no other code on the stack.
         return eventIndent == 1; //No other event is calling this event, which means it must be manually called
     }
 
-    function postEvent() {
+    function postEvent(logType) {
         eventIndent--;
+        logType = typeof (logType) == "undefined" ? -1 : logType;
+        console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
     }
 
     function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus) {
@@ -566,11 +618,14 @@
         var $document = $(document);
 
         function mousedownEvent(event) {
-            if (!preEvent())
-                return;
+            //if (!preEvent(LogType.OnMouseDown))
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
 
             var v = {
                 button: event.button, //0=left 1=middle 2=right //The best supported
@@ -583,11 +638,14 @@
         }
 
         function mouseupEvent(event) { //left click vs right click?
-            if (!preEvent())
-                return;
+            //if (!preEvent(LogType.OnMouseUp))
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
 
             var v = {
                 button: event.button,
@@ -600,11 +658,14 @@
         };
 
         function clickEvent(event) { //Only elements with onclick/click event attached will be logged
-            if (!preEvent())
-                return;
+            //if (!preEvent(LogType.OnClick))
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
 
             var v = {};
 
@@ -612,11 +673,14 @@
         };
 
         function dblclickEvent(event) {
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
 
             var v = {};
 
@@ -624,8 +688,8 @@
         };
 
         function dragstartEvent(event) {
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             var target = event.target ? event.target : event.srcElement;
 
@@ -637,8 +701,8 @@
         };
 
         function dragendEvent(event) {
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             var target = event.target ? event.target : event.srcElement;
 
@@ -648,8 +712,8 @@
         };
 
         function dragoverEvent(event) { //To tell if it is allowed
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             var target = event.target ? event.target : event.srcElement;
 
@@ -659,8 +723,8 @@
         };
 
         function dropEvent(event) {
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             var target = event.target ? event.target : event.srcElement;
 
@@ -670,7 +734,13 @@
         };
 
         function scrollEvent(event) {
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (!event)
+                event = window.event;
+
+            if (event.target !== this)
                 return;
 
             var $this = $(this);
@@ -748,21 +818,33 @@
         var $document = $(document);
 
         function blurEvent(event) { //after focusin
-            if (!preEvent())
+            //if (!preEvent(LogType.OnBlur))
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnBlur, null, JSONEvent(event));
         };
 
         function focusEvent(event) { //after focusin
-            if (!preEvent())
+            //console.log('focusevent called 1');
+            //if (!preEvent(LogType.OnFocus))
+            //    return;
+
+            //console.log('focusevent called 2');
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnFocus, null, JSONEvent(event));
         };
 
         function changeEvent(event) { //after focusin
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             var $this = $(this);
@@ -777,39 +859,55 @@
         };
 
         function selectEvent(event) { //select text.. apparently no way of getting the selected text? or is there... check caret showSelectionInsideTextarea also works on inputs    //after focusin
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnSelect, getSelectionInfo(this), JSONEvent(event));
         };
 
         function copyEvent(event) { //after focusin
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnCopy, getSelectionInfo(this), JSONEvent(event));
         };
 
         function cutEvent(event) { //after focusin
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnCut, getSelectionInfo(this), JSONEvent(event));
         };
 
         function pasteEvent(event) { //after focusin 
-            if (!preEvent())
+            //if (!preEvent())
+            //    return;
+
+            if (event.target !== this)
                 return;
 
             logInputClientsideControlEvent(this, LogType.OnPaste, $(this).val(), JSONEvent(event));
         };
 
         function keydownEvent(event) { //after focusin
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
+
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -826,11 +924,15 @@
         };
 
         function keyupEvent(event) { //keyCode is incase-sensative   //after focusin
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
+
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -847,11 +949,15 @@
         };
 
         function keypressEvent(event) { //keyCode is case-sensative    //after focusin
-            if (!preEvent())
-                return;
+            //if (!preEvent())
+            //    return;
 
             if (!event)
                 event = window.event;
+
+            if (event.target !== this)
+                return;
+
             var charCode = event.which || event.keyCode;
             var ch = String.fromCharCode(charCode);
 
@@ -1074,6 +1180,7 @@
             InstanceTime: convertToJsonDate(new Date())
         };
         logElements.push(request);
+        console.log('added logelement with logtype : ' + logType);
 
         compactLogElementList();
     }    
@@ -1748,6 +1855,7 @@
     }
 
     function playLogElement(logElement /*json*/) {
+        
 
         //setTimeout(function() {
         //    window.external.SetLogElementAsDone(0, false, 'woohooo timed!');
@@ -1923,6 +2031,8 @@
         //url
         //week
 
+        //alert("doPlayEventFor called: " + elementValue + " : " + logType);
+
         var preCombinedLogTypes = [];
         var postCombinedLogTypes = [];
 
@@ -2069,7 +2179,6 @@
         //Post-section
         switch (logType) {
             case LogType.OnKeyPress:
-
                 var selectionInfo = getSelectionInfo($elm[0]);
                 if (selectionInfo != null) { //startPos + endPos
                     var value = $elm.val();

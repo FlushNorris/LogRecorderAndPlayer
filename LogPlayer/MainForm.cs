@@ -12,34 +12,34 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
 
-namespace TestBrowser
+namespace LogPlayer
 {
-    public partial class Form2 : Form
+    public partial class MainForm : Form
     {
-        private NamedPipeServer Server { get; set; } = null;
+        private PlayerCommunicationServer Server { get; set; } = null;
         private Guid ServerGUID { get; set; }
         private List<TransferElementSession> Sessions { get; set; } = new List<TransferElementSession>();
 
-        public Form2()
+        public MainForm()
         {
             ServerGUID = Guid.NewGuid();
             InitializeComponent();
             //MessageBox.Show($"Starting player-server {ServerGUID}");
-            Server = new NamedPipeServer(ServerGUID);
-            Server.ServiceInstanse.OnSyncSession += ServiceInstanse_OnSyncSession;
-            Server.ServiceInstanse.OnClosingSession += ServiceInstanse_OnClosingSession;
-            Server.ServiceInstanse.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
-            Server.ServiceInstanse.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
+            Server = new PlayerCommunicationServer(ServerGUID);
+            Server.ServiceInstance.OnSyncSession += ServiceInstanse_OnSyncSession;
+            Server.ServiceInstance.OnClosingSession += ServiceInstanse_OnClosingSession;
+            Server.ServiceInstance.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
+            Server.ServiceInstance.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
         }
 
         private TransferElementResponse ServiceInstanse_OnFetchLogElement(TransferElementFetchLogElement fetchLogElement)
         {
             var fetchLogElementResponse = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
-            return new TransferElementResponse() {Success = true, Data = fetchLogElementResponse };
+            return new TransferElementResponse() {Success = true, Data = fetchLogElementResponse};
         }
 
         private TransferElementResponse ServiceInstanse_OnBrowserJobComplete(TransferElementBrowserJob namedPipeBrowserJob) //For clientside-events
-        {            
+        {
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             Guid? logElementGUID = namedPipeBrowserJob.LogElementGUID;
             if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
@@ -60,20 +60,20 @@ namespace TestBrowser
                 }
             }
 
-            return new TransferElementResponse() { Success = true };
+            return new TransferElementResponse() {Success = true};
         }
 
         private TransferElementResponse ServiceInstanse_OnClosingSession(TransferElementSession namedPipeSession)
         {
             var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID));
             Sessions.Remove(browser);
-            return new TransferElementResponse() { Success = true };
+            return new TransferElementResponse() {Success = true};
         }
 
         private TransferElementResponse ServiceInstanse_OnSyncSession(TransferElementSession namedPipeSession)
         {
             var browser = Sessions.First(x => x.ProcessGUID.Equals(namedPipeSession.ProcessGUID) && x.ProcessId == -1);
-            browser.ProcessId = namedPipeSession.ProcessId;                        
+            browser.ProcessId = namedPipeSession.ProcessId;
 
             return new TransferElementResponse() {Success = true};
         }
@@ -82,7 +82,11 @@ namespace TestBrowser
         {
             foreach (var browser in Sessions.Where(x => x.ProcessId != -1))
             {
-                Process.GetProcessById(browser.ProcessId).Kill();
+                try
+                {
+                    Process.GetProcessById(browser.ProcessId).Kill();
+                }
+                catch{}
             }
 
             if (Server != null)
@@ -94,6 +98,8 @@ namespace TestBrowser
 
         private void Form2_Load(object sender, EventArgs e)
         {
+            textBox1.AppendText($"ServerGUID = {ServerGUID}");
+
             var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
 
             DoubleBuffered = true;
@@ -119,7 +125,7 @@ namespace TestBrowser
             {
                 if (LogTypeHelper.IsClientsideUserEvent(logElement.LogType))
                 {
-                    NamedPipeHelper.SendBrowserJob_ASYNC(session, logElement);
+                    PlayerCommunicationHelper.SendBrowserJob_ASYNC(session, logElement);
                 }
                 else
                 {
@@ -174,9 +180,9 @@ namespace TestBrowser
 
             Sessions.Add(session);
 
-            var browserApp = ConfigurationManager.AppSettings["BrowserApp"];
+            var sessionApp = ConfigurationManager.AppSettings["SessionApp"];
 
-            var psi = new ProcessStartInfo(browserApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} \"{url}\"");
+            var psi = new ProcessStartInfo(sessionApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} \"{url}\"");
             Process.Start(psi);
         }
 

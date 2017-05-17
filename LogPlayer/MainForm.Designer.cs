@@ -1,6 +1,6 @@
-﻿namespace TestBrowser
+﻿namespace LogPlayer
 {
-    partial class Form2
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.eventsTable1 = new TestBrowser.EventsTable();
+            this.eventsTable1 = new LogPlayer.EventsTable();
             this.txtBaseUrl = new System.Windows.Forms.TextBox();
             this.txtPath = new System.Windows.Forms.TextBox();
             this.textBox1 = new System.Windows.Forms.TextBox();

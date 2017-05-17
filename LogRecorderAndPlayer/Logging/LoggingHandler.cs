@@ -43,7 +43,7 @@ namespace LogRecorderAndPlayer
 
                     LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }
@@ -88,7 +88,7 @@ namespace LogRecorderAndPlayer
                     context.Response.Clear();
                     context.Response.Write(newResponse);
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return newResponse;
             }
@@ -136,7 +136,7 @@ namespace LogRecorderAndPlayer
                         throw new Exception("Session difference");
                     }
 
-                    NamedPipeHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }

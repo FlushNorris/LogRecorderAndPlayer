@@ -287,6 +287,8 @@ namespace LogRecorderAndPlayer
             try
             {
                 var config = ConfigurationHelper.GetConfigurationSection();
+                if (!config.Enabled)
+                    return new LogElementResponse() { Success = true };
 
                 var unixNow = TimeHelper.UnixTimestamp();
 
@@ -511,7 +513,7 @@ namespace LogRecorderAndPlayer
             FetchLogElementResponse fetchLogElement = null;
             do
             {
-                fetchLogElement = NamedPipeHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+                fetchLogElement = PlayerCommunicationHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
                 continueFlag = fetchLogElement.Type == FetchLogElementResponseType.IncorrectLogType;
                 if (continueFlag)
                 {

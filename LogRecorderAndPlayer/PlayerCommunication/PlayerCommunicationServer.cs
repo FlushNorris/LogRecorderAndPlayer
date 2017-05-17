@@ -34,25 +34,30 @@ namespace LogRecorderAndPlayer
 
         public PlayerCommunicationServer(Guid serverGUID)
         {
-            var baseAddress = new Uri("net.tcp://localhost:445/LogRecorderAndPlayer");
+            //var baseAddress = new Uri("net.pipe://localhost/LogRecorderAndPlayer");
 
             ServiceInstance = new PlayerCommunicationService();
 
-            ServiceHost = new ServiceHost(ServiceInstance, baseAddress);
+            //ServiceHost = new ServiceHost(ServiceInstance, baseAddress);
             try
-            { 
-                var binding = new NetTcpBinding(); //WSHttpBinding();
-                binding.Security.Mode = SecurityMode.None;
-                //binding.Security.Message.NegotiateServiceCredential = false;
-                binding.Security.Message.ClientCredentialType = MessageCredentialType.None;
+            {
+                ServiceHost = new ServiceHost(ServiceInstance, new Uri($"net.pipe://localhost/{serverGUID.ToString().Replace("-", "")}"));
+                ServiceHost.AddServiceEndpoint(typeof(PlayerCommunicationServiceInterface), new NetNamedPipeBinding(), $"LRAPService{serverGUID.ToString().Replace("-", "")}");
+                ServiceHost.Open();
 
-                ServiceHost.AddServiceEndpoint(typeof(PlayerCommunicationServiceInterface), binding, $"{serverGUID.ToString().Replace(" - ", "")}");
 
-                var smb = new ServiceMetadataBehavior();
-                //smb.HttpGetEnabled = true;
-                ServiceHost.Description.Behaviors.Add(smb);
+                //var binding = new NetNamedPipeBinding();
+                ////binding.Security.Mode = SecurityMode.None;
+                ////binding.Security.Message.NegotiateServiceCredential = false;
+                ////binding.Security.Message.ClientCredentialType = MessageCredentialType.None;
+
+                //ServiceHost.AddServiceEndpoint(typeof(PlayerCommunicationServiceInterface), binding, $"{serverGUID.ToString().Replace("-", "")}");
+
+                ////var smb = new ServiceMetadataBehavior();
+                ////smb.HttpGetEnabled = true;
+                ////ServiceHost.Description.Behaviors.Add(smb);
                 
-                ServiceHost.Open();                
+                //ServiceHost.Open();                
             }
             catch (Exception ce)
             {
@@ -62,6 +67,20 @@ namespace LogRecorderAndPlayer
                 throw;
             }
         }
+
+        //var factory = new DuplexChannelFactory<PlayerCommunicationServiceInterface>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService{serverId.ToString().Replace("-", "")}"));
+
+        //public NamedPipeServer(Guid serverGUID)
+        //{
+        //    ServiceInstanse = new NamedPipeService();
+
+        //    //ServiceHost = new ServiceHost(ServiceInstanse, new Uri($"net.pipe://localhost//{serverGUID.ToString().Replace("-", "")}"));
+        //    //ServiceHost.AddServiceEndpoint(typeof(INamedPipeService), new NetNamedPipeBinding(), $"LRAPService"); //{serverGUID.ToString().Replace("-", "")}");
+
+        //    ServiceHost = new ServiceHost(ServiceInstanse, new Uri($"net.pipe://localhost/{serverGUID.ToString().Replace("-", "")}"));
+        //    ServiceHost.AddServiceEndpoint(typeof(INamedPipeService), new NetNamedPipeBinding(), $"LRAPService{serverGUID.ToString().Replace("-", "")}");
+        //    ServiceHost.Open();
+        //}
 
         public void Dispose()
         {

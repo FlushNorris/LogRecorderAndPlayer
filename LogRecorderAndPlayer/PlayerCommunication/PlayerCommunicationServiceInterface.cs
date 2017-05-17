@@ -7,10 +7,12 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    [ServiceContract]
+    //[ServiceContract]
+    [ServiceContract(CallbackContract = typeof(PlayerCommunicationCallbackServiceInterface))]
     public interface PlayerCommunicationServiceInterface
     {
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
+        //[OperationContract]
         string ProcessData(string someValue);
     }
 }

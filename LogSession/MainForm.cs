@@ -18,7 +18,7 @@ namespace LogSession
         private Guid? ServerGUID { get; set; } //PlayerGUID
         private Guid? ProcessGUID { get; set; } //or SessionGUID        
         private List<BrowserForm> Browsers { get; set; } = null;
-        private NamedPipeServer Server { get; set; } = null;
+        private PlayerCommunicationServer Server { get; set; } = null;
 
         public MainForm(string[] args) //Primary CTOR
         {
@@ -54,13 +54,13 @@ namespace LogSession
             refreshTimer.Enabled = true;
 
             //Send back process id related to guid
-            NamedPipeHelper.SendSyncSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id);
+            PlayerCommunicationHelper.SendSyncSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id);
 
             this.Text = $"Session: {ProcessGUID.Value} Page: {0}";
 
             //MessageBox.Show($"Starting session-server {ProcessGUID.Value}");
-            Server = new NamedPipeServer(ProcessGUID.Value);
-            Server.ServiceInstanse.OnBrowserJob += ServiceInstanse_OnBrowserJob;
+            Server = new PlayerCommunicationServer(ProcessGUID.Value);
+            Server.ServiceInstance.OnBrowserJob += ServiceInstanse_OnBrowserJob;
 
             JumpToURL(startingPageGUID.Value, startingUrl);
 
@@ -130,7 +130,7 @@ namespace LogSession
 
         private void Browser_OnHandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus)
         {
-            NamedPipeHelper.SetHandlerLogElementAsDone(ServerGUID.Value, browser.PageGUID, logType, handlerUrl, jobStatus); //, async: false); 
+            PlayerCommunicationHelper.SetHandlerLogElementAsDone(ServerGUID.Value, browser.PageGUID, logType, handlerUrl, jobStatus); //, async: false); 
         }
 
         private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus)
@@ -149,7 +149,7 @@ namespace LogSession
 
             //MessageBox.Show("Send BrowserJobComplete to player");
             //MessageBox.Show($"jobcomplete: logElementGUID={logElementGUID}");
-            NamedPipeHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
+            PlayerCommunicationHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
 
 //            NamedPipeHelper.SendBrowserJobComplete(ServerGUID.Value, new NamedPipeBrowserJob() { PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
         }       
@@ -168,20 +168,22 @@ namespace LogSession
                 if (ProcessGUID == null || ServerGUID == null)
                     return;
 
-                var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-                if (dialogResult == DialogResult.No)
-                {
-                    e.Cancel = true;
-                    return;
-                }
+                //TODO.. include this section again when everything else is working correctly
+                //var dialogResult = MessageBox.Show("Are you sure you want to close this session?", "Are you sure?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                //if (dialogResult == DialogResult.No)
+                //{
+                //    e.Cancel = true;
+                //    return;
+                //}                
 
-                if (!NamedPipeHelper.SendClosingSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id))
-                {
-                    e.Cancel = true;
-                    MessageBox.Show("Player does not allow closing the browser at this point");
-                }
+                //TODO.. include this section again when everything else is working correctly
+                //if (!PlayerCommunicationHelper.SendClosingSession(ServerGUID.Value, ProcessGUID.Value, Process.GetCurrentProcess().Id))
+                //{
+                //    e.Cancel = true;
+                //    MessageBox.Show("Player does not allow closing the browser at this point");
+                //}
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show("Error occured while closing form");
                 e.Cancel = false;
