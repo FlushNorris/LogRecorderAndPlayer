@@ -50,7 +50,7 @@ namespace LogRecorderAndPlayer
             CombinedRequestsWithDifferentLogType = new LogElementDTO[0];
             InstanceTime = instanceTime;
         }
-    }
+    }    
 
     public class LogElementInfo
     {

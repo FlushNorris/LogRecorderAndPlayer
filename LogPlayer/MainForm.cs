@@ -20,6 +20,8 @@ namespace LogPlayer
         private Guid ServerGUID { get; set; }
         private List<TransferElementSession> Sessions { get; set; } = new List<TransferElementSession>();
 
+        private List<Tuple<LogElementDTO, LogElementDTO, AdditionalData>> LogElementHistory { get; set; } = new List<Tuple<LogElementDTO, LogElementDTO, AdditionalData>>();
+
         public MainForm()
         {
             ServerGUID = Guid.NewGuid();
@@ -30,6 +32,13 @@ namespace LogPlayer
             Server.ServiceInstance.OnClosingSession += ServiceInstanse_OnClosingSession;
             Server.ServiceInstance.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
             Server.ServiceInstance.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
+            Server.ServiceInstance.OnLogElementHistory += ServiceInstance_OnLogElementHistory;
+        }
+       
+        private TransferElementResponse ServiceInstance_OnLogElementHistory(LogElementDTO previousLogElement, LogElementDTO nextLogElement, AdditionalData additionalData)
+        {
+            LogElementHistory.Add(new Tuple<LogElementDTO, LogElementDTO, AdditionalData>(previousLogElement, nextLogElement, additionalData));
+            return new TransferElementResponse() { Success = true, Data = null };
         }
 
         private TransferElementResponse ServiceInstanse_OnFetchLogElement(TransferElementFetchLogElement fetchLogElement)
@@ -100,10 +109,10 @@ namespace LogPlayer
         {
             textBox1.AppendText($"ServerGUID = {ServerGUID}");
 
-            var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
+            //var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
 
             DoubleBuffered = true;
-            eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
+            //eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
             eventsTable1.OnLoadLogElement += EventsTable1_OnLoadLogElement;
             eventsTable1.OnPlayElement += EventsTable1_OnPlayElement;
         }
@@ -113,30 +122,48 @@ namespace LogPlayer
             return LoggingHelper.LoadElement(LRAPLogType.JSON, element.LogElementInfo);            
         }
 
-        private void EventsTable1_OnPlayElement(LogElementDTO logElement)
+        private PlayElementResponse EventsTable1_OnPlayElement(LogElementDTO logElement, bool doNotWaitForExecution)
         {
             var session = Sessions.FirstOrDefault(x => x.ProcessGUID.Equals(logElement.SessionGUID));
 
             if (session == null) //TODO Check if the logElement is both the first one of a bundle... and able to spawn a new session/browser
             {
-                SpawnSession(logElement.SessionGUID, logElement.PageGUID, txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/'));
+                var url = txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/');
+                url = LoggingHelper.SolutionLoggingPlayer?.FinalizeUrl(LogElementHistory, url);
+
+                SpawnSession(logElement.SessionGUID, logElement.PageGUID, url);
+
+                return PlayElementResponse.InProgress;
             }
             else
             {
                 if (LogTypeHelper.IsClientsideUserEvent(logElement.LogType))
                 {
                     PlayerCommunicationHelper.SendBrowserJob_ASYNC(session, logElement);
+                    return PlayElementResponse.InProgress;
                 }
                 else
                 {
                     if (logElement.LogType == LogType.OnPageRequest) // || logElement.LogType == LogType.OnHandlerRequestReceived)
                     {
-                        var value = LoggingPage.DeserializeRequestValue(logElement);
-                        var requestMethod = value.ServerVariables["REQUEST_METHOD"].ToUpper();
-                        if (requestMethod == "POST")
-                        {
-                            //Ignore event
-                        }
+                        if (!doNotWaitForExecution)
+                            return PlayElementResponse.WaitingToBeExecuted;
+
+                        //refresh and history-change should result in an existing pageGUID, but that pageGUID/browserWindow might in fact have been closed for some time at this point :(
+
+asdadsasd
+
+
+                        //var value = LoggingPage.DeserializeRequestValue(logElement);
+                        //var requestMethod = value.ServerVariables["REQUEST_METHOD"].ToUpper();
+                        //if (requestMethod == "POST") //Cannot rely on requestMethod to be able to determine if it can be ignored from being executed by LogPlayer, because refresh/F5 is able to reproduce any requestMethod
+                        //{
+                        //    //Ignore event
+                        //}
+                    }
+                    else
+                    {
+                        return PlayElementResponse.Ignored;
                     }
 
                     //Ignore serverside.. they are handled by the webserver.... eh, this means we do no accept new pagerequests, we should only ignore postback events
@@ -225,5 +252,12 @@ namespace LogPlayer
         }
 
         #endregion
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);
+
+            eventsTable1.SetupSessions(elementsInfo.LogElementInfos);
+        }
     }
 }

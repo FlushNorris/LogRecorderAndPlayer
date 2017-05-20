@@ -77,11 +77,18 @@ namespace LogPlayer
         {
             Flows = new Dictionary<LRAPSessionFlowType, List<LRAPSessionElement>>();
         }
-    }   
+    }
 
-    public class EventsTable : TableLayoutPanel
+    public enum PlayElementResponse
     {
-        public delegate void PlayElement(LogElementDTO logElement);
+        InProgress = 0,
+        Ignored = 1, //For serverside-events we dont ever wish to run from LogPlayer
+        WaitingToBeExecuted = 2 //For serverside-events we might wish to run from the LogPlayer, depending on if the event is running automatically (EventsTable keep track of when we waited enough time
+    }
+        
+    public class EventsTable : TableLayoutPanel
+    {       
+        public delegate PlayElementResponse PlayElement(LogElementDTO logElement, bool doNotWaitForExecution/*Used for elements returned WaitingToBeExecuted earlier...*/);
         public delegate LogElementDTO LoadLogElement(LRAPSessionElement element);
         public event LoadLogElement OnLoadLogElement = null;
         public event PlayElement OnPlayElement = null;

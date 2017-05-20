@@ -12,6 +12,18 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingHelper
     {
+        public static ILoggingPlayer SolutionLoggingPlayer { get; private set; }
+
+        static LoggingHelper()
+        {
+            var config = ConfigurationHelper.GetConfigurationSection();
+
+            if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
+                SolutionLoggingPlayer = DynamicAssembly.LoadAssemblyInstances<ILoggingPlayer>(config.SolutionAssembly).FirstOrDefault();
+            else
+                SolutionLoggingPlayer = null;
+        }
+
         public static void SetupSession(HttpContext context, Page page, NameValueCollection requestForm)
         {
             var v = GetSessionGUID(context, page, defaultValue:null, requestForm:requestForm);

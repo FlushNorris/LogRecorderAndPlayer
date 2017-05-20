@@ -5,24 +5,32 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.UI;
 using LogRecorderAndPlayer;
 
 namespace SolutionSpecificAssembly
 {
     public class SolutionSpecificClass : ILoggingPlayer
     {
-        public bool StoredLogElementHistory(LogElementDTO previousLogElement, LogElementDTO nextLogElement)
+        public bool StoreLogElementHistory(LogElementDTO previousLogElement, LogElementDTO nextLogElement)
         {
-            if (previousLogElement.LogType == LogType.OnHandlerRequestReceived || previousLogElement.LogType == LogType.OnHandlerSessionBefore)
-                return true;
-
-            if (previousLogElement.LogType == LogType.OnPageRequest || previousLogElement.LogType == LogType.OnPageSessionBefore)
-                return true;
-
-            return false;
+            return previousLogElement.LogType == LogType.OnPageRequest;
         }
 
-        public Uri FinalizeUri(List<Tuple<LogElementDTO, LogElementDTO>> previousServersideLogElements, Uri uri)
+        public AdditionalData BuildAdditionalData(HttpApplication httpApplication)
+        {
+            var httpContext = httpApplication.Context;
+            var page = httpContext.CurrentHandler as Page;
+            if (page != null)
+            {
+                //...
+            }
+            var r = new AdditionalData();
+            r.Data.Add("SomeKey", "SomeData");
+            return r;
+        }
+
+        public string FinalizeUrl(List<Tuple<LogElementDTO, LogElementDTO, AdditionalData>> previousServersideLogElements, string url)
         {
             //AbsolutePath    "/PageCallingWebService.aspx"   string
             //AbsoluteUri "http://localhost:61027/PageCallingWebService.aspx?hejhej=1234" string
@@ -51,7 +59,7 @@ namespace SolutionSpecificAssembly
             //UserInfo    ""  string
 
 
-            //Uri uri = new Uri(url);
+            Uri uri = new Uri(url);
 
             var pageName = uri.AbsolutePath.Trim('/').ToLower();
             var query = HttpUtility.ParseQueryString(uri.Query);
@@ -91,7 +99,7 @@ namespace SolutionSpecificAssembly
                 }
             }
 
-            return uri;            
+            return uri.ToString();
             //WebHelper.AddQryStrElement()
         }
     }

@@ -15,6 +15,7 @@ namespace LogRecorderAndPlayer
         public delegate TransferElementResponse SyncSession(TransferElementSession namedPipeSession);
         public delegate TransferElementResponse ClosingSession(TransferElementSession namedPipeSession);
         public delegate TransferElementResponse BrowserJobComplete(TransferElementBrowserJob namedPipeBrowserJob);
+        public delegate TransferElementResponse LogElementHistory(LogElementDTO previousLogElement, LogElementDTO nextLogElement, AdditionalData additionalData);
 
         //Server/Player to Session/Browser
         public delegate TransferElementResponse BrowserJob(LogElementDTO logElement);
@@ -27,6 +28,7 @@ namespace LogRecorderAndPlayer
         public event BrowserJob OnBrowserJob = null;
         public event BrowserJobComplete OnBrowserJobComplete = null;
         public event FetchLogElement OnFetchLogElement = null;
+        public event LogElementHistory OnLogElementHistory = null;
 
         public string ProcessData(string value)
         {
@@ -67,6 +69,13 @@ namespace LogRecorderAndPlayer
                         var logElement = (LogElementDTO)serverRequest.Data;
                         if (OnBrowserJob != null)
                             serverResponse = OnBrowserJob(logElement);
+                        break;
+                    }
+                case TransferElementRequestType.LogElementHistory:
+                    {
+                        var logElementHistory = (TransferLogElementHistory) serverRequest.Data;
+                        if (OnLogElementHistory != null)
+                            serverResponse = OnLogElementHistory(logElementHistory.PreviousLogElement, logElementHistory.NextLogElement, logElementHistory.AdditionalData);
                         break;
                     }
                 default:

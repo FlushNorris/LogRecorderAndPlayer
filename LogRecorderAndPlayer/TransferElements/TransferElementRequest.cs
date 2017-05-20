@@ -13,7 +13,8 @@ namespace LogRecorderAndPlayer
         ClosingSession = 1,
         BrowserJob = 2,
         BrowserJobComplete = 3,
-        FetchLogElement = 4
+        FetchLogElement = 4,
+        LogElementHistory = 5
     }
 
     [DataContract]
@@ -21,6 +22,7 @@ namespace LogRecorderAndPlayer
     [KnownType(typeof(LogElementDTO))]
     [KnownType(typeof(TransferElementBrowserJob))]
     [KnownType(typeof(TransferElementFetchLogElement))]
+    [KnownType(typeof(TransferLogElementHistory))]
     public class TransferElementRequest
     {
         [DataMember]

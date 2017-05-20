@@ -5,6 +5,7 @@
     Server textbox: <asp:TextBox runat="server" id="serverTextbox"></asp:TextBox><br/>
     <asp:Button runat="server" id="serverButton" Text="Fetch current time" OnClick="serverButton_OnClick" /><br/>
     <asp:Button runat="server" id="serverButton2" Text="Fetch current time2" OnClick="serverButton2_OnClick" /><br/>
+    <asp:Button runat="server" id="redirectButton" Text="Redirect to other page" OnClick="redirectButton_OnClick" /><br/>
     <br/>
     <br/>
     Client textbox with id and no class: <input id="clientTextboxWithID"/><br/>

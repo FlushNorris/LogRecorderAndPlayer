@@ -105,7 +105,12 @@ namespace LogRecorderAndPlayer
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
-                {
+                {                    
+                    if (LoggingHelper.SolutionLoggingPlayer?.StoreLogElementHistory(logElement, newLogElement) ?? false)
+                    {
+                        PlayerCommunicationHelper.SendLogElementHistory(serverGUID, logElement, newLogElement, LoggingHelper.SolutionLoggingPlayer?.BuildAdditionalData(context.ApplicationInstance));
+                    }
+
                     //var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                     requestParams = DeserializeRequestValue(logElement);
 

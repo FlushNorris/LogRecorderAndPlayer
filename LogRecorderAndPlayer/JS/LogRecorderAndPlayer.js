@@ -267,10 +267,12 @@
         });        
 
         bindWindowUnloadFirst(function () {
+            console.log('unload');
             finalizeLogger();                        
         });
 
-        bindWindowBeforeClose(function() {
+        bindWindowBeforeClose(function () {
+            console.log('beforeclose');
             finalizeLogger();
         });
 
@@ -841,9 +843,6 @@
         };
 
         function changeEvent(event) { //after focusin
-            //if (!preEvent())
-            //    return;
-
             if (event.target !== this)
                 return;
 
@@ -1851,7 +1850,11 @@
         var elm = $elm[0];
         //var position = $elm.position();
         var position = elm.getBoundingClientRect(); //also works with element with arbitrary margins and checkboxes
-        return elm == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top)); 
+        return elm == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top));
+    }
+
+    function isControlActive($elm) {
+        return !$elm.is(":disabled");
     }
 
     function playLogElement(logElement /*json*/) {
@@ -1882,6 +1885,7 @@
             function () { //condition
                 //alert("playLogElement condition1: " + logElement.Element + " : " + logElement.LogType);
                 var rx = isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm) : true;
+                rx = rx && isControlActive($elm);
                 //alert("playLogElement condition2: " + logElement.Element + " : " + logElement.LogType);
                 return rx;
             },

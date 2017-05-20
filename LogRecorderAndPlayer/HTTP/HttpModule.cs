@@ -15,21 +15,9 @@ namespace LogRecorderAndPlayer
     {
         private StreamWatcher watcher;
         private HttpApplication context;
-        private ILoggingPlayer solutionLoggingPlayer;
 
         public void Init(HttpApplication context)
         {
-            var config = ConfigurationHelper.GetConfigurationSection();
-
-            if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
-            {
-                solutionLoggingPlayer = DynamicAssembly.LoadAssemblyInstances<ILoggingPlayer>(config.SolutionAssembly).FirstOrDefault();    
-            }
-
-
-            //var ost = weee.DoStuff(6, 10);
-
-
             this.context = context;
             context.BeginRequest += Context_BeginRequest; //beforepage
             context.PostMapRequestHandler += Context_PostMapRequestHandler; //Before page

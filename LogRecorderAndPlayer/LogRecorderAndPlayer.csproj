@@ -104,6 +104,7 @@
     <Compile Include="PlayerCommunication\PlayerCommunicationServer.cs" />
     <Compile Include="PlayerCommunication\PlayerCommunicationService.cs" />
     <Compile Include="PlayerCommunication\PlayerCommunicationServiceInterface.cs" />
+    <Compile Include="TransferElements\TransferLogElementHistory.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="JS\LogRecorderAndPlayer.js" />

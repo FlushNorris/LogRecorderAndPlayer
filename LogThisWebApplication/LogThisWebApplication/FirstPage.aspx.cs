@@ -33,6 +33,8 @@ namespace LogThisWebApplication
             return control;
         }
 
+        public static int pageLoadCounter = 0;
+
         protected void Page_Load(object sender, EventArgs e)
         {
             //Request.Form["WHAT"] = "BUTT";
@@ -42,12 +44,22 @@ namespace LogThisWebApplication
 
         protected void serverButton_OnClick(object sender, EventArgs e)
         {
+            System.Threading.Thread.Sleep(10000);
             serverTextbox.Text = DateTime.Now.ToString("HH:mm:ss:fff");
         }
 
         protected void serverButton2_OnClick(object sender, EventArgs e)
         {
             serverTextbox.Text = DateTime.Now.ToString("HH:mm:ss:fff")+" part 2";
+        }
+
+        public static int pageRedirectCounter = 0;
+
+        protected void redirectButton_OnClick(object sender, EventArgs e)
+        {
+            pageRedirectCounter++;
+            System.Threading.Thread.Sleep(5000);
+            Response.Redirect("SecondPage.aspx");
         }
     }
 }
