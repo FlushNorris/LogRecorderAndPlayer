@@ -13,6 +13,15 @@ namespace LogThisWebApplication {
     public partial class FirstPage {
         
         /// <summary>
+        /// someLabel control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label someLabel;
+        
+        /// <summary>
         /// serverTextbox control.
         /// </summary>
         /// <remarks>
@@ -20,6 +29,15 @@ namespace LogThisWebApplication {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox serverTextbox;
+        
+        /// <summary>
+        /// serverTextbox2 control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox serverTextbox2;
         
         /// <summary>
         /// serverButton control.

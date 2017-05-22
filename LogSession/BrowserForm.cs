@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.UI.WebControls;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
 using Microsoft.Win32;
@@ -28,7 +29,9 @@ namespace LogSession
         public event HandlerJobCompleted OnHandlerJobCompleted = null;
 
         public Guid ServerGUID { get; set; }
+        public Guid SessionGUID { get; set; }
         public Guid PageGUID { get; set; }
+        
         private string StartingURL { get; set; }
 
         private bool IsNavigating { get; set; } = true;
@@ -41,10 +44,31 @@ namespace LogSession
             }
 
             ServerGUID = serverGUID;
+            SessionGUID = sessionGUID;
             PageGUID = pageGUID;
             StartingURL = LoggingHelper.PrepareUrlForLogPlayer(url, serverGUID, sessionGUID, pageGUID);
 
             InitializeComponent();
+        }
+
+        public void PerformURLRequest(string url, RequestMethod requestMethod)
+        {
+            WaitTillDocumentIsComplete(delegate
+            {
+                WaitTillWebBrowserIsNoLongerInUse(webBrowser =>
+                {
+                    if (requestMethod == RequestMethod.GET)
+                    {
+                        url = LoggingHelper.PrepareUrlForLogPlayer(url, ServerGUID, SessionGUID, PageGUID);
+                        webBrowser.Url = new Uri(url);
+                    }
+                    else
+                    {
+                        webBrowser.Document.InvokeScript("eval", new object[] { $"location.reload(true)" });
+                    }
+                    return true;
+                });
+            });
         }
 
         public string URL
@@ -64,13 +88,19 @@ namespace LogSession
         }
 
         private void BrowserForm_Load(object sender, EventArgs e)
-        {
-           
+        {           
             webBrowser.Url = new Uri(StartingURL);
             var scriptManager = new ScriptManager(this);
             scriptManager.OnJobCompleted += ScriptManager_OnJobCompleted;
             scriptManager.OnHandlerJobCompleted += ScriptManager_OnHandlerJobCompleted;
+            scriptManager.OnUpdatePageGUID += ScriptManager_OnUpdatePageGUID;
             webBrowser.ObjectForScripting = scriptManager;
+        }
+
+        private void ScriptManager_OnUpdatePageGUID(Guid pageGUID)
+        {
+            //MessageBox.Show($"Updating PageGUID from {this.PageGUID} to {pageGUID}");
+            this.PageGUID = pageGUID;
         }
 
         private void ScriptManager_OnHandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus)
@@ -146,7 +176,7 @@ namespace LogSession
             OnJobCompleted?.Invoke(this, logElementGUID, new JobStatus() {Success = true});
         }
 
-        private void WaitTillDocumentIsComplete(MethodInvoker invoker, double timeoutInMS = 30000)
+        private Thread WaitTillDocumentIsComplete(MethodInvoker invoker, double timeoutInMS = 30000)
         {
             var t = new Thread(() => //prevent deadlock (e.g. OnPageResponse followed by clientside event which has to wait for the pageresponse to end)
             {
@@ -184,10 +214,12 @@ namespace LogSession
                 }
                 
             });
+            t.IsBackground = true;
             t.Start();
+            return t;
         }
 
-        private void WaitTillWebBrowserIsNoLongerInUse(Func<WebBrowser, bool> f, double timeoutInMS = 30000)
+        private Thread WaitTillWebBrowserIsNoLongerInUse(Func<WebBrowser, bool> f, double timeoutInMS = 30000)
         {
             var t = new Thread(() => //prevent deadlock (e.g. OnPageResponse followed by clientside event which has to wait for the pageresponse to end)
             {
@@ -217,6 +249,7 @@ namespace LogSession
                     throw new Exception("WaitTillWebBrowserIsNoLongerInUse raised an timeout");
             });
             t.Start();
+            return t;
         }
 
         public void PerformLogElement(LogElementDTO logElement)
@@ -326,6 +359,9 @@ namespace LogSession
         public delegate void HandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus);
         public event HandlerJobCompleted OnHandlerJobCompleted = null;
 
+        public delegate void UpdatePageGUIDDelegate(Guid pageGUID);
+        public event UpdatePageGUIDDelegate OnUpdatePageGUID = null;
+
         BrowserForm _form;
         public ScriptManager(BrowserForm form)
         {
@@ -381,6 +417,12 @@ namespace LogSession
             //window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
 
             OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });
+        }
+
+        public void UpdatePageGUID(string pageGUIDString)
+        {
+            //MessageBox.Show("UPDATE!");
+            OnUpdatePageGUID?.Invoke(new Guid(pageGUIDString));
         }
     }
 

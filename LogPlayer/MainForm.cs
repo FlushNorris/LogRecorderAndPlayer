@@ -122,16 +122,18 @@ namespace LogPlayer
             return LoggingHelper.LoadElement(LRAPLogType.JSON, element.LogElementInfo);            
         }
 
-        private PlayElementResponse EventsTable1_OnPlayElement(LogElementDTO logElement, bool doNotWaitForExecution)
+        private PlayElementResponse EventsTable1_OnPlayElement(LogElementDTO logElement, bool ableToWaitForExecution)
         {
             var session = Sessions.FirstOrDefault(x => x.ProcessGUID.Equals(logElement.SessionGUID));
 
             if (session == null) //TODO Check if the logElement is both the first one of a bundle... and able to spawn a new session/browser
             {
-                var url = txtBaseUrl.Text.TrimEnd('/') + '/' + logElement.Element.TrimStart('/');
-                url = LoggingHelper.SolutionLoggingPlayer?.FinalizeUrl(LogElementHistory, url);
+                var baseUrl = txtBaseUrl.Text.TrimEnd('/');
+                var url = logElement.Element.TrimStart('/');
+                url = LoggingHelper.SolutionLoggingPlayer?.FinalizeUrl(LogElementHistory, baseUrl + '/' + url);
+                url = url.Substring(baseUrl.Length);
 
-                SpawnSession(logElement.SessionGUID, logElement.PageGUID, url);
+                SpawnSession(logElement.SessionGUID, logElement.PageGUID, baseUrl, url);
 
                 return PlayElementResponse.InProgress;
             }
@@ -146,12 +148,25 @@ namespace LogPlayer
                 {
                     if (logElement.LogType == LogType.OnPageRequest) // || logElement.LogType == LogType.OnHandlerRequestReceived)
                     {
-                        if (!doNotWaitForExecution)
+                        if (ableToWaitForExecution)
                             return PlayElementResponse.WaitingToBeExecuted;
+
+                        var baseUrl = txtBaseUrl.Text.TrimEnd('/');
+                        var url = logElement.Element.TrimStart('/');
+                        url = LoggingHelper.SolutionLoggingPlayer?.FinalizeUrl(LogElementHistory, baseUrl + '/' + url);
+                        url = url.Substring(baseUrl.Length);
+                        logElement.Element = url;
+
+                        PlayerCommunicationHelper.SendBrowserJob_ASYNC(session, logElement);
+                        return PlayElementResponse.InProgress;
+                        //RequestMethods:
+                        //GET:   Open new tab/window, unless logElement.PageGUID are found within the current LogSession
+                        //OTHER:
+                        //  Refresh: location.reload(true)
+                        //  History: pt ignoreres denne sektion, selvom det er forkert... ved ikke helt præcist hvordan dette skal ordnes
 
                         //refresh and history-change should result in an existing pageGUID, but that pageGUID/browserWindow might in fact have been closed for some time at this point :(
 
-asdadsasd
 
 
                         //var value = LoggingPage.DeserializeRequestValue(logElement);
@@ -201,15 +216,15 @@ asdadsasd
             }
         }
 
-        private void SpawnSession(Guid processGUID, Guid pageGUID, string url)
+        private void SpawnSession(Guid processGUID, Guid pageGUID, string baseUrl, string url)
         {
             var session = new TransferElementSession() { ProcessGUID = processGUID, ProcessId = -1 };
 
             Sessions.Add(session);
+            
+            var sessionApp = ConfigurationHelper.GetConfigurationSection().SessionApp;
 
-            var sessionApp = ConfigurationManager.AppSettings["SessionApp"];
-
-            var psi = new ProcessStartInfo(sessionApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} \"{url}\"");
+            var psi = new ProcessStartInfo(sessionApp, $"{ServerGUID} {session.ProcessGUID} {pageGUID} \"{baseUrl}\" \"{url}\"");
             Process.Start(psi);
         }
 

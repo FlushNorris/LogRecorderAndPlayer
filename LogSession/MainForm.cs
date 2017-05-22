@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
@@ -19,6 +20,7 @@ namespace LogSession
         private Guid? ProcessGUID { get; set; } //or SessionGUID        
         private List<BrowserForm> Browsers { get; set; } = null;
         private PlayerCommunicationServer Server { get; set; } = null;
+        private string BaseUrl = null;
 
         public MainForm(string[] args) //Primary CTOR
         {
@@ -30,9 +32,11 @@ namespace LogSession
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            MessageBox.Show("LogSession loaded...");
+
             Guid? startingPageGUID = null;
             string startingUrl = null;
-            if (Arguments.Length > 3)
+            if (Arguments.Length > 4)
             {
                 Guid tmp;
                 if (Guid.TryParse(Arguments[0], out tmp))
@@ -41,10 +45,11 @@ namespace LogSession
                     ProcessGUID = tmp;
                 if (Guid.TryParse(Arguments[2], out tmp))
                     startingPageGUID = tmp;
-                startingUrl = Arguments[3];
+                BaseUrl = Arguments[3];
+                startingUrl = Arguments[4];
             }
 
-            if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || startingUrl == null)
+            if (ServerGUID == null || ProcessGUID == null || startingPageGUID == null || BaseUrl == null || startingUrl == null)
             {
                 MessageBox.Show("Invalid arguments");
                 Close();
@@ -62,7 +67,7 @@ namespace LogSession
             Server = new PlayerCommunicationServer(ProcessGUID.Value);
             Server.ServiceInstance.OnBrowserJob += ServiceInstanse_OnBrowserJob;
 
-            JumpToURL(startingPageGUID.Value, startingUrl);
+            PerformURLRequest(startingPageGUID.Value, BaseUrl.TrimEnd('/') + '/' + startingUrl.TrimStart('/'), RequestMethod.GET);
 
             RefreshUI();
         }
@@ -83,19 +88,27 @@ namespace LogSession
 
         private TransferElementResponse ServiceInstanse_OnBrowserJob(LogElementDTO logElement)
         {
-            //if (logElement.GUID.ToString().ToLower().IndexOf("caa1") == 0)
+            //if (logElement.LogType == LogType.OnPageRequest)
             //{
             //    MessageBox.Show("what?");
             //}
 
             switch (logElement.LogType)
             {
-                case LogType.OnPageSessionBefore: //Burde jeg slå alle disse page pagerequest-events sammen?... nej, da der kan være event kald imellem eventsene
-                    JumpToURL(logElement.PageGUID, logElement.Element);
-                    break;
                 case LogType.OnResize:
                     var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value, SerializationType.Json);
-                    FindBrowserAndExec(logElement.PageGUID, x => x.ResizeBrowser(browserResize, logElement.GUID));
+                    FindBrowserAndExec(logElement.PageGUID, x =>
+                    {
+                        //MessageBox.Show($"Found Browser by pageGUID {logElement.PageGUID}");
+                        x.ResizeBrowser(browserResize, logElement.GUID);                        
+                    }); //Hvis det er en redirect, så er PageGUID blevet ændret i response-html'et, men ikke opdateret i browseren endnu. Hvor længe skal jeg vente på at det sker?
+                    break;
+                case LogType.OnPageRequest:
+                    var requestParams = SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
+                    RequestMethod requestMethod;
+                    if (!Enum.TryParse(requestParams.ServerVariables["REQUEST_METHOD"], true, out requestMethod))
+                        throw new Exception("PageRequest does not have a valid request method");
+                    PerformURLRequest(logElement.PageGUID, BaseUrl.TrimEnd('/') + '/' + logElement.Element.TrimStart('/'), requestMethod);
                     break;
                 default:
                     FindBrowserAndExec(logElement.PageGUID, x => x.PerformLogElement(logElement));
@@ -105,26 +118,95 @@ namespace LogSession
             return new TransferElementResponse() {Success = true};
         }
 
-        private void FindBrowserAndExec(Guid pageGUID, Action<BrowserForm> fn)
+        private BrowserForm FindBrowser(Guid pageGUID)
         {
-            var browser = Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
-            if (browser == null)
-                throw new Exception($"Error: Browser({pageGUID}) is not found");
-
-            fn(browser);
+            return Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
         }
 
-        private void JumpToURL(Guid pageGUID, string url)
+        private void FindBrowserAndExec(Guid pageGUID, Action<BrowserForm> fn, double timeoutInMS = 300000)
+        {            
+            var t = new Thread(() => 
+            {
+                var start = DateTime.Now;
+                var finished = false;
+                //var counter = 0;
+                do
+                {
+                    if (this.InvokeRequired) //but needs to run in on the main ui-thread
+                    {
+                        this.Invoke(new MethodInvoker(delegate
+                        {
+                            var browser = FindBrowser(pageGUID);
+                            if (browser != null)
+                            {
+                                fn(browser);
+                                finished = true;
+                            }                                                       
+                        }));
+                    }
+                    else
+                    {
+                        var browser = FindBrowser(pageGUID);
+                        if (browser != null)
+                        {
+                            fn(browser);
+                            finished = true;
+                        }
+                    }
+
+                    if (!finished)
+                    {
+                        Thread.Sleep(300);
+                    }
+
+                    //if (counter % 33 == 0)
+                    //{
+                    //    this.Invoke(new MethodInvoker(delegate
+                    //    {
+                    //        MessageBox.Show(finished ? "Found it!" : "Still looking....");
+                    //    }));
+                    //}
+
+                    //counter++;
+
+                } while (!finished && (DateTime.Now - start).TotalMilliseconds < timeoutInMS);
+
+                if (!finished)
+                {
+                    if (this.InvokeRequired) //but needs to run in on the main ui-thread
+                    {
+                        this.Invoke(new MethodInvoker(delegate
+                        {
+                            MessageBox.Show($"Error: Browser({pageGUID}) is not found");
+                        }));
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Error: Browser({pageGUID}) is not found");
+                    }
+                }
+
+            });
+            t.IsBackground = true;
+            t.Start();
+
+        }
+
+        private void PerformURLRequest(Guid pageGUID, string url, RequestMethod requestMethod)
         {
-            var browser = Browsers.FirstOrDefault(x => x.PageGUID.Equals(pageGUID));
+            var browser = FindBrowser(pageGUID);
             if (browser == null)
             {                
-                browser = new BrowserForm(ServerGUID.Value, ProcessGUID.Value, pageGUID, url);
+                browser = new BrowserForm(ServerGUID.Value, ProcessGUID.Value, pageGUID, url); //Processed as 'GET'
                 browser.FormClosing += Browser_FormClosing;
                 browser.OnJobCompleted += Browser_OnJobCompleted;
                 browser.OnHandlerJobCompleted += Browser_OnHandlerJobCompleted;
                 Browsers.Add(browser);
                 browser.Show();
+            }
+            else
+            {
+                browser.PerformURLRequest(url, requestMethod);
             }
         }
 
@@ -189,5 +271,15 @@ namespace LogSession
                 e.Cancel = false;
             }
         }
+    }
+
+    public enum RequestMethod //Inspired by http://docs.spring.io/spring-framework/docs/2.5.1/api/org/springframework/web/bind/annotation/RequestMethod.html
+    {
+        GET = 0,
+        POST = 1,
+        PUT = 2,
+        DELETE = 3,
+        HEAD = 4,
+        OPTIONS = 5
     }
 }

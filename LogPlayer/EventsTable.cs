@@ -22,7 +22,8 @@ namespace LogPlayer
     {
         Waiting = 0,
         Playing = 1,
-        Played = 2
+        Played = 2,
+        WaitingToTestIfCalledAutomatically = 3
     }
 
     public enum SessionState
@@ -88,7 +89,7 @@ namespace LogPlayer
         
     public class EventsTable : TableLayoutPanel
     {       
-        public delegate PlayElementResponse PlayElement(LogElementDTO logElement, bool doNotWaitForExecution/*Used for elements returned WaitingToBeExecuted earlier...*/);
+        public delegate PlayElementResponse PlayElement(LogElementDTO logElement, bool ableToWaitForExecution/*Used for elements returned WaitingToBeExecuted earlier...*/);
         public delegate LogElementDTO LoadLogElement(LRAPSessionElement element);
         public event LoadLogElement OnLoadLogElement = null;
         public event PlayElement OnPlayElement = null;
@@ -371,6 +372,8 @@ namespace LogPlayer
                 this.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 10));
             }
 
+            var sessionDistincter = new HashSet<Guid>();
+
             int startIdx = PageElements*PageIndex;
             int endIdx = startIdx + numOfElements - 1;
             int colorIdx = 0;
@@ -381,9 +384,11 @@ namespace LogPlayer
                 foreach (var sessionElement in sessionElementsAtPosition)
                 {
                     var rowIndex = LogTypeHelper.IsClientsideEvent(sessionElement.LogElementInfo.LogType) ? sessionElement.Session.ClientRowIndex : sessionElement.Session.ServerRowIndex;
-
-                    if (IsValidStartingEvent(sessionElement))
+                                        
+                    if (IsValidStartingEvent(sessionElement) && !sessionDistincter.Contains(sessionElement.Session.GUID))
                     {
+                        sessionDistincter.Add(sessionElement.Session.GUID);
+
                         var btn = new Button();
                         btn.FlatStyle = FlatStyle.Flat;
                         btn.Margin = new Padding(0);
@@ -432,8 +437,27 @@ namespace LogPlayer
             StartPlayer(sessionElement.Index);
         }
 
+        private void WaitForSessionElementToBeCalledAutomatically(LogElementDTO logElementDTO)
+        {
+            Thread.Sleep(5000);
+            var sessionElement = GetPlayingSessionElement(logElementDTO.GUID);
+            if (sessionElement != null && sessionElement.State == SessionElementState.WaitingToTestIfCalledAutomatically)
+            {
+                if (InvokeRequired)
+                {
+                    Invoke(new MethodInvoker(delegate
+                    {
+                        OnPlayElement?.Invoke(logElementDTO, ableToWaitForExecution: false);
+                    }));
+                }                
+            }
+        }
+
+        //private int SessionIndexPlaying = -1;
+
         private void StartPlayer(int index)
         {
+            //SessionIndexPlaying = index;
             StartIndex = index;
             CurrentIndex = index;
             CurrentState = EventsState.Playing;
@@ -449,14 +473,21 @@ namespace LogPlayer
                 if (logElementDTO != null)
                 {
                     sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
-                    OnPlayElement?.Invoke(logElementDTO);
+                    var playElementResponse = OnPlayElement?.Invoke(logElementDTO, ableToWaitForExecution: true);
+                    if (playElementResponse == PlayElementResponse.WaitingToBeExecuted)
+                    {
+                        sessionElement.State = SessionElementState.WaitingToTestIfCalledAutomatically;
+                        var t = new Thread(() => WaitForSessionElementToBeCalledAutomatically(logElementDTO));
+                        t.IsBackground = true;
+                        t.Start();
+                    }
                 }
             }
         }
 
         private void StopPlayer()
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); //not yet...
         }        
 
         public FetchLogElementResponse FetchLogElement(Guid pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
@@ -467,12 +498,13 @@ namespace LogPlayer
                 return new FetchLogElementResponse() {Type = FetchLogElementResponseType.NoMore};
 
             var lst = SessionElementOrderedList[currentIndex.Value];
-            var sessionElement = lst.First(x => x.LogElementInfo.PageGUID.Equals(pageGUID)); //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
+            var sessionElement = lst.FirstOrDefault(x => x.LogElementInfo.PageGUID.Equals(pageGUID)) ?? lst.First()/*Only one session is supported atm*/; //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
             switch (sessionElement.State)
             {
                 case SessionElementState.Played:
                     //Look at the next event if it matches the LogType for the current PageGUID
                     return FetchLogElement(pageGUID, logType, handlerUrl, currentIndex.Value + 1);
+                case SessionElementState.WaitingToTestIfCalledAutomatically:
                 case SessionElementState.Playing:
                     if (sessionElement.LogElementInfo.LogType == logType)
                     {
@@ -502,7 +534,7 @@ namespace LogPlayer
             if (SessionElementOrderedList.Count <= currentIndex.Value)
                 return null;
             var lst = SessionElementOrderedList[currentIndex.Value];
-            var elm = lst.Where(x => x.State == SessionElementState.Playing && x.LogElementInfo.GUID.Equals(elementGUID)).FirstOrDefault();
+            var elm = lst.Where(x => (x.State == SessionElementState.Playing || x.State == SessionElementState.WaitingToTestIfCalledAutomatically) && x.LogElementInfo.GUID.Equals(elementGUID)).FirstOrDefault();
             if (elm != null)
                 return elm;
 
@@ -527,6 +559,9 @@ namespace LogPlayer
             var elm = GetPlayingSessionElement(elementGUID);
             if (elm == null)
                 throw new Exception($"Unable to find playing element ({elementGUID})");
+            if (elm.State == SessionElementState.Played)
+                return NewEvent.None;
+
             elm.State = SessionElementState.Played;
 
             //Prevent deadlock, when e.g. marking an PageResponse as done and start the next event which 
@@ -563,8 +598,19 @@ namespace LogPlayer
                 if (logElementDTO != null)
                 {
                     sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
-                    OnPlayElement?.Invoke(logElementDTO);
-                    newEvent = NewEvent.StartedAtLeastOne;
+                    var playElementResponse = OnPlayElement?.Invoke(logElementDTO, ableToWaitForExecution:true);
+
+                    if (playElementResponse == PlayElementResponse.WaitingToBeExecuted)
+                    {
+                        //Hmm, noget er galt her... for den ovenstående foreach udfører alt for mange sessionElements på én gang... noget kalder BrowserJobComplete/done for events der overhovedet ikke er færdige????
+                        sessionElement.State = SessionElementState.WaitingToTestIfCalledAutomatically;
+                        var t = new Thread(() => WaitForSessionElementToBeCalledAutomatically(logElementDTO));
+                        t.IsBackground = true;
+                        t.Start();
+                        newEvent = NewEvent.WaitingForServerEvents;
+                    }
+                    else
+                        newEvent = NewEvent.StartedAtLeastOne;
                 }
             }
 

@@ -40,12 +40,18 @@ namespace LogThisWebApplication
             //Request.Form["WHAT"] = "BUTT";
             var obj = GetPostBackControl(this);
             serverTextbox.Text = "weee";
+
+            someLabel.Text = HttpUtility.HtmlEncode(this.Request["id"] ?? "NULL");
         }
 
         protected void serverButton_OnClick(object sender, EventArgs e)
         {
-            System.Threading.Thread.Sleep(10000);
+            //Simulated the creation of data by setting session-variable to something special... ligegyldigt, skal jo bare redirect to url med et id jeg anvender både for redirecten og den manuelle åbning af url efterfølgende
+
+            //System.Threading.Thread.Sleep(10000);
             serverTextbox.Text = DateTime.Now.ToString("HH:mm:ss:fff");
+
+            Response.Redirect("FirstPage.aspx?id=" + Guid.NewGuid().ToString().Replace("-", ""));
         }
 
         protected void serverButton2_OnClick(object sender, EventArgs e)

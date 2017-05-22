@@ -12,16 +12,21 @@ namespace LogRecorderAndPlayer
 {
     public static class LoggingHelper
     {
-        public static ILoggingPlayer SolutionLoggingPlayer { get; private set; }
+        private static ILoggingPlayer solutionLoggingPlayer = null;
 
-        static LoggingHelper()
+        public static ILoggingPlayer SolutionLoggingPlayer
         {
-            var config = ConfigurationHelper.GetConfigurationSection();
+            get
+            {
+                if (solutionLoggingPlayer == null)
+                {
+                    var config = ConfigurationHelper.GetConfigurationSection();
 
-            if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
-                SolutionLoggingPlayer = DynamicAssembly.LoadAssemblyInstances<ILoggingPlayer>(config.SolutionAssembly).FirstOrDefault();
-            else
-                SolutionLoggingPlayer = null;
+                    if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
+                        solutionLoggingPlayer = DynamicAssembly.LoadAssemblyInstances<ILoggingPlayer>(config.SolutionAssembly).FirstOrDefault();
+                }
+                return solutionLoggingPlayer;
+            }
         }
 
         public static void SetupSession(HttpContext context, Page page, NameValueCollection requestForm)
@@ -36,6 +41,10 @@ namespace LogRecorderAndPlayer
                 }
             }
             SetSessionGUIDInViewState(page, v.Value);
+
+            var serverGUID = GetServerGUID(context, defaultValue: null, requestForm: requestForm);
+            if (serverGUID != null)
+                SetServerGUIDInViewState(page, serverGUID.Value);
         }
 
         private static void SetSessionGUIDCookie(HttpContext context, Guid guid)
@@ -88,19 +97,45 @@ namespace LogRecorderAndPlayer
             return null;
         }
 
-        public static void SetupPage(HttpContext context, Page page, NameValueCollection requestForm = null)
+        public static void SetupPage(HttpContext context, Page page, LogType logType, NameValueCollection requestForm = null)
         {
             var pageGUID = GetPageGUID(context, page, defaultValue:null, requestForm:requestForm);
             if (pageGUID == null)
             {
-                SetPageGUID(page, Guid.NewGuid());
+                if (IsPlaying(context, requestForm))
+                {
+                    var serverGUID = GetServerGUID(context, null, requestForm).Value;
+
+                    if (FetchAndExecuteLogElement(serverGUID, new Guid(), logType, (logElement) =>
+                    {
+                        SetPageGUID(page, logElement.PageGUID);                        
+                    }));
+                }
+                else
+                {
+                    SetPageGUID(page, Guid.NewGuid());
+                }                
             }
         }
 
         public static Guid? GetServerGUID(HttpContext context, Func<Guid?> defaultValue = null, NameValueCollection requestForm = null)
-        {            
-            var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
-            var requestServerGUID = requestParams?[Consts.ServerGUIDTag];
+        {
+            string requestServerGUID = null;
+            if (context.Session != null)
+                requestServerGUID = context.Session[Consts.ServerGUIDTag] as string;
+            if (requestServerGUID == null)
+            {
+                var page = context.CurrentHandler as Page;
+                if (page != null && page.Session != null)
+                    requestServerGUID = page.Session[Consts.ServerGUIDTag] as string;
+            }
+            if (requestServerGUID == null && context.Request != null && context.Request.Headers != null)
+                requestServerGUID = context.Request.Headers[Consts.ServerGUIDTag];
+            if (requestServerGUID == null)
+            {
+                var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
+                requestServerGUID = requestParams?[Consts.ServerGUIDTag];
+            }
             if (!String.IsNullOrWhiteSpace(requestServerGUID))
                 return new Guid(requestServerGUID);
             return defaultValue != null ? defaultValue() : null;
@@ -114,7 +149,10 @@ namespace LogRecorderAndPlayer
             var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
             var requestPageGUID = requestParams?[Consts.PageGUIDTag]; // context.Request?.Params[Consts.PageGUIDTag];
             if (requestPageGUID != null)
-                return new Guid(requestPageGUID);
+            {
+                var arr = requestPageGUID.Split(',');
+                return new Guid(arr[0]); //QryStr, RequestForm, Cookies, ServerVariables... the correct order of importance!
+            }
 
             if (page == null)
                 return defaultValue != null ? defaultValue() : null;
@@ -148,7 +186,7 @@ namespace LogRecorderAndPlayer
                 return;
 
             var viewState = WebHelper.GetViewState(page);
-            viewState[Consts.PageGUIDTag] = Guid.NewGuid();
+            viewState[Consts.PageGUIDTag] = pageGUID;
         }
 
         public static Guid? GetInstanceGUID(HttpContext context, Func<Guid?> defaultValue = null, NameValueCollection requestForm = null)
@@ -254,6 +292,14 @@ namespace LogRecorderAndPlayer
             var viewState = WebHelper.GetViewState(page);
             viewState[Consts.SessionGUIDTag] = sessionGUID;
         }
+
+        private static void SetServerGUIDInViewState(System.Web.UI.Page page, Guid serverGUID)
+        {
+            if (page == null)
+                return;
+            var viewState = WebHelper.GetViewState(page);
+            viewState[Consts.ServerGUIDTag] = serverGUID;
+        }        
 
         public static LogHandlerResponse LogHandlerRequest(string requestJSON)
         {
@@ -507,15 +553,60 @@ namespace LogRecorderAndPlayer
             return nvc;
         }
 
+        private static int debugCounter = 0;
+
         public static bool IsPlaying(HttpContext context, NameValueCollection requestForm)
         {
+            string r = null;
+            if (context.Session != null)
+                r = context.Session[Consts.ServerGUIDTag] as string;
+            if (r == null && context.Request != null && context.Request.Headers != null)
+                r = context.Request.Headers[Consts.ServerGUIDTag];
+
+            if (r == null)
+            {
+                var page = context.CurrentHandler as Page;
+                if (page != null)
+                {
+                    if (page.Session != null)
+                        r = page.Session[Consts.ServerGUIDTag] as string;
+
+                    if (r == null)
+                    {
+                        var viewState = WebHelper.GetViewState(page);
+                        if (viewState != null)
+                            r = viewState[Consts.ServerGUIDTag] as string;
+                    }
+                }
+            }
+
+            if (r != null)
+                return true;
+
             var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
-            var r = requestParams[Consts.ServerGUIDTag];
+            r = requestParams[Consts.ServerGUIDTag];
             if (String.IsNullOrWhiteSpace(r))
+            {
+                if (debugCounter++ > 6)
+                    throw new Exception("WHAT1");
                 return false;
+            }
             Guid g;
-            return Guid.TryParse(r, out g) && !g.Equals(new Guid());
-        }
+            var result = Guid.TryParse(r, out g) && !g.Equals(new Guid());
+            if (result)
+            {                
+                if (context.Session != null)
+                    context.Session[Consts.ServerGUIDTag] = r;
+                if (context.Request != null && context.Request.Headers != null)
+                    context.Request.Headers[Consts.ServerGUIDTag] = r;
+            }
+            else
+            {
+                if (debugCounter++ > 6)
+                    throw new Exception("WHAT2");
+            }
+            return result;
+        }        
 
         public static bool FetchAndExecuteLogElement(Guid serverGUID, Guid pageGUID, LogType logType, Action<LogElementDTO> action, int timeoutInSeconds = 10)
         {
@@ -540,7 +631,7 @@ namespace LogRecorderAndPlayer
             {
                 action(fetchLogElement.LogElementDTO);
                 return true;
-            }
+            }            
             return false;
         }
     }

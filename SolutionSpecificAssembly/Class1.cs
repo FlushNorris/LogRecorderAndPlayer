@@ -65,8 +65,8 @@ namespace SolutionSpecificAssembly
             var query = HttpUtility.ParseQueryString(uri.Query);
             if (pageName == "secondpage.aspx")
             {
-                var newId = Int32.Parse(query["id"]);
-                for (int i = previousServersideLogElements.Count - 1; i >= 0; i++)
+                var newId = query["id"];
+                for (int i = previousServersideLogElements.Count - 1; i >= 0; i--)
                 {
                     var loggedElement = previousServersideLogElements[i].Item1;
                     var currentElement = previousServersideLogElements[i].Item2;
@@ -74,11 +74,11 @@ namespace SolutionSpecificAssembly
                     if (loggedElement.LogType == LogType.OnPageSessionBefore || loggedElement.LogType == LogType.OnPageRequest)
                     {
                         var loggedUri = new Uri("http://" + loggedElement.Element.Trim('/').ToLower());
-                        var loggedPageName = loggedUri.AbsolutePath.Trim('/').ToLower();
+                        var loggedPageName = loggedUri.Host.Trim('/').ToLower();
                         var loggedQuery = HttpUtility.ParseQueryString(loggedUri.Query);
                         if (loggedPageName == "firstpage.aspx")
                         {
-                            var loggedId = Int32.Parse(loggedQuery["id"]);
+                            var loggedId = loggedQuery["id"];
                             if (loggedId == newId)
                             {
                                 var currentUri = new Uri("http://" + currentElement.Element.Trim('/').ToLower());

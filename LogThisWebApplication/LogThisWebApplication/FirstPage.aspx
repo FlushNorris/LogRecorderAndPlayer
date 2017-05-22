@@ -2,7 +2,9 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+    <asp:Label runat="server" id="someLabel"></asp:Label>
     Server textbox: <asp:TextBox runat="server" id="serverTextbox"></asp:TextBox><br/>
+    Server textbox2: <asp:TextBox runat="server" id="serverTextbox2"></asp:TextBox><br/>
     <asp:Button runat="server" id="serverButton" Text="Fetch current time" OnClick="serverButton_OnClick" /><br/>
     <asp:Button runat="server" id="serverButton2" Text="Fetch current time2" OnClick="serverButton2_OnClick" /><br/>
     <asp:Button runat="server" id="redirectButton" Text="Redirect to other page" OnClick="redirectButton_OnClick" /><br/>

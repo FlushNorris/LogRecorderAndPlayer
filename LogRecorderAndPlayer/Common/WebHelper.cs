@@ -225,9 +225,13 @@ namespace LogRecorderAndPlayer
                 nvc.Add(context.Request.QueryString);
 
             if (requestForm != null)
-                nvc.Add(requestForm);
+            {
+                requestForm.AllKeys.Where(x => !Consts.LRAPFormFields.Contains(x) || !nvc.AllKeys.Contains(x)).ToList().ForEach(x => nvc.Add(x, requestForm[x]));
+            }                
             else if (context != null && context.Request != null)
-                nvc.Add(context.Request.Form);
+            {
+                context.Request.Form.AllKeys.Where(x => !Consts.LRAPFormFields.Contains(x) || !nvc.AllKeys.Contains(x)).ToList().ForEach(x => nvc.Add(x, context.Request.Form[x]));
+            }
 
             if (context != null && context.Request != null)
             {
@@ -236,7 +240,8 @@ namespace LogRecorderAndPlayer
                     var cv = context.Request.Cookies[x];
                     if (cv != null)
                     {
-                        nvc.Add(x, cv.Value);
+                        if (!Consts.LRAPFormFields.Contains(x) || !nvc.AllKeys.Contains(x))
+                            nvc.Add(x, cv.Value);
                     }
                 });
 

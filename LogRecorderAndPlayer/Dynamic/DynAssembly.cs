@@ -18,7 +18,10 @@ namespace LogRecorderAndPlayer
         public static IEnumerable<T> LoadAssemblyInstances<T>(string assemblyFilename, AssemblyPathType assemblyPathType = AssemblyPathType.RelativePath)
         {
             if (assemblyPathType == AssemblyPathType.RelativePath)
-                assemblyFilename = AppDomain.CurrentDomain.RelativeSearchPath.TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar + assemblyFilename;
+            {
+                var basePath = AppDomain.CurrentDomain.RelativeSearchPath != null ? AppDomain.CurrentDomain.RelativeSearchPath : AppDomain.CurrentDomain.BaseDirectory;
+                assemblyFilename = basePath.TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar + assemblyFilename;
+            }
 
             AssemblyName an = AssemblyName.GetAssemblyName(assemblyFilename);
             var hmm3 = Assembly.Load(an);

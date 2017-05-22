@@ -34,6 +34,7 @@ namespace LogRecorderAndPlayer
                     errorTmp = ex.Message;
                 }
             });
+            t.IsBackground = true;
             t.Start();
             if (async)
             {

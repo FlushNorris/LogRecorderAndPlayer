@@ -89,7 +89,7 @@ namespace LogRecorderAndPlayer
                     var requestForm = content != null ? HttpUtility.ParseQueryString(content) : null;
 
                     LoggingHelper.SetupSession(context, page, requestForm);
-                    LoggingHelper.SetupPage(context, page, requestForm);                    
+                    LoggingHelper.SetupPage(context, page, page != null ? LogType.OnPageRequest : LogType.OnHandlerRequestReceived, requestForm);                    
 
                     if (page != null)
                     {
@@ -100,8 +100,7 @@ namespace LogRecorderAndPlayer
                     {
                         LoggingHandler.LogRequest(context, requestForm);
                         LoggingHandler.LogSession(context, requestForm, before: true);
-                    }
-                    
+                    }                                       
 
                     return requestForm?.ToString();
                 });
@@ -111,6 +110,10 @@ namespace LogRecorderAndPlayer
                 {
                     requestCallback(null);
                 }
+
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
+                if (pageGUID.Equals(new Guid()))
+                    throw new Exception("What!??");
             }
         }
 

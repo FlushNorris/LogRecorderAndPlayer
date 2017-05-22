@@ -282,6 +282,10 @@
         callLogHandler(false/*async*/, undefined, function() {
             setupLogger();
         });
+
+        if (isPlaying() && window.external) {
+            window.external.UpdatePageGUID(pageGUID); //When e.g. redirecting to another url in the same window, we reuse the current window and update the pageGUID.
+        }
     }
 
     function getSelectionInfo(elm) {

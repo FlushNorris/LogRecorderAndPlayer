@@ -114,8 +114,8 @@ namespace LogRecorderAndPlayer
                     //var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                     requestParams = DeserializeRequestValue(logElement);
 
-                    LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);
-                    //Der mangler da at blive sat nogle request-værdier.. f.eks useragent?
+                    //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+                    //LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);                    
 
                     //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
 
@@ -160,7 +160,8 @@ namespace LogRecorderAndPlayer
                     if (logElement.Value != null)
                     {
                         NameValueCollection loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
-                        LoggingHelper.SetSessionValues(page, loggedSessionValues);
+                        //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+                        //LoggingHelper.SetSessionValues(page, loggedSessionValues);
                     }
                     else if (sessionValues != null)
                     {
@@ -207,10 +208,11 @@ namespace LogRecorderAndPlayer
                 {
                     //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
                     var responseViewState = WebHelper.GetResponseViewState(response);
-                    newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
-
-                    context.Response.Clear();
-                    context.Response.Write(newResponse);
+                    //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+                    //newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
+                    //context.Response.Clear();
+                    //context.Response.Write(newResponse);
+                    newResponse = response;
 
                     PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
                 }))

@@ -17,8 +17,8 @@ namespace LogRecorderAndPlayer
 
     public class LRAPConfigurationSection : ConfigurationSection
     {
-        [ConfigurationProperty("enabled", IsRequired = true)]
-        public bool Enabled
+        [ConfigurationProperty("enabled")]
+        public bool Enabled //Used by HttpModule
         {
             get
             {
@@ -30,8 +30,8 @@ namespace LogRecorderAndPlayer
             }
         }        
 
-        [ConfigurationProperty("logType", IsRequired = true)]
-        public LRAPLogType LogType
+        [ConfigurationProperty("logType")]
+        public LRAPLogType LogType //Used by HttpModule
         {
             get
             {
@@ -44,7 +44,7 @@ namespace LogRecorderAndPlayer
         }
 
         [ConfigurationProperty("filePath", DefaultValue = null)]
-        public string FilePath
+        public string FilePath //Used by HttpModule
         {
             get
             {
@@ -60,7 +60,7 @@ namespace LogRecorderAndPlayer
         }
 
         [ConfigurationProperty("solutionAssembly", DefaultValue = null)]
-        public string SolutionAssembly
+        public string SolutionAssembly //Used by LogPlayer and HttpModule
         {
             get
             {
@@ -73,5 +73,18 @@ namespace LogRecorderAndPlayer
             }
         }
 
+        [ConfigurationProperty("sessionApp", DefaultValue = null)]
+        public string SessionApp //Used by LogPlayer
+        {
+            get
+            {
+                var v = (string)this["sessionApp"];
+                return v;
+            }
+            set
+            {
+                this["sessionApp"] = value;
+            }
+        }      
     }
 }
