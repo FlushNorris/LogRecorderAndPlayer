@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace LogRecorderAndPlayer
 {
@@ -36,16 +38,50 @@ namespace LogRecorderAndPlayer
             //dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
             //return dtDateTime;
         }
-    }
 
-    public class DateTimeLRAP 
-    {
-        public DateTime Now
+        public static void SetNow(HttpContext context, DateTime dt)
         {
-            get
+            if (context == null)
+                return;
+
+            if (context.Session != null)
             {
-                return DateTime.Now;
+                context.Session[Consts.NowSetTimestampTag] = TimeHelper.UnixTimestamp(DateTime.Now).ToString(CultureInfo.InvariantCulture);
+                context.Session[Consts.NowTimestampTag] = TimeHelper.UnixTimestamp(dt).ToString(CultureInfo.InvariantCulture);
             }
+
+            if (context.Request?.Headers != null)
+            {
+                context.Request.Headers[Consts.NowSetTimestampTag] = TimeHelper.UnixTimestamp(DateTime.Now).ToString(CultureInfo.InvariantCulture);
+                context.Request.Headers[Consts.NowTimestampTag] = TimeHelper.UnixTimestamp(dt).ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        public static DateTime Now(HttpContext context = null)
+        {
+            context = context ?? HttpContext.Current;
+
+            if (!LoggingHelper.IsPlaying(context, null))
+                return DateTime.Now;
+
+            DateTime? nowTimestamp = null;
+            DateTime? nowSetTimestamp = null;
+
+            if (context.Session != null)
+            {
+                nowTimestamp = TimeHelper.UnixTimeStampToDateTime(Double.Parse(context.Session[Consts.NowTimestampTag] as string, CultureInfo.InvariantCulture));
+                nowSetTimestamp = TimeHelper.UnixTimeStampToDateTime(Double.Parse(context.Session[Consts.NowSetTimestampTag] as string, CultureInfo.InvariantCulture));
+            }
+            else if (context.Request?.Headers != null)
+            {
+                nowTimestamp = TimeHelper.UnixTimeStampToDateTime(Double.Parse(context.Request.Headers[Consts.NowTimestampTag] as string, CultureInfo.InvariantCulture));
+                nowSetTimestamp = TimeHelper.UnixTimeStampToDateTime(Double.Parse(context.Request.Headers[Consts.NowSetTimestampTag] as string, CultureInfo.InvariantCulture));
+            }
+            
+            if (nowSetTimestamp == null || nowTimestamp == null)
+                throw new Exception("Failed to fetch LRAP-Now");
+
+            return nowTimestamp.Value + (DateTime.Now - nowSetTimestamp.Value);
         }
     }
 }

@@ -78,7 +78,7 @@ namespace LogRecorderAndPlayer
             var f = File.CreateText(fileName);
             try
             {
-                f.Write(new JavaScriptSerializer().Serialize(logElement));
+                f.Write(SerializationHelper.Serialize(logElement, SerializationType.Json));
             }
             finally
             {
@@ -93,14 +93,14 @@ namespace LogRecorderAndPlayer
             {
                 var logElementInfo = BuildLogElementInfo(file);
                 if ((from == null || from.Value <= logElementInfo.Timestamp) && (to == null || to >= logElementInfo.Timestamp))
-                    yield return new JavaScriptSerializer().Deserialize<LogElementDTO>(System.IO.File.ReadAllText(file));
+                    yield return SerializationHelper.Deserialize<LogElementDTO>(System.IO.File.ReadAllText(file), SerializationType.Json);
             }
         }
 
         public LogElementDTO LoadLogElement(LogElementInfo logElementInfo)
         {
             var json = File.ReadAllText(logElementInfo.FilePath);
-            return new JavaScriptSerializer().Deserialize<LogElementDTO>(json);
+            return SerializationHelper.Deserialize<LogElementDTO>(json, SerializationType.Json);
         }
 
         public LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? from, DateTime? to)

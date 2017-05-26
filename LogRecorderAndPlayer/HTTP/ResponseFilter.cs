@@ -7,94 +7,79 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    class ResponseFilter : Stream
+    public class ResponseFilter : Stream
     {
-        //Temporary buffer to accumulate page writes
-        private MemoryStream ms;
+        private Stream _base;
+        private MemoryStream _memoryStream = new MemoryStream();
 
-        //Handle to original output stream pipeline
-        private Stream _outputStream;
-
-        //Encoding of the response
-        private Encoding _encoding;
-
-        //The callback function
-        private Func<string, string> _callback;
-
-        /// <summary>
-        /// String based callback filter
-        /// </summary>
-        /// <param name="stream"></param>
-        /// <param name="encoding"></param>
-        /// <param name="callback"></param>
-        public ResponseFilter(Stream stream, Encoding encoding, Func<string, string> callback)
+        public ResponseFilter(Stream stream)
         {
-            ms = new MemoryStream();
-            _outputStream = stream;
-            _encoding = encoding;
-            _callback = callback;
+            _base = stream;
         }
 
         public override void Flush()
         {
-            if (_callback != null)
-            {
-                //perform replacement
-                string content = _encoding.GetString(ms.GetBuffer());
-
-                //Perform the content replacement routine
-                content = _callback(content);
-
-                Byte[] bytes = _encoding.GetBytes(content);
-                _outputStream.Write(bytes, 0, bytes.Length);
-                _outputStream.Flush();
-            }
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            return ms.Seek(offset, origin);
-        }
-
-        public override void SetLength(long value)
-        {
-            ms.SetLength(value);
+            _base.Flush();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
-        {
-            return ms.Read(buffer, offset, count);
+        {            
+            return _base.Read(buffer, offset, count);
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            ms.Write(buffer, offset, count);
+            _memoryStream.Write(buffer, offset, count);
+            _base.Write(buffer, offset, count);
         }
 
+        public override string ToString()
+        {
+            return Encoding.UTF8.GetString(_memoryStream.ToArray());
+        }
+
+        #region Rest of the overrides
         public override bool CanRead
         {
-            get { return true; }
+            get { throw new NotImplementedException(); }
         }
 
         public override bool CanSeek
         {
-            get { return true; }
+            get { throw new NotImplementedException(); }
         }
 
         public override bool CanWrite
         {
-            get { return true; }
+            get { throw new NotImplementedException(); }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotImplementedException();
         }
 
         public override long Length
         {
-            get { return ms.Length; }
+            get { return _base.Length; }
         }
 
         public override long Position
         {
-            get { return ms.Position; }
-            set { ms.Position = value; }
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
         }
+        #endregion
     }
 }

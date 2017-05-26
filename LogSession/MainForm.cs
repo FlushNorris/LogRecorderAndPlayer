@@ -32,8 +32,6 @@ namespace LogSession
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            MessageBox.Show("LogSession loaded...");
-
             Guid? startingPageGUID = null;
             string startingUrl = null;
             if (Arguments.Length > 4)
@@ -210,9 +208,9 @@ namespace LogSession
             }
         }
 
-        private void Browser_OnHandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus)
+        private LogElementDTO Browser_OnHandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus)
         {
-            PlayerCommunicationHelper.SetHandlerLogElementAsDone(ServerGUID.Value, browser.PageGUID, logType, handlerUrl, jobStatus); //, async: false); 
+            return PlayerCommunicationHelper.SetHandlerLogElementAsDone(ServerGUID.Value, browser.PageGUID, logType, handlerUrl, jobStatus); //, async: false); 
         }
 
         private void Browser_OnJobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus)

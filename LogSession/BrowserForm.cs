@@ -24,7 +24,7 @@ namespace LogSession
 
         public event JobCompleted OnJobCompleted = null;
 
-        public delegate void HandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus);
+        public delegate LogElementDTO HandlerJobCompleted(BrowserForm browser, LogType logType, string handlerUrl, JobStatus jobStatus);
 
         public event HandlerJobCompleted OnHandlerJobCompleted = null;
 
@@ -103,9 +103,9 @@ namespace LogSession
             this.PageGUID = pageGUID;
         }
 
-        private void ScriptManager_OnHandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus)
+        private LogElementDTO ScriptManager_OnHandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus)
         {
-            OnHandlerJobCompleted?.Invoke(this, logType, handlerUrl, jobStatus);
+            return OnHandlerJobCompleted?.Invoke(this, logType, handlerUrl, jobStatus);
         }
 
         private void ScriptManager_OnJobCompleted(Guid? logElementGUID, JobStatus jobStatus)
@@ -356,7 +356,7 @@ namespace LogSession
         public delegate void JobCompleted(Guid? logElementGUID, JobStatus jobStatus);
         public event JobCompleted OnJobCompleted = null;
 
-        public delegate void HandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus);
+        public delegate LogElementDTO HandlerJobCompleted(LogType logType, string handlerUrl, JobStatus jobStatus);
         public event HandlerJobCompleted OnHandlerJobCompleted = null;
 
         public delegate void UpdatePageGUIDDelegate(Guid pageGUID);
@@ -409,14 +409,15 @@ namespace LogSession
             //OnJobCompleted?.Invoke(logElementGUID);
         }
 
-        public void SetHandlerLogElementAsDone(int logTypeValue, string handlerUrl, bool error, string errorMessage)
+        public string SetHandlerLogElementAsDone(int logTypeValue, string handlerUrl, bool error, string errorMessage)
         {
             var logType = (LogType) logTypeValue;
 
             //MessageBox.Show("SetHandlerLogElementAsDone called"); //
             //window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
 
-            OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });
+            var logElement = OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });
+            return SerializationHelper.Serialize(logElement, SerializationType.Json);
         }
 
         public void UpdatePageGUID(string pageGUIDString)
@@ -424,6 +425,11 @@ namespace LogSession
             //MessageBox.Show("UPDATE!");
             OnUpdatePageGUID?.Invoke(new Guid(pageGUIDString));
         }
+    }
+    public class LogElementSimple
+    {
+        public Guid Guid { get; set; }
+        public double InstanceTime { get; set; }
     }
 
 }

@@ -60,12 +60,6 @@ namespace LogRecorderAndPlayer
                 case TransferElementRequestType.BrowserJobComplete:
                     {
                         var browserJob = (TransferElementBrowserJob)serverRequest.Data;
-                        if (browserJob.LogElementGUID.Equals(new Guid("3600df3f-e9ba-54ac-c4a8-8e712a921763")))
-                        {
-                            if (OnBrowserJobComplete != null)
-                                serverResponse = OnBrowserJobComplete(browserJob);
-                        }
-                        else
                         if (OnBrowserJobComplete != null)
                             serverResponse = OnBrowserJobComplete(browserJob);
                         break;

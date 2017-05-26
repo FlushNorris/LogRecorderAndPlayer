@@ -35,7 +35,7 @@ namespace LogRecorderAndPlayer
             return (FetchLogElementResponse)serverResponse.Data;
         }
 
-        public static void SetHandlerLogElementAsDone(Guid serverGUID, Guid pageGUID, LogType logType, string handlerUrl, JobStatus jobStatus) //, bool async)
+        public static LogElementDTO SetHandlerLogElementAsDone(Guid serverGUID, Guid pageGUID, LogType logType, string handlerUrl, JobStatus jobStatus) //, bool async)
         {
             var async = false;
 
@@ -46,13 +46,15 @@ namespace LogRecorderAndPlayer
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
             if (async && serverResponseJSON == null)
-                return;
+                return null;
             TransferElementResponse serverResponse = null;
             if (error == null)
                 serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
+
+            return serverResponse?.Data as LogElementDTO;
         }
 
         public static void SetLogElementAsDone(Guid serverGUID, Guid pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)

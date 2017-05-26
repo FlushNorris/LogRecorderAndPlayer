@@ -53,6 +53,8 @@ namespace LogRecorderAndPlayer
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     if (logElement.Value != null)
                     {
                         NameValueCollection loggedViewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
@@ -105,7 +107,9 @@ namespace LogRecorderAndPlayer
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
-                {                    
+                {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     if (LoggingHelper.SolutionLoggingPlayer?.StoreLogElementHistory(logElement, newLogElement) ?? false)
                     {
                         PlayerCommunicationHelper.SendLogElementHistory(serverGUID, logElement, newLogElement, LoggingHelper.SolutionLoggingPlayer?.BuildAdditionalData(context.ApplicationInstance));
@@ -157,6 +161,8 @@ namespace LogRecorderAndPlayer
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     if (logElement.Value != null)
                     {
                         NameValueCollection loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
@@ -206,6 +212,8 @@ namespace LogRecorderAndPlayer
                 string newResponse = null;
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
                     var responseViewState = WebHelper.GetResponseViewState(response);
                     //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior

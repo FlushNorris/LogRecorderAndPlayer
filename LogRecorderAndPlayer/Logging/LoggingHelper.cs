@@ -108,6 +108,7 @@ namespace LogRecorderAndPlayer
 
                     if (FetchAndExecuteLogElement(serverGUID, new Guid(), logType, (logElement) =>
                     {
+                        TimeHelper.SetNow(context, logElement.InstanceTime);
                         SetPageGUID(page, logElement.PageGUID);                        
                     }));
                 }
@@ -587,8 +588,6 @@ namespace LogRecorderAndPlayer
             r = requestParams[Consts.ServerGUIDTag];
             if (String.IsNullOrWhiteSpace(r))
             {
-                if (debugCounter++ > 6)
-                    throw new Exception("WHAT1");
                 return false;
             }
             Guid g;
@@ -599,11 +598,6 @@ namespace LogRecorderAndPlayer
                     context.Session[Consts.ServerGUIDTag] = r;
                 if (context.Request != null && context.Request.Headers != null)
                     context.Request.Headers[Consts.ServerGUIDTag] = r;
-            }
-            else
-            {
-                if (debugCounter++ > 6)
-                    throw new Exception("WHAT2");
             }
             return result;
         }        

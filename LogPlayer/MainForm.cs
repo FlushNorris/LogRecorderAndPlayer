@@ -51,9 +51,10 @@ namespace LogPlayer
         {
             //MessageBox.Show($"Received BrowserJobComplete {(namedPipeBrowserJob.LogElementGUID != null ? namedPipeBrowserJob.LogElementGUID.Value.ToString() : "null")}");
             Guid? logElementGUID = namedPipeBrowserJob.LogElementGUID;
+            LogElementDTO logElementDTO = null;
             if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
             {
-                var logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
+                logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
                 logElementGUID = logElementDTO?.GUID;
                 if (logElementGUID == null)
                     return new TransferElementResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};
@@ -69,7 +70,7 @@ namespace LogPlayer
                 }
             }
 
-            return new TransferElementResponse() {Success = true};
+            return new TransferElementResponse() {Success = true, Data = logElementDTO };
         }
 
         private TransferElementResponse ServiceInstanse_OnClosingSession(TransferElementSession namedPipeSession)

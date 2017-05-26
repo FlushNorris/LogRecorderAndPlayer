@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -13,7 +14,7 @@ namespace LogRecorderAndPlayer
 {
     public class LRAPHttpModule : IHttpModule
     {
-        private StreamWatcher watcher;
+        private ResponseFilter responseWatcher;
         private HttpApplication context;
 
         public void Init(HttpApplication context)
@@ -31,8 +32,8 @@ namespace LogRecorderAndPlayer
             if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
                 return;
 
-            watcher = new StreamWatcher(this.context.Response.Filter); 
-            this.context.Response.Filter = watcher;
+            responseWatcher = new ResponseFilter(this.context.Response.Filter); 
+            this.context.Response.Filter = responseWatcher;
         }
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
@@ -100,7 +101,7 @@ namespace LogRecorderAndPlayer
                     {
                         LoggingHandler.LogRequest(context, requestForm);
                         LoggingHandler.LogSession(context, requestForm, before: true);
-                    }                                       
+                    }
 
                     return requestForm?.ToString();
                 });
@@ -109,11 +110,7 @@ namespace LogRecorderAndPlayer
                 if (this.context.Request.Form == null || !requestCallbackExecuted) //Ensure requestCallback is being called to log session and request etc
                 {
                     requestCallback(null);
-                }
-
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
-                if (pageGUID.Equals(new Guid()))
-                    throw new Exception("What!??");
+                }                
             }
         }
 
@@ -184,9 +181,9 @@ namespace LogRecorderAndPlayer
             //{
             //    this.context.Response.Filter = watcher.Base;
             //}
-            if (watcher == null)
+            if (responseWatcher == null)
                 return; //e.g. Invalid web.config setting
-            string response = watcher.ToString();
+            string response = responseWatcher.ToString();
             //int xlen = (int)watcher.Length;
             //var xbuf = new byte[xlen];
             //watcher.Read(xbuf, 0, xlen);

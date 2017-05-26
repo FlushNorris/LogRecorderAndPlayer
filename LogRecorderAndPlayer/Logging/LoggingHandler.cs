@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -38,10 +39,21 @@ namespace LogRecorderAndPlayer
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     //                    var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
                     requestParams = SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
 
-                    LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);
+                    var headers = context?.Request?.Headers;
+                    if (headers != null)
+                    {
+                        var json1 = SerializationHelper.Serialize(newLogElement, SerializationType.Json);
+                        var xxx = SerializationHelper.Deserialize<LogElementDTO>(json1, SerializationType.Json);
+                        var what = TimeHelper.UnixTimestamp(xxx.InstanceTime).ToString(CultureInfo.InvariantCulture);
+
+                        headers[Consts.NowTimestampTag] = TimeHelper.UnixTimestamp(logElement.InstanceTime).ToString(CultureInfo.InvariantCulture);
+                    }
+                    //LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);
 
                     PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
@@ -83,10 +95,13 @@ namespace LogRecorderAndPlayer
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
-                    newResponse = logElement.Value;
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
 
-                    context.Response.Clear();
-                    context.Response.Write(newResponse);
+                    newResponse = response;
+                    //newResponse = logElement.Value;
+
+                    //context.Response.Clear();
+                    //context.Response.Write(newResponse);
 
                     PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
@@ -126,6 +141,8 @@ namespace LogRecorderAndPlayer
 
                 if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
                 {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
                     if (logElement.Value != null)
                     {
                         var loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);

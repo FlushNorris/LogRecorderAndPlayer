@@ -2,6 +2,12 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+    Clientside time:
+    <input type="button" id="fetchClientsideTime" value="Fetch clientsideTime"/>
+    <span id="clientsideTime">???</span>
+    <br/>
+    <br/>
+
     <asp:Label runat="server" id="someLabel"></asp:Label>
     Server textbox: <asp:TextBox runat="server" id="serverTextbox"></asp:TextBox><br/>
     Server textbox2: <asp:TextBox runat="server" id="serverTextbox2"></asp:TextBox><br/>
@@ -96,7 +102,13 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
     }
     </style>
     <script type="text/javascript">
-        
+        $("#fetchClientsideTime").on('click', function(event) {
+            var $clientsideTime = $("#clientsideTime");
+
+            var now = logRecorderAndPlayer.now();
+
+            $clientsideTime.text(now);
+        });
 
         $("#clientTextboxWithID").on('select', function (event) {
             console.log('select!');
@@ -755,6 +767,7 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
             //alert('firstpage ajax send first');
             $.ajax({
                 url: "/TestHandler.ashx",
+                //method: "POST",
                 data: {
                     'request': JSON.stringify(request)
                 },

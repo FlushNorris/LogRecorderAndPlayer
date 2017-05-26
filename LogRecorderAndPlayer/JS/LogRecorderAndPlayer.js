@@ -11,6 +11,7 @@
     var PageGUIDTag = "lrap-pageguid";
     var BundleGUIDTag = "lrap-bundleguid";
     var ServerGUIDTag = "lrap-serverguid"; //For the namedpipe-connection to the LogPlayer
+    var NowTimestampTag = "lrap-nowtimestamp";
 
     function unixTimestamp(dt) { //seconds since 1970/1/1
         if (typeof (dt) == "undefined" || dt == null)
@@ -231,12 +232,9 @@
             options.url = getHandlerUrlForLogging(options.url, options.lrapSessionGUID, options.lrapPageGUID, options.lrapBundleGUID, getServerGUID());
 
             if (isPlaying() && window.external) {
-                window.external.SetHandlerLogElementAsDone(LogType.OnHandlerRequestSend, stripLRAPFromUrl(options.url), false, null);
+                var logElementObj = JSON.parse(window.external.SetHandlerLogElementAsDone(LogType.OnHandlerRequestSend, stripLRAPFromUrl(options.url), false, null));
+                setNow(parseJsonDate(logElementObj.InstanceTime));
             }
-
-            //window.external.SetLogElementAsDone(logElement.GUID, false, null);
-
-            //Ja, det er faktisk et ret stort tab... vi kan ikke simulere tid og dato som det var "dengang" det fejlede. Det skal beskrives i rapporten
         });
 
         bindAjaxCompleteFirst(function (event, xhr, options) { //has to be first, if one of the other events is doing a redirect we may not get to do this event...
@@ -1565,12 +1563,7 @@
     }
 
     function addQryStrElement(url, tag, value) {
-        return url + (url.indexOf("?") == -1 ? "?" : "&") + tag + "=" + value;
-    }
-
-    //Replacement for "new Date()" in order to get the current time/date, but for the LogPlayer we need to simulate the same "current time/date" as when we recorded useractivity.
-    function now() {
-        return new Date();
+        return url + (url.indexOf("?") == -1 ? "?" : "&") + tag + "=" + encodeURIComponent(value);
     }
 
     // Return value relative to end of value (0-oField.value.length)
@@ -1861,8 +1854,28 @@
         return !$elm.is(":disabled");
     }
 
+    var nowSetTimestamp = null;
+    var nowTimestamp = null;
+
+    //Replacement for "new Date()" in order to get the current time/date, but for the LogPlayer we need to simulate the same "current time/date" as when we recorded useractivity.
+    function now() {
+        if (!isPlaying())
+            return new Date();
+
+        var actualNow = new Date();
+
+        var ticks = nowTimestamp.getTime() + (actualNow.getTime() - nowSetTimestamp.getTime());
+
+        return new Date(ticks);
+    }
+
+    function setNow(date) {
+        nowSetTimestamp = new Date();
+        nowTimestamp = date;
+    }
+
     function playLogElement(logElement /*json*/) {
-        
+        setNow(parseJsonDate(logElement.InstanceTime));
 
         //setTimeout(function() {
         //    window.external.SetLogElementAsDone(0, false, 'woohooo timed!');

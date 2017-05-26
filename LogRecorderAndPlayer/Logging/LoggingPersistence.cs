@@ -66,24 +66,57 @@ namespace LogRecorderAndPlayer
     {
         public static LogElementResponse LogRequest(SqlCommandLRAP cmd, LoggingDBType type, CommandBehavior behavior = CommandBehavior.Default)
         {
+            var context = HttpContext.Current;
+
+            var page = HttpContext.Current.Handler as Page;
+            var logType = LogType.OnPersistenceRequest;
+            var sessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
+            var pageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
+
             var cmdDTO = MapSqlCommandLRAPToSqlCommandDTO(cmd, type, behavior);
 
-            var result = LoggingHelper.LogElement(new LogElementDTO(
+            var newLogElement = new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
-                pageGUID: LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
+                sessionGUID: sessionGUID,
+                pageGUID: pageGUID,
                 bundleGUID: cmdDTO.BundleGUID,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnPersistenceRequest,
+                logType: logType,
                 element: cmdDTO.CommandText,
                 element2: null,
                 value: SerializationHelper.Serialize(cmdDTO, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now
-            ));
+            );            
 
+            if (LoggingHelper.IsPlaying(context, page?.Request.Params))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(HttpContext.Current, null, page?.Request.Params).Value;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
+
+                    var loggedCmdDTO = SerializationHelper.Deserialize<SqlCommandDTO>(logElement.Value, SerializationType.Json);
+
+                    if (!cmdDTO.Equals(loggedCmdDTO))
+                    {
+                        //Show UI-warning.. something in the request differs
+                    }
+
+                    //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+                    //LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);                    
+
+                    //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
+
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                }))
+                    return new LogElementResponse() {Success = true, Object = cmdDTO};
+            }
+
+            var result = LoggingHelper.LogElement(newLogElement);
             result.Object = cmdDTO;
 
             return result;
@@ -91,10 +124,17 @@ namespace LogRecorderAndPlayer
 
         public static void LogResponse(SqlCommandDTO cmdDTO, object value)
         {
-            LoggingHelper.LogElement(new LogElementDTO(
+            var context = HttpContext.Current;
+
+            var page = HttpContext.Current.Handler as Page;
+            var logType = LogType.OnPersistenceRequest;
+            var sessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
+            var pageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
+
+            var newLogElement = new LogElementDTO(
                 guid: Guid.NewGuid(),
-                sessionGUID: LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
-                pageGUID: LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value,
+                sessionGUID: sessionGUID,
+                pageGUID: pageGUID,
                 bundleGUID: cmdDTO.BundleGUID,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
@@ -105,7 +145,34 @@ namespace LogRecorderAndPlayer
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now
-            ));            
+            );
+
+            if (LoggingHelper.IsPlaying(context, page?.Request.Params))
+            {
+                var serverGUID = LoggingHelper.GetServerGUID(HttpContext.Current, null, page?.Request.Params).Value;
+
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                {
+                    TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
+
+                    var loggedValue = logElement.Value != null ? SerializationHelper.Deserialize<object>(logElement.Value, SerializationType.Json) : null;
+
+                    if (loggedValue != null && value != null && !loggedValue.Equals(value))
+                    {
+                        //Show UI-warning.. something in the response differs
+                    }
+
+                    //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+                    //LoggingHelper.SetRequestValues(context, requestParams.Form, requestForm);                    
+
+                    //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
+
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                }))
+                    return;
+            }
+
+            LoggingHelper.LogElement(newLogElement);
         }
 
         public static ReaderResultDTO MapReaderToReaderResultDTO(SqlDataReader reader, int resultIndex = 0)

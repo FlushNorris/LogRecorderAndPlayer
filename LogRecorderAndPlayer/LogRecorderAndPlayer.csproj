@@ -69,7 +69,6 @@
     <Compile Include="HTTP\HttpModule.cs" />
     <Compile Include="HTTP\RequestFilter.cs" />
     <Compile Include="HTTP\ResponseFilter.cs" />
-    <Compile Include="HTTP\StreamWatcher.cs" />
     <Compile Include="Interfaces\ILoggingPersister.cs" />
     <Compile Include="Interfaces\ILoggingPlayer.cs" />
     <Compile Include="Interfaces\ILogRecorderAndPlayer.cs" />
@@ -81,19 +80,12 @@
     <Compile Include="Logging\LoggingPage.cs" />
     <Compile Include="Logging\LoggingClientBase.cs" />
     <Compile Include="Logging\LogHandlerDTO.cs" />
-    <Compile Include="NamedPipes\INamedPipeCallbackService.cs" />
-    <Compile Include="NamedPipes\INamedPipeService.cs" />
     <Compile Include="PlayerCommunication\PlayerCommunicationCallbackServiceInterface.cs" />
     <Compile Include="TransferElements\TransferElementBrowserJob.cs" />
-    <Compile Include="NamedPipes\NamedPipeClient.cs" />
     <Compile Include="TransferElements\TransferElementFetchLogElement.cs" />
-    <Compile Include="NamedPipes\NamedPipeHelper.cs" />
-    <Compile Include="NamedPipes\NamedPipeServer.cs" />
     <Compile Include="TransferElements\TransferElementRequest.cs" />
     <Compile Include="TransferElements\TransferElementResponse.cs" />
-    <Compile Include="NamedPipes\NamedPipeService.cs" />
     <Compile Include="TransferElements\TransferElementSession.cs" />
-    <Compile Include="NamedPipes\Singleton.cs" />
     <Compile Include="LoggingClientMessage\ClientMessageInspector.cs" />
     <Compile Include="LoggingClientMessage\ClientMessageEndPointBehavior.cs" />
     <Compile Include="LoggingClientMessage\ClientMessageHook.cs" />
