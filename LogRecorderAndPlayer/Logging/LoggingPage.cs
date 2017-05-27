@@ -217,6 +217,7 @@ namespace LogRecorderAndPlayer
                     //Skal vel bare replace viewstate med den fra response... oooog... hmm, ja burde jo være fint nok at diverse lrap-værdier er i response
                     var responseViewState = WebHelper.GetResponseViewState(response);
                     //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
+
                     //newResponse = WebHelper.SetResponseViewState(logElement.Value, responseViewState);
                     //context.Response.Clear();
                     //context.Response.Write(newResponse);

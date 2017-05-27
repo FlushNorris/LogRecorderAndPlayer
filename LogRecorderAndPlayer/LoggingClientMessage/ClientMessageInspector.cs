@@ -19,10 +19,13 @@ namespace LogRecorderAndPlayer
     {
         private class LoggingState
         {
+            public HttpContext Context { get; set; }
+            public Page Page { get; set; }
             public Guid GUID { get; set; }
             public Guid SessionGUID { get; set; }
             public Guid PageGUID { get; set; }
             public Guid BundleGUID { get; set; }
+            public Guid? ServerGUID { get; set; }
             public string Url { get; set; }
             public string Action { get; set; }
 
@@ -41,35 +44,68 @@ namespace LogRecorderAndPlayer
             //var LocalAddress = channel.LocalAddress;
             //var state = channel.State;            
 
+            var context = HttpContext.Current;
+            var page = HttpContext.Current?.Handler as Page;
+
             var loggingState = new LoggingState()
             {
-                GUID = LoggingHelper.GetInstanceGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
-                SessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => new Guid()).GetValueOrDefault(),
-                PageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current?.Handler as Page, () => new Guid()).GetValueOrDefault(),
-                BundleGUID = LoggingHelper.GetBundleGUID(HttpContext.Current, () => Guid.NewGuid()).GetValueOrDefault(),
+                Context = context,
+                Page = page,
+                GUID = LoggingHelper.GetInstanceGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
+                SessionGUID = LoggingHelper.GetSessionGUID(context, page, () => new Guid()).GetValueOrDefault(),
+                PageGUID = LoggingHelper.GetPageGUID(context, page, null).GetValueOrDefault(),
+                BundleGUID = LoggingHelper.GetBundleGUID(context, () => Guid.NewGuid()).GetValueOrDefault(),
                 Url = LoggingHelper.StripUrlForLRAP(channel.Via.ToString()),
-                Action = request.Headers.Action
+                Action = request.Headers.Action,
+                ServerGUID = LoggingHelper.GetServerGUID(HttpContext.Current, null, page?.Request?.Params)
             };
+
+            var logType = LogType.OnWCFServiceRequest;
 
             //OperationContext.Current.SessionId
 
             string messageBody = GetMessageBody(request);
 
-            LoggingHelper.LogElement(new LogElementDTO(
+            var newLogElement = new LogElementDTO(
                 guid: loggingState.GUID,
                 sessionGUID: loggingState.SessionGUID,
                 pageGUID: loggingState.PageGUID,
                 bundleGUID: loggingState.BundleGUID,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnWCFServiceRequest,
+                logType: logType,
                 element: Path.GetFileName(loggingState.Action),
                 element2: null,
                 value: messageBody,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now
-            ));
+            );
+
+            if (LoggingHelper.IsPlaying(context, page?.Request.Params))
+            {
+                if (LoggingHelper.FetchAndExecuteLogElement(loggingState.ServerGUID.Value, loggingState.PageGUID, logType, (logElement) =>
+                {
+                    TimeHelper.SetNow(context, logElement.InstanceTime);
+
+                    var loggedMessageBody = logElement.Value;
+                    if (loggedMessageBody != null && messageBody != null && loggedMessageBody != messageBody)
+                    {
+                        var useLoggedElement = PlayerCommunicationHelper.ReportDifference(loggingState.ServerGUID.Value, logElement, newLogElement);
+                        if (useLoggedElement)
+                        {
+                            messageBody = loggedMessageBody;
+                        }
+                    }
+
+                    PlayerCommunicationHelper.SetLogElementAsDone(loggingState.ServerGUID.Value, loggingState.PageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                }))
+                {
+                    
+                }
+            }
+            else
+                LoggingHelper.LogElement(newLogElement);
 
             request = BuildMessage(messageBody, request);
 
@@ -83,21 +119,48 @@ namespace LogRecorderAndPlayer
             {
                 string messageBody = GetMessageBody(reply);
 
-                LoggingHelper.LogElement(new LogElementDTO(
+                var logType = LogType.OnWCFServiceResponse;
+
+                var newLogElement = new LogElementDTO(
                     guid: loggingState.GUID,
                     sessionGUID: loggingState.SessionGUID,
                     pageGUID: loggingState.PageGUID,
                     bundleGUID: loggingState.BundleGUID,
                     progressGUID: null,
                     unixTimestamp: TimeHelper.UnixTimestamp(),
-                    logType: LogType.OnWCFServiceResponse,
+                    logType: logType,
                     element: Path.GetFileName(loggingState.Action),
                     element2: null,
                     value: messageBody,
                     times: 1,
                     unixTimestampEnd: null,
                     instanceTime: DateTime.Now
-                ));
+                );
+
+                if (LoggingHelper.IsPlaying(loggingState.Context, loggingState.Page?.Request.Params))
+                {
+                    if (LoggingHelper.FetchAndExecuteLogElement(loggingState.ServerGUID.Value, loggingState.PageGUID, logType, (logElement) =>
+                    {
+                        TimeHelper.SetNow(loggingState.Context, logElement.InstanceTime);
+
+                        var loggedMessageBody = logElement.Value;
+                        if (loggedMessageBody != null && messageBody != null && loggedMessageBody != messageBody)
+                        {
+                            var useLoggedElement = PlayerCommunicationHelper.ReportDifference(loggingState.ServerGUID.Value, logElement, newLogElement);
+                            if (useLoggedElement)
+                            {
+                                messageBody = loggedMessageBody;
+                            }
+                        }
+
+                        PlayerCommunicationHelper.SetLogElementAsDone(loggingState.ServerGUID.Value, loggingState.PageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    }))
+                    {
+
+                    }
+                }
+                else
+                    LoggingHelper.LogElement(newLogElement);
 
                 reply = BuildMessage(messageBody, reply);
             }

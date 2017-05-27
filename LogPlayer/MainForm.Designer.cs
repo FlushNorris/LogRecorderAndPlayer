@@ -60,7 +60,6 @@
             this.txtBaseUrl.Name = "txtBaseUrl";
             this.txtBaseUrl.Size = new System.Drawing.Size(169, 20);
             this.txtBaseUrl.TabIndex = 3;
-            this.txtBaseUrl.Text = "http://localhost:61027";
             // 
             // txtPath
             // 

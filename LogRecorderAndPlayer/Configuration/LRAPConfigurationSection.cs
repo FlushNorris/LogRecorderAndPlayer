@@ -12,7 +12,7 @@ namespace LogRecorderAndPlayer
     {
         CSV = 0,
         JSON = 1,
-        DB = 2
+        Custom = 2
     }
 
     public class LRAPConfigurationSection : ConfigurationSection

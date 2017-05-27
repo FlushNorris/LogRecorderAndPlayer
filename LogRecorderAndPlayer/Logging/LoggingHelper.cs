@@ -29,6 +29,23 @@ namespace LogRecorderAndPlayer
             }
         }
 
+        private static ILoggingPersister solutionLoggingPersister = null;
+
+        public static ILoggingPersister SolutionLoggingPersister
+        {
+            get
+            {
+                if (solutionLoggingPersister == null)
+                {
+                    var config = ConfigurationHelper.GetConfigurationSection();
+
+                    if (!String.IsNullOrWhiteSpace(config.SolutionAssembly))
+                        solutionLoggingPersister = DynamicAssembly.LoadAssemblyInstances<ILoggingPersister>(config.SolutionAssembly).FirstOrDefault();
+                }
+                return solutionLoggingPersister;
+            }
+        }
+
         public static void SetupSession(HttpContext context, Page page, NameValueCollection requestForm)
         {
             var v = GetSessionGUID(context, page, defaultValue:null, requestForm:requestForm);
@@ -393,19 +410,6 @@ namespace LogRecorderAndPlayer
             }
         }
 
-        private static string GetExtensionByLogType(LRAPLogType logType)
-        {
-            switch (logType)
-            {
-                case LRAPLogType.CSV:
-                    return "csv";
-                case LRAPLogType.JSON:
-                    return "json";
-                default:
-                    return null;
-            }
-        }
-
         public static IEnumerable<LogElementDTO> LoadElements(string path, LRAPLogType logType, DateTime? from = null, DateTime? to = null)
         {
             return GetLoggingPersister(logType).LoadLogElements(path, from, to);
@@ -429,6 +433,8 @@ namespace LogRecorderAndPlayer
                     return new LoggingToCSV();
                 case LRAPLogType.JSON:
                     return new LoggingToJSON();
+                case LRAPLogType.Custom:
+                    return SolutionLoggingPersister;
                 default:
                     throw new NotImplementedException();
             }

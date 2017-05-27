@@ -2,57 +2,68 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
-    Clientside time:
-    <input type="button" id="fetchClientsideTime" value="Fetch clientsideTime"/>
-    <span id="clientsideTime">???</span>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>Database og redirect test:</b><br/>
+        Person name: <asp:TextBox runat="server" id="txtPersonName"></asp:TextBox><br/>
+        Person address: <asp:TextBox runat="server" id="txtPersonAddress"></asp:TextBox><br/>
+        <asp:Button runat="server" id="btnAddPersonAndRedirect" Text="Add Person and Redirect" OnClick="btnAddPersonAndRedirect_OnClick" /><br/>
+        Efter der er blevet redirected, prøv da at ændre "SecondPage.aspx?id=...." til "ThirdPage.aspx?id=...." i enten ny tab eller nuværende, <br/>
+        det vil blive tolket som en direkte handling hvor en bestemt url skal fremfinde en webside. Denne URL vil indeholde et ID der ikke skal anvendes<br/>
+        i afspilningen og vil blive ændret så det matcher det ID som SecondPage bliver kaldt med. (se i rapporten 3.8.b.I eller 4.19.h)<br/>
+        <br/>
+    </div>
     <br/>
     <br/>
 
-    <asp:Label runat="server" id="someLabel"></asp:Label>
-    Server textbox: <asp:TextBox runat="server" id="serverTextbox"></asp:TextBox><br/>
-    Server textbox2: <asp:TextBox runat="server" id="serverTextbox2"></asp:TextBox><br/>
-    <asp:Button runat="server" id="serverButton" Text="Fetch current time" OnClick="serverButton_OnClick" /><br/>
-    <asp:Button runat="server" id="serverButton2" Text="Fetch current time2" OnClick="serverButton2_OnClick" /><br/>
-    <asp:Button runat="server" id="redirectButton" Text="Redirect to other page" OnClick="redirectButton_OnClick" /><br/>
-    <br/>
-    <br/>
-    Client textbox with id and no class: <input id="clientTextboxWithID"/><br/>
-    Client textbox with class and no id: <input class="clientTextboxWithNoID"/><br/>
-    Client textbox with no id and no class, and no type: <input /><br/>
-    Client textbox with no id and no class, but with type: <input type="text"/><br/>
-    <br/>
-    <br/>
-    <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler2" onclick="console.log('1111')"/><br/><input type="button" value="Call generic handler2" id="btncallgenerichandler3"/><br/>
-    <input type="button" value="Call generic handler4 no click event" id="btncallgenerichandler4noclickevent"/><br/>
-    Input for generic handler: <input id="inputValueForGenericHandler" style="width:300px"/><br/>
-    Output for generic handler: <input id="outputValueForGenericHandler" style="width:300px"/><br/>
-    <br/>
-    <br/>
-    <a href="http://www.google.dk">Google default</a><br/>
-    <a href="http://www.google.dk" target="_blank">Google _blank</a><br/>
-    <a href="http://www.google.dk" target="_self">Google _self</a><br/>
-    <a href="http://www.google.dk" target="_parent">Google _parent</a><br/>
-    <a href="http://www.google.dk" target="_top">Google _top</a><br/>
-    
-    <div id="ost">
-	    <input id="firstinput" class="qwerty" value="wtf" onchange="testChange()" onfocus="return someFocusFunc()" onfocus2="someFocusFunc(1,2,3,4, funcResult())" onkeydown="testKeyDown()" onmousedown="testMouseDown()"/>
-	    <div>
-	        <input class="qwerty bah" onclick="testMethod()"/>
-	    </div>
-	    <div>
-	        <input class="qwerty" onclick="testMethod()"/>
-	        <input class="qwerty" onclick="testMethod()"/>
-	    </div>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>Test at klientside(javascript)-tid ved afspilning har samme tidsangivelse som da der blev logget:</b><br/>
+        <input type="button" id="fetchClientsideTime" value="Hent klientside-tid"/>
+        <span id="clientsideTime">???</span>
     </div>
-    <input type="button" value="Tryk på mig click" onclick="callFocusMethod('#whatwhat')"/>
-    <input type="button" value="Tryk på mig focus" onclick="callFocusMethod('#ost,1!.qwerty')"/>
-    <div class="parentparentStopPropagation">
-        <div class="parentStopPropagation">
-            <input type="button" value="test stopPropagation" class="testStopPropagation" id="whatwhat"/>
+    <br/>
+    <br/>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>Test at serverside(website)-tid ved afspilning har samme tidsangivelse som da der blev logget:</b><br/>
+        Server textbox: <asp:TextBox runat="server" id="serverTextbox"></asp:TextBox><br/>
+        <asp:Button runat="server" id="serverButton" Text="Fetch current server time" OnClick="serverButton_OnClick" /><br/>
+    </div>
+    <br/>
+    <br/>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>Sektion til at teste "HTML-element-reference", om HTML-kontroller med forskellige referencer kan fremfindes:</b><br/>
+        Client textbox with id and no class: <input id="clientTextboxWithID"/><br/>
+        Client textbox with class and no id: <input class="clientTextboxWithNoID"/><br/>
+        Client textbox with no id and no class, and no type: <input /><br/>
+        Client textbox with no id and no class, but with type: <input type="text"/><br/>
+        <br/>
+        <br/>
+        Kontroller embedded i div tags (rapporteksempel 4.15.e)<br/>
+        <div id="foo">
+            <input class="bar" value="111" />
+            <div>
+                <input class="bar" value="222" />
+            </div>
+            <div>
+                <input class="bar" id="someId" value="333" />
+                <input value="444" />
+                <input class="bar bar2" value="555" />
+                <input class="bar" value="666" />
+            </div>
         </div>
     </div>
-    
-    <br/><br/>Different input elements:<br/>
+
+
+    <br/>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>Sektion til at teste ajax-kald af generic-handler(ashx):</b><br/>
+        <input type="button" value="Call generic handler" id="btncallgenerichandler"/><br/>
+        Input for generic handler: <input id="inputValueForGenericHandler" style="width:300px"/><br/>
+        Output for generic handler: <input id="outputValueForGenericHandler" style="width:300px"/><br/>
+    </div>
+       
+    <br/><br/>
+    <div style="border-style: solid;border-width: 2px;">        
+        <b>De forskellige input kontroller:</b><br/>
     <input id="i0" value="default"/>
 checkbox:<input id="i1" type="checkbox" value="1" /><br/>
 radio:<input id="i12" type="radio" value="1" /><br/>
@@ -76,7 +87,28 @@ text:<input id="i18" type="text" value="1" /><br/> <!-- shown like a normal inpu
 time:<input id="i19" type="time" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
 url:<input id="i20" type="url" value="http://www.itu.dk" /><br/> <!-- Not supported in IE, just shown like a normal input -->
 week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, just shown like a normal input -->
+    </div>
     
+ <div style="display: none">
+    <br/>
+    <br/>
+    <a href="http://www.google.dk">Google default</a><br/>
+    <a href="http://www.google.dk" target="_blank">Google _blank</a><br/>
+    <a href="http://www.google.dk" target="_self">Google _self</a><br/>
+    <a href="http://www.google.dk" target="_parent">Google _parent</a><br/>
+    <a href="http://www.google.dk" target="_top">Google _top</a><br/>
+
+	        <input id="firstinput" class="qwerty" value="wtf" onchange="testChange()" onfocus="return someFocusFunc()" onfocus2="someFocusFunc(1,2,3,4, funcResult())" onkeydown="testKeyDown()" onmousedown="testMouseDown()"/>
+
+    
+    <input type="button" value="Tryk på mig click" onclick="callFocusMethod('#whatwhat')"/>
+    <input type="button" value="Tryk på mig focus" onclick="callFocusMethod('#ost,1!.qwerty')"/>
+    <div class="parentparentStopPropagation">
+        <div class="parentStopPropagation">
+            <input type="button" value="test stopPropagation" class="testStopPropagation" id="whatwhat"/>
+        </div>
+    </div>
+
 <input type="button" value="test input elements" onclick="testInputElements()"/>   
 
 <br><br>
@@ -91,7 +123,7 @@ week:<input id="i21" type="week" value="1" /><br/> <!-- Not supported in IE, jus
 <input id="btnTestGetselectioninfo" type="button" value="test getselectioninfo" onclick="testGetSelectionInfo()"/>   
 <br><br>
 <input type="button" value="test location change" onclick="window.location='firstpage.aspx'"/>   
-
+     </div>
     
     <style>
     #div1 {

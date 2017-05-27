@@ -127,7 +127,7 @@ namespace LogRecorderAndPlayer
             var context = HttpContext.Current;
 
             var page = HttpContext.Current.Handler as Page;
-            var logType = LogType.OnPersistenceRequest;
+            var logType = LogType.OnPersistenceResponse;
             var sessionGUID = LoggingHelper.GetSessionGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
             var pageGUID = LoggingHelper.GetPageGUID(HttpContext.Current, HttpContext.Current.Handler as Page, () => new Guid()).Value;
 
@@ -138,7 +138,7 @@ namespace LogRecorderAndPlayer
                 bundleGUID: cmdDTO.BundleGUID,
                 progressGUID: null,
                 unixTimestamp: TimeHelper.UnixTimestamp(),
-                logType: LogType.OnPersistenceResponse,
+                logType: logType,
                 element: cmdDTO.CommandText,
                 element2: null,
                 value: value != null ? SerializationHelper.Serialize(value, SerializationType.Json) : null,

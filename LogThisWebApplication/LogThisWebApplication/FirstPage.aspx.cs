@@ -1,9 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.EnterpriseServices;
 using System.Linq;
+using System.ServiceModel;
+using System.Threading;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using AppModule.InterProcessComm;
+using AppModule.NamedPipes;
+using LogRecorderAndPlayer;
+using IClientChannel = System.ServiceModel.IClientChannel;
 
 namespace LogThisWebApplication
 {
@@ -40,19 +50,13 @@ namespace LogThisWebApplication
             //Request.Form["WHAT"] = "BUTT";
             var obj = GetPostBackControl(this);
             serverTextbox.Text = "weee";
-
-            someLabel.Text = HttpUtility.HtmlEncode(this.Request["id"] ?? "NULL");
         }
 
         protected void serverButton_OnClick(object sender, EventArgs e)
-        {
-            //Simulated the creation of data by setting session-variable to something special... ligegyldigt, skal jo bare redirect to url med et id jeg anvender både for redirecten og den manuelle åbning af url efterfølgende
-
-            //System.Threading.Thread.Sleep(10000);
-            serverTextbox.Text = DateTime.Now.ToString("HH:mm:ss:fff");
-
-            Response.Redirect("FirstPage.aspx?id=" + Guid.NewGuid().ToString().Replace("-", ""));
+        {          
+            serverTextbox.Text = LogRecorderAndPlayer.TimeHelper.Now(Context).ToString("F");
         }
+
 
         protected void serverButton2_OnClick(object sender, EventArgs e)
         {
@@ -67,5 +71,28 @@ namespace LogThisWebApplication
             System.Threading.Thread.Sleep(5000);
             Response.Redirect("SecondPage.aspx");
         }
-    }
+
+        protected void btnAddPersonAndRedirect_OnClick(object sender, EventArgs e)
+        {
+            var db = ConfigurationManager.ConnectionStrings["db"].ConnectionString;
+
+            var sql = @"declare @id uniqueidentifier;
+                        set @id = NEWID();
+                        INSERT INTO PERSON(ID, NAME, ADDRESS) VALUES(@id, @Name, @Address);
+                        SELECT @id;";
+
+            using (var conn = new SqlConnection(db))
+            {
+                conn.Open();
+                using (var comm = new SqlCommandLRAP(sql, conn))
+                {
+                    comm.CreateAndAddInputParameter(SqlDbType.NVarChar, "@Name", txtPersonName.Text);
+                    comm.CreateAndAddInputParameter(SqlDbType.NVarChar, "@Address", txtPersonAddress.Text);
+
+                    var guid = (Guid) comm.ExecuteScalar();
+                    Response.Redirect("SecondPage.aspx?id=" + HttpUtility.HtmlAttributeEncode(guid.ToString()));
+                }
+            }
+        }
+    }    
 }

@@ -20,7 +20,7 @@ namespace WebService
         [WebMethod]
         public string SomeFunction(string someValue)
         {
-            return $"SomeResult with embedded value {someValue}";
+            return $"SomeResult with embedded value {someValue} "+DateTime.Now.ToString("U");
         }
     }
 }

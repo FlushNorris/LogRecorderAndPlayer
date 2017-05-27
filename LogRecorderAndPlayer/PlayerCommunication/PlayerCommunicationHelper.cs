@@ -124,5 +124,23 @@ namespace LogRecorderAndPlayer
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
         }
+
+        public static bool ReportDifference(Guid serverGUID, LogElementDTO previousLogElement, LogElementDTO nextLogElement)
+        {
+            var data = new TransferLogDifference() {PreviousLogElement = previousLogElement, NextLogElement = nextLogElement};
+
+            var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.ReportDifference, Data = data };
+            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            string error;
+            var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
+            TransferElementResponse serverResponse = null;
+            if (error == null)
+                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+
+            if (error != null || !serverResponse.Success)
+                throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
+
+            return (bool)serverResponse.Data;
+        }
     }
 }

@@ -14,7 +14,8 @@ namespace LogRecorderAndPlayer
         BrowserJob = 2,
         BrowserJobComplete = 3,
         FetchLogElement = 4,
-        LogElementHistory = 5
+        LogElementHistory = 5,
+        ReportDifference = 6
     }
 
     [DataContract]
@@ -23,6 +24,7 @@ namespace LogRecorderAndPlayer
     [KnownType(typeof(TransferElementBrowserJob))]
     [KnownType(typeof(TransferElementFetchLogElement))]
     [KnownType(typeof(TransferLogElementHistory))]
+    [KnownType(typeof(TransferLogDifference))]
     public class TransferElementRequest
     {
         [DataMember]

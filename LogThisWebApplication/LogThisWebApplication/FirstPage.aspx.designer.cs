@@ -13,13 +13,31 @@ namespace LogThisWebApplication {
     public partial class FirstPage {
         
         /// <summary>
-        /// someLabel control.
+        /// txtPersonName control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label someLabel;
+        protected global::System.Web.UI.WebControls.TextBox txtPersonName;
+        
+        /// <summary>
+        /// txtPersonAddress control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtPersonAddress;
+        
+        /// <summary>
+        /// btnAddPersonAndRedirect control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAddPersonAndRedirect;
         
         /// <summary>
         /// serverTextbox control.
@@ -31,15 +49,6 @@ namespace LogThisWebApplication {
         protected global::System.Web.UI.WebControls.TextBox serverTextbox;
         
         /// <summary>
-        /// serverTextbox2 control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.TextBox serverTextbox2;
-        
-        /// <summary>
         /// serverButton control.
         /// </summary>
         /// <remarks>
@@ -47,23 +56,5 @@ namespace LogThisWebApplication {
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button serverButton;
-        
-        /// <summary>
-        /// serverButton2 control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button serverButton2;
-        
-        /// <summary>
-        /// redirectButton control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button redirectButton;
     }
 }

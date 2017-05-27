@@ -26,15 +26,47 @@ namespace LogPlayer
         {
             ServerGUID = Guid.NewGuid();
             InitializeComponent();
-            //MessageBox.Show($"Starting player-server {ServerGUID}");
             Server = new PlayerCommunicationServer(ServerGUID);
             Server.ServiceInstance.OnSyncSession += ServiceInstanse_OnSyncSession;
             Server.ServiceInstance.OnClosingSession += ServiceInstanse_OnClosingSession;
             Server.ServiceInstance.OnBrowserJobComplete += ServiceInstanse_OnBrowserJobComplete;
             Server.ServiceInstance.OnFetchLogElement += ServiceInstanse_OnFetchLogElement;
             Server.ServiceInstance.OnLogElementHistory += ServiceInstance_OnLogElementHistory;
+            Server.ServiceInstance.OnLogElementDifference += ServiceInstance_OnLogElementDifference;
         }
-       
+
+        private TransferElementResponse ServiceInstance_OnLogElementDifference(LogElementDTO previousLogElement, LogElementDTO nextLogElement)
+        {
+            if (previousLogElement.LogType != nextLogElement.LogType)
+                return new TransferElementResponse() {Success = false, Message = "LogTypes must be equal"};
+
+            this.TopMost = true;
+            try
+            {
+                switch (previousLogElement.LogType)
+                {
+                    case LogType.OnWCFServiceRequest:
+                    {
+                        var text = "Difference found in service request, should we use the logged data?" + Environment.NewLine + Environment.NewLine + "Logged:" + Environment.NewLine + previousLogElement.Value + Environment.NewLine + Environment.NewLine + "New:" + Environment.NewLine + nextLogElement.Value;
+                        var useLoggedData = MessageBox.Show(text, "Difference found", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+                        return new TransferElementResponse() {Success = true, Data = useLoggedData};
+                    }
+                    case LogType.OnWCFServiceResponse:
+                    {
+                        var text = "Difference found in service response, should we use the logged data?" + Environment.NewLine + Environment.NewLine + "Logged:" + Environment.NewLine + previousLogElement.Value + Environment.NewLine + Environment.NewLine + "New:" + Environment.NewLine + nextLogElement.Value;
+                        var useLoggedData = MessageBox.Show(text, "Difference found", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+                        return new TransferElementResponse() {Success = true, Data = useLoggedData};
+                    }
+                }
+            }
+            finally
+            {
+                this.TopMost = false;
+            }
+
+            return new TransferElementResponse() {Success = true, Data = false/*Use logged data*/};
+        }
+
         private TransferElementResponse ServiceInstance_OnLogElementHistory(LogElementDTO previousLogElement, LogElementDTO nextLogElement, AdditionalData additionalData)
         {
             LogElementHistory.Add(new Tuple<LogElementDTO, LogElementDTO, AdditionalData>(previousLogElement, nextLogElement, additionalData));
@@ -108,7 +140,9 @@ namespace LogPlayer
 
         private void Form2_Load(object sender, EventArgs e)
         {
-            textBox1.AppendText($"ServerGUID = {ServerGUID}");
+            txtBaseUrl.Text = ConfigurationSettings.AppSettings["DefaultBaseUrl"];
+
+            textBox1.AppendText($"Server started with ServerGUID = {ServerGUID}");
 
             //var elementsInfo = LoggingHelper.LoadElementsInfo(txtPath.Text.TrimEnd('\\'), LRAPLogType.JSON);            
 
