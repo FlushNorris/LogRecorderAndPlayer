@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using System.ServiceModel;
 using System.ServiceModel.Description;
 using System.Text;
@@ -34,6 +35,7 @@ namespace LogRecorderAndPlayer
 
         public PlayerCommunicationServer(Guid serverGUID)
         {
+            //serverGUID = new Guid("7639dc4b-35c1-4376-abbc-ccfa42e30825");
             //var baseAddress = new Uri("net.pipe://localhost/LogRecorderAndPlayer");
 
             ServiceInstance = new PlayerCommunicationService();
@@ -41,8 +43,13 @@ namespace LogRecorderAndPlayer
             //ServiceHost = new ServiceHost(ServiceInstance, baseAddress);
             try
             {
-                ServiceHost = new ServiceHost(ServiceInstance, new Uri($"net.pipe://localhost/{serverGUID.ToString().Replace("-", "")}"));
-                ServiceHost.AddServiceEndpoint(typeof(PlayerCommunicationServiceInterface), new NetNamedPipeBinding(), $"LRAPService{serverGUID.ToString().Replace("-", "")}");
+                var binding = new NetNamedPipeBinding();
+                binding.Security.Mode = NetNamedPipeSecurityMode.None;
+                binding.Security.Transport.ProtectionLevel = ProtectionLevel.None;    
+                
+
+                ServiceHost = new ServiceHost(ServiceInstance, new Uri($"net.pipe://localhost/{serverGUID.ToString().Replace("-", "")}"));                
+                var endpoint = ServiceHost.AddServiceEndpoint(typeof(PlayerCommunicationServiceInterface), binding, $"LRAPService{serverGUID.ToString().Replace("-", "")}");                
                 ServiceHost.Open();
 
 

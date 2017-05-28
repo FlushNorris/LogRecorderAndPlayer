@@ -13,6 +13,7 @@ using System.Web.UI.WebControls;
 using AppModule.InterProcessComm;
 using AppModule.NamedPipes;
 using LogRecorderAndPlayer;
+using LogThisWebApplication.WebService;
 using IClientChannel = System.ServiceModel.IClientChannel;
 
 namespace LogThisWebApplication
@@ -53,10 +54,28 @@ namespace LogThisWebApplication
         }
 
         protected void serverButton_OnClick(object sender, EventArgs e)
-        {          
+        {
+            //try
+            //{
+            //    var g = new Guid("7639dc4b-35c1-4376-abbc-ccfa42e30825");
+            //    var p = new PlayerCommunicationClient(g);
+            //    p.Close();
+            //    serverTextbox.Text = "Woohooo!";
+            //}
+            //catch (Exception ex)
+            //{
+            //    serverTextbox.Text = ex.Message;
+            //}
+
             serverTextbox.Text = LogRecorderAndPlayer.TimeHelper.Now(Context).ToString("F");
         }
 
+        protected void btnCallWebService_OnClick(object sender, EventArgs e)
+        {
+            var client = new WebService1SoapClient();
+            LogRecorderAndPlayer.LoggingClientBase.SetupClientBase(client, Context);
+            txtSomeResult.Text = client.SomeFunction(txtSomeInput.Text);
+        }
 
         protected void serverButton2_OnClick(object sender, EventArgs e)
         {
@@ -94,5 +113,5 @@ namespace LogThisWebApplication
                 }
             }
         }
-    }    
+    }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using System.ServiceModel;
 using System.Text;
 using System.Threading;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LogRecorderAndPlayer
 {
-    class PlayerCommunicationClient : PlayerCommunicationCallbackServiceInterface
+    public class PlayerCommunicationClient : PlayerCommunicationCallbackServiceInterface
     {
         private PlayerCommunicationServiceInterface Proxy { get; set; }
 
@@ -54,7 +55,10 @@ namespace LogRecorderAndPlayer
         public PlayerCommunicationClient(Guid serverId)
         {
             //var factory = new DuplexChannelFactory<PlayerCommunicationServiceInterface>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/LogRecorderAndPlayer/{serverId.ToString().Replace("-", "")}/{serverId.ToString().Replace("-", "")}"));
-            var factory = new DuplexChannelFactory<PlayerCommunicationServiceInterface>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService{serverId.ToString().Replace("-", "")}"));
+            var binding = new NetNamedPipeBinding();
+            binding.Security.Mode = NetNamedPipeSecurityMode.None;
+            binding.Security.Transport.ProtectionLevel = ProtectionLevel.None;
+            var factory = new DuplexChannelFactory<PlayerCommunicationServiceInterface>(new InstanceContext(this), binding, new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService{serverId.ToString().Replace("-", "")}"));
             //            var factory = new DuplexChannelFactory<INamedPipeService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress($"net.pipe://localhost/{serverId.ToString().Replace("-", "")}/LRAPService"));
             Proxy = factory.CreateChannel();
 
@@ -75,6 +79,7 @@ namespace LogRecorderAndPlayer
 
         private void NamedPipeClient_Faulted(object sender, EventArgs e)
         {
+            var t = sender.GetType();
             throw new Exception("Connection faulted");
         }
     }

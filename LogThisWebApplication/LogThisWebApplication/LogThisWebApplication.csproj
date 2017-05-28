@@ -43,6 +43,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AppModule.InterProcessComm">
+      <HintPath>..\..\..\Users\NikolajStrauss\Downloads\DotNetNamedPipes\AppModule.NamedPipes\bin\Debug\AppModule.InterProcessComm.dll</HintPath>
+    </Reference>
+    <Reference Include="AppModule.NamedPipes">
+      <HintPath>..\..\..\Users\NikolajStrauss\Downloads\DotNetNamedPipes\AppModule.NamedPipes\bin\Debug\AppModule.NamedPipes.dll</HintPath>
+    </Reference>
     <Reference Include="LogRecorderAndPlayer, Version=1.0.0.2, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>bin\LogRecorderAndPlayer.dll</HintPath>

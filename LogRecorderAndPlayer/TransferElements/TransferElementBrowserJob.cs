@@ -9,9 +9,12 @@ namespace LogRecorderAndPlayer
 {
     [DataContract]
     public class TransferElementBrowserJob
-    {       
+    {
         [DataMember]
-        public Guid PageGUID { get; set; }
+        public Guid? SessionGUID { get; set; }
+
+        [DataMember]
+        public Guid? PageGUID { get; set; }
 
         [DataMember]
         public Guid? LogElementGUID { get; set; } //Either this is used to locate a logElement ...

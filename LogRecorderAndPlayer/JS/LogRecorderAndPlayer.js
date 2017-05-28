@@ -1181,7 +1181,7 @@
             InstanceTime: convertToJsonDate(new Date())
         };
         logElements.push(request);
-        console.log('added logelement with logtype : ' + logType);
+        //console.log('added logelement with logtype : ' + logType);
 
         compactLogElementList();
     }    
@@ -1842,12 +1842,29 @@
         //    logType == LogType.OnDrop;
     }
 
-    function isControlVisible($elm) {
+    function isControlVisible($elm, logType) {
         scrollToElement($elm);
         var elm = $elm[0];
         //var position = $elm.position();
+        //if (logType == LogType.OnMouseDown) {
+        //    alert($elm.prop("id"));
+        //}
+
+        //var elmP = document.elementFromPoint(Math.ceil(event.pageX - window.pageXOffset), Math.ceil(event.pageY - window.pageYOffset));
+
         var position = elm.getBoundingClientRect(); //also works with element with arbitrary margins and checkboxes
-        return elm == document.elementFromPoint(Math.ceil(position.left), Math.ceil(position.top));
+        //if (logType == LogType.OnMouseDown) {
+        //    alert(Math.ceil(position.left)+' - '+Math.ceil(position.top));
+        //}
+        var foundElm = document.elementFromPoint(Math.ceil((position.left + position.right) / 2), Math.ceil((position.top + position.bottom) / 2));
+
+        //if (logType == LogType.OnMouseDown && foundElm != null) {
+        //    var $foundElm = $(foundElm);
+        //    alert($foundElm.prop("id"));
+        //    alert($foundElm.html());
+        //}
+
+        return elm == foundElm;
     }
 
     function isControlActive($elm) {
@@ -1882,7 +1899,9 @@
         //}, 3000);
         //return;
 
-        //alert("playLogElement called: " + logElement.Element + " : " + logElement.LogType);
+        //if (logElement.LogType == LogType.OnMouseDown) {
+        //    alert("BEFORE: playLogElement called: " + logElement.Element + " : " + logTypeToString(logElement.LogType));
+        //}
 
         var $elm = getJQueryElementByElementPath(logElement.Element);
 
@@ -1891,6 +1910,9 @@
             return;
         }
 
+        //if (logElement.LogType == LogType.OnMouseDown) {
+        //    alert("AFTER: playLogElement called: " + logElement.Element + " : " + logTypeToString(logElement.LogType));
+        //}
 
         var loopTotal = logElement.Times && logElement.LogType != LogType.OnResize && logElement.LogType != LogType.OnScroll ? logElement.Times : 1;
         var timeoutInSec = 10;
@@ -1901,8 +1923,14 @@
         playLoop(loopTotal, 
             function () { //condition
                 //alert("playLogElement condition1: " + logElement.Element + " : " + logElement.LogType);
-                var rx = isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm) : true;
+                var rx = isControlRequiredToBeVisible($elm, logElement) ? isControlVisible($elm, logElement.LogType) : true;
+                //if (logElement.LogType == LogType.OnMouseDown) {
+                //    alert("condition1=" + rx);
+                //}
                 rx = rx && isControlActive($elm);
+                //if (logElement.LogType == LogType.OnMouseDown) {
+                //    alert("condition2="+rx);
+                //}
                 //alert("playLogElement condition2: " + logElement.Element + " : " + logElement.LogType);
                 return rx;
             },
@@ -2192,7 +2220,6 @@
             doPlayEventFor($elm, preCombinedLogType);
         });
 
-
         if (eventName) {
             callEventMethods($elm, elementValue, eventName);
         }
@@ -2208,14 +2235,15 @@
                     var startPos = selectionInfo.startPos;
                     var endPos = selectionInfo.endPos;
                     if (startPos >= endPos) {
-                        //replace text within startPos and endPos
-                    } else {
-                        //use caretPos to insert value                        
+                        //No selection
                         relatedToStart = value.length - elementValue.value.caretPos;
                         startPos = relatedToStart;
                         endPos = relatedToStart;
+                    } else {
+                        //replace text within startPos and endPos
                     }
                     newValue = value.substring(0, startPos) + elementValue.value.ch + value.substring(endPos);
+
                     $elm.val(newValue);
                     //alert('keypress : ' + newValue);
                 }

@@ -182,7 +182,8 @@ namespace LogPlayer
             }
 
             Sessions = dictSessions.Values.ToList();
-            SessionElementOrderedList = GetOrderedList(Sessions);            
+            SessionElementOrderedList = GetOrderedList(Sessions);
+            var xxx = SessionElementOrderedList.Where(x => x.Any(y => y.LogElementInfo.LogType == LogType.OnKeyPress)).ToList();
         }
 
         private List<List<LRAPSessionElement>> GetOrderedList(List<LRAPSession> sessions)
@@ -202,6 +203,10 @@ namespace LogPlayer
 
                         //int debug;
                         var idx = BinaryFindClosestIndex(lstOrderedByTimestamp, sessionElement.LogElementInfo.Timestamp);
+                        if (sessionElement.LogElementInfo.LogType == LogType.OnKeyPress)
+                        {
+                            idx = idx + 1 - 1;
+                        }
                         if (idx == -1)
                         {
                             lstOrderedByTimestamp.Add(sessionElement);
@@ -292,32 +297,79 @@ namespace LogPlayer
             end = end ?? orderedLst.Count - 1;
             if (start > end) //empty list
                 return -1;
-            var m = (end.Value + start.Value)/2;
+            var m = (end.Value + start.Value) / 2;
 
-            var newTicksPrev = long.MaxValue;
-            var newTicksNext = long.MaxValue;
-            if (m > 0)
-                newTicksPrev = Math.Abs(orderedLst[m - 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
-            if (m < orderedLst.Count - 1)
-                newTicksNext = Math.Abs(orderedLst[m + 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
-            var newTicks0 = Math.Abs(orderedLst[m].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
-            if (newTicks0 < newTicksNext) 
+            //var newTicksPrev = long.MaxValue;
+            //var newTicksNext = long.MaxValue;
+            //if (m > 0)
+            //    newTicksPrev = orderedLst[m - 1].LogElementInfo.Timestamp.Ticks; //Math.Abs(orderedLst[m - 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+            //if (m < orderedLst.Count - 1)
+            //    newTicksNext =  orderedLst[m + 1].LogElementInfo.Timestamp.Ticks; //Math.Abs(orderedLst[m + 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+            var newTicks0 = orderedLst[m].LogElementInfo.Timestamp.Ticks; //Math.Abs(orderedLst[m].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+
+            var ticks = timestamp.Ticks;
+            if (ticks < newTicks0)
             {
-                if (newTicks0 <= newTicksPrev || start == m) //Found the smallest in an ordered list
+                if (start == m) //Found the smallest in an ordered list
                     return m;
                 return BinaryFindClosestIndex(orderedLst, timestamp, start, m - 1, newTicks0);
             }
-            if (newTicks0 <= newTicksPrev) //Go right
+            else if (ticks >= newTicks0)
             {
                 if (end == m)
                     return m;
                 return BinaryFindClosestIndex(orderedLst, timestamp, m + 1, end, newTicks0);
             }
-            
+
+            //if (newTicks0 < newTicksNext)
+            //{
+            //    if (newTicks0 <= newTicksPrev || start == m) //Found the smallest in an ordered list
+            //        return m;
+            //    return BinaryFindClosestIndex(orderedLst, timestamp, start, m - 1, newTicks0);
+            //}
+            //if (newTicks0 <= newTicksPrev) //Go right
+            //{
+            //    if (end == m)
+            //        return m;
+            //    return BinaryFindClosestIndex(orderedLst, timestamp, m + 1, end, newTicks0);
+            //}
+
             //newTicks0>=newTicksNext && newTicks0>=newTicksPrev
             //should not happen in an ordered list
             throw new Exception("Are you sure this is an ordered list?");
         }
+        //private int BinaryFindClosestIndex(List<LRAPSessionElement> orderedLst, DateTime timestamp, int? start = null, int? end = null, long smallestTicksSoFar = long.MaxValue)
+        //{
+        //    start = start ?? 0;
+        //    end = end ?? orderedLst.Count - 1;
+        //    if (start > end) //empty list
+        //        return -1;
+        //    var m = (end.Value + start.Value) / 2;
+
+        //    var newTicksPrev = long.MaxValue;
+        //    var newTicksNext = long.MaxValue;
+        //    if (m > 0)
+        //        newTicksPrev = Math.Abs(orderedLst[m - 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+        //    if (m < orderedLst.Count - 1)
+        //        newTicksNext = Math.Abs(orderedLst[m + 1].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+        //    var newTicks0 = Math.Abs(orderedLst[m].LogElementInfo.Timestamp.Ticks - timestamp.Ticks);
+        //    if (newTicks0 < newTicksNext)
+        //    {
+        //        if (newTicks0 <= newTicksPrev || start == m) //Found the smallest in an ordered list
+        //            return m;
+        //        return BinaryFindClosestIndex(orderedLst, timestamp, start, m - 1, newTicks0);
+        //    }
+        //    if (newTicks0 <= newTicksPrev) //Go right
+        //    {
+        //        if (end == m)
+        //            return m;
+        //        return BinaryFindClosestIndex(orderedLst, timestamp, m + 1, end, newTicks0);
+        //    }
+
+        //    //newTicks0>=newTicksNext && newTicks0>=newTicksPrev
+        //    //should not happen in an ordered list
+        //    throw new Exception("Are you sure this is an ordered list?");
+        //}
 
         private bool IsValidStartingEvent(LRAPSessionElement sessionElement)
         {
@@ -490,7 +542,7 @@ namespace LogPlayer
             throw new NotImplementedException(); //not yet...
         }        
 
-        public FetchLogElementResponse FetchLogElement(Guid pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
+        public FetchLogElementResponse FetchLogElement(Guid? sessionGUID, Guid? pageGUID, LogType logType, string handlerUrl = null, int? currentIndex = null)
         {
             currentIndex = currentIndex ?? CurrentIndex;
 
@@ -498,12 +550,19 @@ namespace LogPlayer
                 return new FetchLogElementResponse() {Type = FetchLogElementResponseType.NoMore};
 
             var lst = SessionElementOrderedList[currentIndex.Value];
-            var sessionElement = lst.FirstOrDefault(x => x.LogElementInfo.PageGUID.Equals(pageGUID)) ?? lst.First()/*Only one session is supported atm*/; //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
+
+            LRAPSessionElement sessionElement = null;
+            if (sessionGUID.HasValue)
+                sessionElement = lst.FirstOrDefault(x => x.Session.GUID.Equals(sessionGUID));
+            if (sessionElement == null && pageGUID.HasValue)
+                sessionElement = lst.FirstOrDefault(x => x.LogElementInfo.PageGUID.Equals(pageGUID));
+            sessionElement = sessionElement ?? lst.First()/*Only one session is supported atm*/; //Skal være på samme linie som denne.. eller de efterfølgende "bundlede" events er ikke nødvendigvis på samme index
+
             switch (sessionElement.State)
             {
                 case SessionElementState.Played:
                     //Look at the next event if it matches the LogType for the current PageGUID
-                    return FetchLogElement(pageGUID, logType, handlerUrl, currentIndex.Value + 1);
+                    return FetchLogElement(sessionGUID, pageGUID, logType, handlerUrl, currentIndex.Value + 1);
                 case SessionElementState.WaitingToTestIfCalledAutomatically:
                 case SessionElementState.Playing:
                     if (sessionElement.LogElementInfo.LogType == logType)

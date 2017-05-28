@@ -22,9 +22,9 @@ namespace LogRecorderAndPlayer
             return !serverResponse.Success;
         }
 
-        public static FetchLogElementResponse FetchLogElementFromPlayer(Guid serverGUID, Guid pageGUID, LogType logType)
+        public static FetchLogElementResponse FetchLogElementFromPlayer(Guid serverGUID, Guid? sessionGUID, Guid? pageGUID, LogType logType)
         {
-            var fetchLogElement = new TransferElementFetchLogElement() { PageGUID = pageGUID, LogType = logType };
+            var fetchLogElement = new TransferElementFetchLogElement() { SessionGUID = sessionGUID, PageGUID = pageGUID, LogType = logType };
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.FetchLogElement, Data = fetchLogElement };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
             string error;
@@ -57,11 +57,11 @@ namespace LogRecorderAndPlayer
             return serverResponse?.Data as LogElementDTO;
         }
 
-        public static void SetLogElementAsDone(Guid serverGUID, Guid pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)
+        public static void SetLogElementAsDone(Guid serverGUID, Guid? sessionGUID, Guid? pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)
         {
             var async = false;
 
-            var data = new TransferElementBrowserJob() { PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
+            var data = new TransferElementBrowserJob() { SessionGUID = sessionGUID, PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJobComplete, Data = data };
             var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);

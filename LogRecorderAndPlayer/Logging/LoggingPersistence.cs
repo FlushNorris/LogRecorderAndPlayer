@@ -95,7 +95,7 @@ namespace LogRecorderAndPlayer
             {
                 var serverGUID = LoggingHelper.GetServerGUID(HttpContext.Current, null, page?.Request.Params).Value;
 
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
 
@@ -111,7 +111,7 @@ namespace LogRecorderAndPlayer
 
                     //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
                 }))
                     return new LogElementResponse() {Success = true, Object = cmdDTO};
             }
@@ -151,7 +151,7 @@ namespace LogRecorderAndPlayer
             {
                 var serverGUID = LoggingHelper.GetServerGUID(HttpContext.Current, null, page?.Request.Params).Value;
 
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
 
@@ -167,7 +167,7 @@ namespace LogRecorderAndPlayer
 
                     //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }

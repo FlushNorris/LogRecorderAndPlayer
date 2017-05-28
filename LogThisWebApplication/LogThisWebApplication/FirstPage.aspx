@@ -16,6 +16,15 @@
     <br/>
 
     <div style="border-style: solid;border-width: 2px;">        
+        <b>Kald af webservice med visning af difference box pga afspilningsdataen ikke svare overens med loggede data (se i rapporten 4.19.j):</b><br/>
+        <asp:Button runat="server" ID="btnCallWebService" OnClick="btnCallWebService_OnClick" Text="Call WebService"/><br/>
+        Input: <asp:TextBox runat="server" ID="txtSomeInput" Width="400" Text="Et eller andet input"></asp:TextBox><br/>
+        Result: <asp:TextBox runat="server" ID="txtSomeResult" Width="1000"></asp:TextBox><br/>
+    </div>
+    <br/>
+    <br/>
+
+    <div style="border-style: solid;border-width: 2px;">        
         <b>Test at klientside(javascript)-tid ved afspilning har samme tidsangivelse som da der blev logget:</b><br/>
         <input type="button" id="fetchClientsideTime" value="Hent klientside-tid"/>
         <span id="clientsideTime">???</span>

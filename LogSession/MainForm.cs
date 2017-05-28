@@ -229,7 +229,7 @@ namespace LogSession
 
             //MessageBox.Show("Send BrowserJobComplete to player");
             //MessageBox.Show($"jobcomplete: logElementGUID={logElementGUID}");
-            PlayerCommunicationHelper.SetLogElementAsDone(ServerGUID.Value, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
+            PlayerCommunicationHelper.SetLogElementAsDone(ServerGUID.Value, null, browser.PageGUID, logElementGUID, jobStatus); //, async: false); 
 
 //            NamedPipeHelper.SendBrowserJobComplete(ServerGUID.Value, new NamedPipeBrowserJob() { PageGUID = browser.PageGUID, LogElementGUID = logElementGUID });
         }       

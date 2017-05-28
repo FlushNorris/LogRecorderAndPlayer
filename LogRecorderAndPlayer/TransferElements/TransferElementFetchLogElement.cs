@@ -11,7 +11,10 @@ namespace LogRecorderAndPlayer
     public class TransferElementFetchLogElement
     {
         [DataMember]
-        public Guid PageGUID { get; set; }
+        public Guid? SessionGUID { get; set; }
+
+        [DataMember]
+        public Guid? PageGUID { get; set; }
 
         [DataMember]
         public LogType LogType { get; set; }

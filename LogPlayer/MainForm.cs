@@ -75,7 +75,7 @@ namespace LogPlayer
 
         private TransferElementResponse ServiceInstanse_OnFetchLogElement(TransferElementFetchLogElement fetchLogElement)
         {
-            var fetchLogElementResponse = eventsTable1.FetchLogElement(fetchLogElement.PageGUID, fetchLogElement.LogType);
+            var fetchLogElementResponse = eventsTable1.FetchLogElement(fetchLogElement.SessionGUID, fetchLogElement.PageGUID, fetchLogElement.LogType);
             return new TransferElementResponse() {Success = true, Data = fetchLogElementResponse};
         }
 
@@ -86,7 +86,7 @@ namespace LogPlayer
             LogElementDTO logElementDTO = null;
             if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
             {
-                logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
+                logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.SessionGUID, namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
                 logElementGUID = logElementDTO?.GUID;
                 if (logElementGUID == null)
                     return new TransferElementResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};

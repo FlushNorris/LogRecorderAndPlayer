@@ -123,7 +123,7 @@ namespace LogRecorderAndPlayer
                 {
                     var serverGUID = GetServerGUID(context, null, requestForm).Value;
 
-                    if (FetchAndExecuteLogElement(serverGUID, new Guid(), logType, (logElement) =>
+                    if (FetchAndExecuteLogElement(serverGUID, null, new Guid(), logType, (logElement) =>
                     {
                         TimeHelper.SetNow(context, logElement.InstanceTime);
                         SetPageGUID(page, logElement.PageGUID);                        
@@ -608,7 +608,7 @@ namespace LogRecorderAndPlayer
             return result;
         }        
 
-        public static bool FetchAndExecuteLogElement(Guid serverGUID, Guid pageGUID, LogType logType, Action<LogElementDTO> action, int timeoutInSeconds = 10)
+        public static bool FetchAndExecuteLogElement(Guid serverGUID, Guid? sessionGUID, Guid? pageGUID, LogType logType, Action<LogElementDTO> action, int timeoutInSeconds = 10)
         {
             var timeout = DateTime.Now.AddSeconds(timeoutInSeconds);
 
@@ -616,7 +616,7 @@ namespace LogRecorderAndPlayer
             FetchLogElementResponse fetchLogElement = null;
             do
             {
-                fetchLogElement = PlayerCommunicationHelper.FetchLogElementFromPlayer(serverGUID, pageGUID, logType);
+                fetchLogElement = PlayerCommunicationHelper.FetchLogElementFromPlayer(serverGUID, serverGUID, pageGUID, logType);
                 continueFlag = fetchLogElement.Type == FetchLogElementResponseType.IncorrectLogType;
                 if (continueFlag)
                 {

@@ -49,9 +49,10 @@ namespace LogRecorderAndPlayer
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+                var sessionGUID = LoggingHelper.GetSessionGUID(context, page, null);
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, null);
 
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(context, logElement.InstanceTime);
 
@@ -65,7 +66,7 @@ namespace LogRecorderAndPlayer
                         throw new Exception("ViewState difference");
                     }
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() { Success = true }); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, jobStatus: new JobStatus() { Success = true }); //, async: false); //Non deadlock, because we would never call the webserver via namedpipe back again
                 }))
                     return;
             }
@@ -104,9 +105,10 @@ namespace LogRecorderAndPlayer
             if (LoggingHelper.IsPlaying(context, requestForm))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
+                var sessionGUID = LoggingHelper.GetSessionGUID(context, page, null, requestForm);
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, null, requestForm);
 
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(context, logElement.InstanceTime);
 
@@ -123,7 +125,7 @@ namespace LogRecorderAndPlayer
 
                     //var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }
@@ -157,9 +159,10 @@ namespace LogRecorderAndPlayer
             if (LoggingHelper.IsPlaying(context, requestForm))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }, requestForm).Value;
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }, requestForm).Value;
+                var sessionGUID = LoggingHelper.GetSessionGUID(context, page, null, requestForm);
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, null, requestForm);
 
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(context, logElement.InstanceTime);
 
@@ -174,7 +177,7 @@ namespace LogRecorderAndPlayer
                         throw new Exception("Session difference");
                     }
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
             }
@@ -207,10 +210,11 @@ namespace LogRecorderAndPlayer
             if (LoggingHelper.IsPlaying(context, requestForm:null))
             {
                 var serverGUID = LoggingHelper.GetServerGUID(context, () => { throw new Exception(); }).Value;
-                var pageGUID = LoggingHelper.GetPageGUID(context, page, () => { throw new Exception(); }).Value;
+                var sessionGUID = LoggingHelper.GetSessionGUID(context, page, null);
+                var pageGUID = LoggingHelper.GetPageGUID(context, page, null);
 
                 string newResponse = null;
-                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, pageGUID, logType, (logElement) =>
+                if (LoggingHelper.FetchAndExecuteLogElement(serverGUID, sessionGUID, pageGUID, logType, (logElement) =>
                 {
                     TimeHelper.SetNow(context, logElement.InstanceTime);
 
@@ -223,7 +227,7 @@ namespace LogRecorderAndPlayer
                     //context.Response.Write(newResponse);
                     newResponse = response;
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
                 }))
                     return newResponse;
             }
