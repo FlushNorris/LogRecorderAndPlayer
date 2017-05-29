@@ -358,55 +358,60 @@ namespace LogRecorderAndPlayer
         private static double unixTimestampForwardAdjuster = 0.001*0.001; //1 ns
         private static double cleanupAfterLastLogElementsAfterSeconds = 100.0; //just any number of seconds which the NTP-algorithm at least would be within precision-wise
 
+        private static object logElementLock = new object();
+
         public static LogElementResponse LogElement(LogElementDTO logElement)
         {
-            try
+            lock (logElementLock)
             {
-                var config = ConfigurationHelper.GetConfigurationSection();
-                if (!config.Enabled)
-                    return new LogElementResponse() { Success = true };
-
-                var unixNow = TimeHelper.UnixTimestamp();
-
-                LogElementDTO lastLogElement = null;
-                //Cleanup old entries in dictionary
-                dictLastLogElementPerPage.Where(x => x.Value.UnixTimestamp < unixNow - cleanupAfterLastLogElementsAfterSeconds).Select(x => x.Key).ToList().ForEach(x => dictLastLogElementPerPage.Remove(x));
-
-                if (dictLastLogElementPerPage.TryGetValue(logElement.PageGUID, out lastLogElement))
+                try
                 {
-                    if (lastLogElement.UnixTimestamp >= logElement.UnixTimestamp)
-                    {
-                        //Correct logElement, it must be placed after lastLogElement
-                        var diffAdjust = (lastLogElement.UnixTimestamp + unixTimestampForwardAdjuster) - logElement.UnixTimestamp;
-                        logElement.UnixTimestamp += diffAdjust;
+                    var config = ConfigurationHelper.GetConfigurationSection();
+                    if (!config.Enabled)
+                        return new LogElementResponse() {Success = true};
 
-                        if (logElement.UnixTimestampEnd.HasValue)
+                    var unixNow = TimeHelper.UnixTimestamp();
+
+                    LogElementDTO lastLogElement = null;
+                    //Cleanup old entries in dictionary
+                    dictLastLogElementPerPage.Where(x => x.Value.UnixTimestamp < unixNow - cleanupAfterLastLogElementsAfterSeconds).Select(x => x.Key).ToList().ForEach(x => dictLastLogElementPerPage.Remove(x));
+
+                    if (dictLastLogElementPerPage.TryGetValue(logElement.PageGUID, out lastLogElement))
+                    {
+                        if (lastLogElement.UnixTimestamp >= logElement.UnixTimestamp)
                         {
-                            logElement.UnixTimestampEnd += diffAdjust;
+                            //Correct logElement, it must be placed after lastLogElement
+                            var diffAdjust = (lastLogElement.UnixTimestamp + unixTimestampForwardAdjuster) - logElement.UnixTimestamp;
+                            logElement.UnixTimestamp += diffAdjust;
+
+                            if (logElement.UnixTimestampEnd.HasValue)
+                            {
+                                logElement.UnixTimestampEnd += diffAdjust;
+                            }
                         }
                     }
+                    else
+                    {
+                        //This is the first registered logElement for this pageGUID, nothing to correct against
+                    }
+
+                    if (unixNow < logElement.UnixTimestamp) //Get server back on right track if the logElement.UnixTimestamp is ahead of time, which it could be if the logElement was transfered from e.g. the clientside(browser)
+                    {
+                        var diffSeconds = logElement.UnixTimestamp - unixNow;
+                        var diffMS = (int) Math.Ceiling(diffSeconds*1000.0);
+                        System.Threading.Thread.Sleep(diffMS);
+                    }
+
+                    dictLastLogElementPerPage[logElement.PageGUID] = logElement;
+
+                    GetLoggingPersister(config.LogType).LogElement(config.FilePath, logElement);
+
+                    return new LogElementResponse() {Success = true};
                 }
-                else
+                catch (Exception ex)
                 {
-                    //This is the first registered logElement for this pageGUID, nothing to correct against
+                    return new LogElementResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
                 }
-
-                if (unixNow < logElement.UnixTimestamp) //Get server back on right track if the logElement.UnixTimestamp is ahead of time, which it could be if the logElement was transfered from e.g. the clientside(browser)
-                {
-                    var diffSeconds = logElement.UnixTimestamp - unixNow;
-                    var diffMS = (int)Math.Ceiling(diffSeconds*1000.0);
-                    System.Threading.Thread.Sleep(diffMS);
-                }
-                
-                dictLastLogElementPerPage[logElement.PageGUID] = logElement;
-
-                GetLoggingPersister(config.LogType).LogElement(config.FilePath, logElement);
-
-                return new LogElementResponse() {Success = true};
-            }
-            catch (Exception ex)
-            {
-                return new LogElementResponse() {Success = false, Message = ex.Message + " ::: " + ex.StackTrace};
             }
         }
 
