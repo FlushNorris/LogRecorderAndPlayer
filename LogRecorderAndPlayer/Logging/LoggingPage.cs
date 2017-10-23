@@ -43,7 +43,8 @@ namespace LogRecorderAndPlayer
                 value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, requestForm:null))
@@ -99,7 +100,8 @@ namespace LogRecorderAndPlayer
                 value: SerializationHelper.Serialize(requestParams, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, requestForm))
@@ -153,7 +155,8 @@ namespace LogRecorderAndPlayer
                 value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, requestForm))
@@ -204,7 +207,8 @@ namespace LogRecorderAndPlayer
                 value: response,
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, requestForm:null))

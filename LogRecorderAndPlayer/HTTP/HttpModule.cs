@@ -17,6 +17,19 @@ namespace LogRecorderAndPlayer
         private ResponseFilter responseWatcher;
         private HttpApplication context;
 
+        private LRAPConfigurationSection _configuration = null;
+        private LRAPConfigurationSection Configuration
+        {
+            get
+            {
+                if (_configuration == null)
+                {
+                    _configuration = ConfigurationHelper.GetConfigurationSection();
+                }
+                return _configuration;
+            }
+        }
+
         public void Init(HttpApplication context)
         {
             this.context = context;
@@ -28,8 +41,8 @@ namespace LogRecorderAndPlayer
         }
 
         private void Context_BeginRequest(object sender, EventArgs e)
-        {
-            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+        {            
+            if (!Configuration.Enabled || ((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
                 return;
 
             responseWatcher = new ResponseFilter(this.context.Response.Filter); 
@@ -38,7 +51,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
         {
-            if (((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || ((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
                 return;
 
             HttpApplication app = (HttpApplication)sender;
@@ -67,7 +80,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
                 return;
 
             HttpApplication app = (HttpApplication) sender;
@@ -116,7 +129,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostRequestHandlerExecute(object sender, EventArgs e)
         {
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;
             }
@@ -165,7 +178,7 @@ namespace LogRecorderAndPlayer
             //var x = new NamedPipeClient();
             //var x2 = x.TalkForServer();
 
-            if (((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;
             }

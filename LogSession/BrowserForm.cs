@@ -18,7 +18,7 @@ using Microsoft.Win32;
 
 namespace LogSession
 {
-    public partial class BrowserForm : Form //Both primary form and secondary form (to save space.. formwise(
+    public partial class BrowserForm : Form 
     {
         public delegate void JobCompleted(BrowserForm browser, Guid? logElementGUID, JobStatus jobStatus);
 
@@ -269,46 +269,46 @@ namespace LogSession
             });
         }       
 
-        private void button1_Click(object sender, EventArgs e)
-        {            
+//        private void button1_Click(object sender, EventArgs e)
+//        {            
 
-            //            var result = webBrowser.Document.InvokeScript("testInvokeScript", new object[] { "hest" });
-//            var result = webBrowser.Document.InvokeScript("logRecorderAndPlayer_PlayEvent", new object[] { "hest" });
-            var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null, DateTime.Now);
-//            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
+//            //            var result = webBrowser.Document.InvokeScript("testInvokeScript", new object[] { "hest" });
+////            var result = webBrowser.Document.InvokeScript("logRecorderAndPlayer_PlayEvent", new object[] { "hest" });
+//            var le = new LogElementDTO(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), null, null, 666, LogType.OnCut, "element", "element2", "value", 1337, null, DateTime.Now, null);
+////            var lst = LoggingHelper.LoadElements(@"c:\WebApplicationJSON", LRAPLogType.JSON).Where(x => x.LogType == LogType.OnKeyPress).ToList();
 
-            var leJSON = "null"; //SerializationHelper.Serialize(lst[0], SerializationType.Json);
-            //MessageBox.Show($"length = {leJSON.Length}");
+//            var leJSON = "null"; //SerializationHelper.Serialize(lst[0], SerializationType.Json);
+//            //MessageBox.Show($"length = {leJSON.Length}");
 
-            var testLength = ""; //new String('c', 40*1024*1024); // approx max 40MB (aka more than enough for my logelements :D)
+//            var testLength = ""; //new String('c', 40*1024*1024); // approx max 40MB (aka more than enough for my logelements :D)
 
-            var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
-            if (result != null)
-                MessageBox.Show(result.ToString());
-        }
+//            var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.playEventFor(logRecorderAndPlayer.LogType.OnKeyPress, '#someId', {leJSON}, '{testLength}')" });
+//            if (result != null)
+//                MessageBox.Show(result.ToString());
+//        }
 
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-//            var w = new WebBrowser();
-//            w.Url = new Uri("http://localhost:61027/FirstPage.aspx");
-            //w.DocumentText = "<html><body><input type='text' value='something'/></body></html>";
+//        private void button1_Click_1(object sender, EventArgs e)
+//        {
+////            var w = new WebBrowser();
+////            w.Url = new Uri("http://localhost:61027/FirstPage.aspx");
+//            //w.DocumentText = "<html><body><input type='text' value='something'/></body></html>";
 
-            //var r = w.DocumentText;
-            //textBox1.Text = r;
+//            //var r = w.DocumentText;
+//            //textBox1.Text = r;
 
-            //var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.getJQueryElementByElementPath('#form1,3!DIV,3!INPUT:not([type])').val('WHAT')" });            
-        }
+//            //var result = webBrowser.Document.InvokeScript("eval", new object[] { $"logRecorderAndPlayer.getJQueryElementByElementPath('#form1,3!DIV,3!INPUT:not([type])').val('WHAT')" });            
+//        }
 
         private void webBrowser_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
             IsNavigating = true;
         }
 
-        private void button1_Click_2(object sender, EventArgs e)
-        {
-            var server = new PlayerCommunicationServer(new Guid());
-            MessageBox.Show($"Connected to : {server.ServerState} : {server.ServiceURL}");
-        }
+        //private void button1_Click_2(object sender, EventArgs e)
+        //{
+        //    var server = new PlayerCommunicationServer(new Guid());
+        //    MessageBox.Show($"Connected to : {server.ServerState} : {server.ServiceURL}");
+        //}
 
         //private void link_MouseUp(object sender, HtmlElementEventArgs e)
         //{

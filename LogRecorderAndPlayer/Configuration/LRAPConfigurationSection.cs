@@ -85,6 +85,20 @@ namespace LogRecorderAndPlayer
             {
                 this["sessionApp"] = value;
             }
-        }      
+        }
+
+        [ConfigurationProperty("logStackTrace", DefaultValue = false)]
+        public bool LogStackTrace 
+        {
+            get
+            {
+                var v = (bool)this["logStackTrace"];
+                return v;
+            }
+            set
+            {
+                this["logStackTrace"] = value;
+            }
+        }        
     }
 }

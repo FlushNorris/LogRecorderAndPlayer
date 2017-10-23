@@ -35,8 +35,26 @@ namespace LogRecorderAndPlayer
             }
         }
 
+        private LRAPConfigurationSection _configuration = null;
+        private LRAPConfigurationSection Configuration
+        {
+            get
+            {
+                if (_configuration == null)
+                {
+                    _configuration = ConfigurationHelper.GetConfigurationSection();
+                }
+                return _configuration;
+            }
+        }
+
         public object BeforeSendRequest(ref System.ServiceModel.Channels.Message request, IClientChannel channel)
         {
+            if (!Configuration.Enabled)
+            {
+                return null;
+            }
+
             //var via = channel.Via;
             //var inputSession = channel.InputSession;
             //var outputSession = channel.OutputSession;
@@ -65,7 +83,6 @@ namespace LogRecorderAndPlayer
             //OperationContext.Current.SessionId
 
             string messageBody = GetMessageBody(request);
-
             var newLogElement = new LogElementDTO(
                 guid: loggingState.GUID,
                 sessionGUID: loggingState.SessionGUID,
@@ -79,7 +96,8 @@ namespace LogRecorderAndPlayer
                 value: messageBody,
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, page?.Request.Params))
@@ -98,10 +116,10 @@ namespace LogRecorderAndPlayer
                         }
                     }
 
-                    PlayerCommunicationHelper.SetLogElementAsDone(loggingState.ServerGUID.Value, loggingState.SessionGUID, loggingState.PageGUID, logElement.GUID, new JobStatus() {Success = true}); //, async: false);
+                    PlayerCommunicationHelper.SetLogElementAsDone(loggingState.ServerGUID.Value, loggingState.SessionGUID, loggingState.PageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                 {
-                    
+
                 }
             }
             else
@@ -114,6 +132,11 @@ namespace LogRecorderAndPlayer
 
         public void AfterReceiveReply(ref System.ServiceModel.Channels.Message reply, object correlationState)
         {
+            if (!Configuration.Enabled)
+            {
+                return;
+            }
+
             var loggingState = correlationState as LoggingState;
             if (loggingState != null)
             {
@@ -134,7 +157,8 @@ namespace LogRecorderAndPlayer
                     value: messageBody,
                     times: 1,
                     unixTimestampEnd: null,
-                    instanceTime: DateTime.Now
+                    instanceTime: DateTime.Now,
+                    stackTrace: null
                 );
 
                 if (LoggingHelper.IsPlaying(loggingState.Context, loggingState.Page?.Request.Params))
@@ -199,39 +223,39 @@ namespace LogRecorderAndPlayer
         }        
     }
 
-    // <summary>
-    /// Necessary to write out the contents as text (used with the Raw return type)
-    /// </summary>
-    public class TextBodyWriter : BodyWriter
-    {
-        byte[] messageBytes;
-        string message;
+    //// <summary>
+    ///// Necessary to write out the contents as text (used with the Raw return type)
+    ///// </summary>
+    //public class TextBodyWriter : BodyWriter
+    //{
+    //    byte[] messageBytes;
+    //    string message;
 
-        public TextBodyWriter(string message)
-            : base(true)
-        {
-            this.message = message;
-            this.messageBytes = Encoding.UTF8.GetBytes(message);
-        }
+    //    public TextBodyWriter(string message)
+    //        : base(true)
+    //    {
+    //        this.message = message;
+    //        this.messageBytes = Encoding.UTF8.GetBytes(message);
+    //    }
 
-        protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
-        {
-            writer.WriteString(message);
-            //writer.WriteStartElement("Binary");
-            //writer.WriteBase64(this.messageBytes, 0, this.messageBytes.Length);
-            //writer.WriteEndElement();
-        }
-    }
+    //    protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
+    //    {
+    //        writer.WriteString(message);
+    //        //writer.WriteStartElement("Binary");
+    //        //writer.WriteBase64(this.messageBytes, 0, this.messageBytes.Length);
+    //        //writer.WriteEndElement();
+    //    }
+    //}
 
-    public class xxx : BodyWriter
-    {
-        public xxx(bool isBuffered) : base(isBuffered)
-        {
-        }
+    //public class xxx : BodyWriter
+    //{
+    //    public xxx(bool isBuffered) : base(isBuffered)
+    //    {
+    //    }
 
-        protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
-        {
+    //    protected override void OnWriteBodyContents(XmlDictionaryWriter writer)
+    //    {
             
-        }
-    }
+    //    }
+    //}
 }

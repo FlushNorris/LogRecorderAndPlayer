@@ -221,19 +221,21 @@ namespace LogRecorderAndPlayer
         public static NameValueCollection ParamsWithSpecialRequestForm(HttpContext context, NameValueCollection requestForm)
         {
             var nvc = new NameValueCollection();
-            if (context != null && context.Request != null)
+            if (context?.Request != null)
+            {
                 nvc.Add(context.Request.QueryString);
+            }
 
             if (requestForm != null)
             {
                 requestForm.AllKeys.Where(x => !Consts.LRAPFormFields.Contains(x) || !nvc.AllKeys.Contains(x)).ToList().ForEach(x => nvc.Add(x, requestForm[x]));
             }                
-            else if (context != null && context.Request != null)
+            else if (context?.Request != null)
             {
                 context.Request.Form.AllKeys.Where(x => !Consts.LRAPFormFields.Contains(x) || !nvc.AllKeys.Contains(x)).ToList().ForEach(x => nvc.Add(x, context.Request.Form[x]));
             }
 
-            if (context != null && context.Request != null)
+            if (context?.Request != null)
             {
                 context.Request.Cookies.AllKeys.ToList().ForEach(x =>
                 {

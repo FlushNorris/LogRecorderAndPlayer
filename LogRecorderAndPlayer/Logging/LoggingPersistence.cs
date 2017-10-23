@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -88,7 +89,8 @@ namespace LogRecorderAndPlayer
                 value: SerializationHelper.Serialize(cmdDTO, SerializationType.Json),
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: ConfigurationHelper.GetConfigurationSection().LogStackTrace ? new StackTrace().ToString() : ""
             );            
 
             if (LoggingHelper.IsPlaying(context, page?.Request.Params))
@@ -144,7 +146,8 @@ namespace LogRecorderAndPlayer
                 value: value != null ? SerializationHelper.Serialize(value, SerializationType.Json) : null,
                 times: 1,
                 unixTimestampEnd: null,
-                instanceTime: DateTime.Now
+                instanceTime: DateTime.Now,
+                stackTrace: null
             );
 
             if (LoggingHelper.IsPlaying(context, page?.Request.Params))

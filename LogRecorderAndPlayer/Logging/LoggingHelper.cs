@@ -139,19 +139,23 @@ namespace LogRecorderAndPlayer
         public static Guid? GetServerGUID(HttpContext context, Func<Guid?> defaultValue = null, NameValueCollection requestForm = null)
         {
             string requestServerGUID = null;
-            if (context.Session != null)
+            if (context?.Session != null)
+            {
                 requestServerGUID = context.Session[Consts.ServerGUIDTag] as string;
+            }
             if (requestServerGUID == null)
             {
-                var page = context.CurrentHandler as Page;
+                var page = context?.CurrentHandler as Page;
                 if (page != null && page.Session != null)
                     requestServerGUID = page.Session[Consts.ServerGUIDTag] as string;
             }
-            if (requestServerGUID == null && context.Request != null && context.Request.Headers != null)
+            if (requestServerGUID == null && context?.Request != null && context.Request.Headers != null)
+            {
                 requestServerGUID = context.Request.Headers[Consts.ServerGUIDTag];
+            }
             if (requestServerGUID == null)
             {
-                var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
+                var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context?.Request?.Params;
                 requestServerGUID = requestParams?[Consts.ServerGUIDTag];
             }
             if (!String.IsNullOrWhiteSpace(requestServerGUID))
@@ -570,14 +574,18 @@ namespace LogRecorderAndPlayer
         public static bool IsPlaying(HttpContext context, NameValueCollection requestForm)
         {
             string r = null;
-            if (context.Session != null)
+            if (context?.Session != null)
+            {
                 r = context.Session[Consts.ServerGUIDTag] as string;
-            if (r == null && context.Request != null && context.Request.Headers != null)
+            }
+            if (r == null && context?.Request?.Headers != null)
+            {
                 r = context.Request.Headers[Consts.ServerGUIDTag];
+            }
 
             if (r == null)
             {
-                var page = context.CurrentHandler as Page;
+                var page = context?.CurrentHandler as Page;
                 if (page != null)
                 {
                     if (page.Session != null)
@@ -593,10 +601,12 @@ namespace LogRecorderAndPlayer
             }
 
             if (r != null)
+            {
                 return true;
+            }
 
-            var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context.Request?.Params;
-            r = requestParams[Consts.ServerGUIDTag];
+            var requestParams = requestForm != null ? WebHelper.ParamsWithSpecialRequestForm(context, requestForm) : context?.Request?.Params;
+            r = requestParams != null ? requestParams[Consts.ServerGUIDTag] : null;
             if (String.IsNullOrWhiteSpace(r))
             {
                 return false;
@@ -605,9 +615,9 @@ namespace LogRecorderAndPlayer
             var result = Guid.TryParse(r, out g) && !g.Equals(new Guid());
             if (result)
             {                
-                if (context.Session != null)
+                if (context?.Session != null)
                     context.Session[Consts.ServerGUIDTag] = r;
-                if (context.Request != null && context.Request.Headers != null)
+                if (context?.Request?.Headers != null)
                     context.Request.Headers[Consts.ServerGUIDTag] = r;
             }
             return result;

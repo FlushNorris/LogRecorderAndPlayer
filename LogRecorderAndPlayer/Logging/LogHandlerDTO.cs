@@ -28,12 +28,13 @@ namespace LogRecorderAndPlayer
         public int Times { get; set; }
         public double? UnixTimestampEnd { get; set; }
         public DateTime InstanceTime { get; set; }
+        public string StackTrace { get; set; }
 
         public LogElementDTO[] CombinedRequestsWithDifferentLogType { get; set; }
 
         public LogElementDTO() { }
 
-        public LogElementDTO(Guid guid, Guid sessionGUID, Guid pageGUID, Guid? bundleGUID, Guid? progressGUID, double unixTimestamp, LogType logType, string element, string element2, string value, int times, double? unixTimestampEnd, DateTime instanceTime)
+        public LogElementDTO(Guid guid, Guid sessionGUID, Guid pageGUID, Guid? bundleGUID, Guid? progressGUID, double unixTimestamp, LogType logType, string element, string element2, string value, int times, double? unixTimestampEnd, DateTime instanceTime, string stackTrace)
         {
             GUID = guid;
             SessionGUID = sessionGUID;
@@ -49,6 +50,7 @@ namespace LogRecorderAndPlayer
             UnixTimestampEnd = unixTimestampEnd;
             CombinedRequestsWithDifferentLogType = new LogElementDTO[0];
             InstanceTime = instanceTime;
+            StackTrace = stackTrace;
         }
     }    
 
@@ -127,7 +129,8 @@ namespace LogRecorderAndPlayer
         OnHandlerSessionBefore = 35,
         OnHandlerSessionAfter = 36,
         OnSubmit = 37,
-        OnReset = 38
+        OnReset = 38,
+        OnSetup = 39
     }
 
     public static class LogTypeHelper
