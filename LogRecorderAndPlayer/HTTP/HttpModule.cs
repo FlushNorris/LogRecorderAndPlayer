@@ -1,12 +1,5 @@
 ﻿using System;
-using System.Collections.Specialized;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.ServiceModel;
-using System.Text;
 using System.Web;
-using System.Web.SessionState;
 using System.Web.UI;
 using LogRecorderAndPlayer.Common;
 
@@ -152,7 +145,7 @@ namespace LogRecorderAndPlayer
 
         public void Page_InitComplete(object sender, EventArgs e)
         {
-            //Player: Alter Before-ViewState here
+            //TODO Player: Alter Before-ViewState here
         }
 
         public void Page_PreLoad(object sender, EventArgs e)
@@ -175,36 +168,15 @@ namespace LogRecorderAndPlayer
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
-            //var x = new NamedPipeClient();
-            //var x2 = x.TalkForServer();
-
             if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
             {
                 return;
             }
 
-            //TODO Look into this dynamic assembly.. it works, but is not in use atm
-            //var weee = DynamicAssembly.LoadAssemblyInstances<ILogRecorderAndPlayer>("DynAssembly.dll").FirstOrDefault();
-            //var ost = weee.DoStuff(6, 10);
-
-            //var ccc = ConfigurationHelper.GetConfigurationSection();
-
-            //var streamWatcher = this.context.Response.Filter is StreamWatcher;
-            //if (streamWatcher != null)
-            //{
-            //    this.context.Response.Filter = watcher.Base;
-            //}
             if (responseWatcher == null)
                 return; //e.g. Invalid web.config setting
             string response = responseWatcher.ToString();
-            //int xlen = (int)watcher.Length;
-            //var xbuf = new byte[xlen];
-            //watcher.Read(xbuf, 0, xlen);
-            //string response2 = Encoding.UTF8.GetString(xbuf);
-            //int xlen2 = (int)watcher.Length;
-            //var xbuf2 = new byte[xlen2];
-            //watcher.Read(xbuf2, 0, xlen2);
-            //string response3 = Encoding.UTF8.GetString(xbuf);
+
 
             HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
@@ -227,7 +199,7 @@ namespace LogRecorderAndPlayer
                     context.Response.ContentType = "application/json";
                     context.Response.Write(logResponseJSON);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     context.Response.Status = "500 Internal Server Error";
                     context.Response.StatusCode = 500;
@@ -246,7 +218,7 @@ namespace LogRecorderAndPlayer
             {
                 var sessionGUID = LoggingHelper.GetSessionGUID(context, page, () => new Guid());
                 var pageGUID = LoggingHelper.GetPageGUID(context, page, () => new Guid());
-                var serverGUID = LoggingHelper.GetServerGUID(context, () => null); //or perhaps should be renamed to playerGUID
+                var serverGUID = LoggingHelper.GetServerGUID(context, () => null); 
 
                 if (page != null)
                     response = LoggingPage.LogResponse(context, page, response);
@@ -263,11 +235,6 @@ namespace LogRecorderAndPlayer
                     context.Response.Write(newResponse);
                 }
             }
-            //if (String.IsNullOrWhiteSpace(context.Request.Params["hejhej"]))
-            //{
-            //    context.Response.Clear();
-            //    context.Response.Redirect(context.Request.RawUrl + (context.Request.RawUrl.IndexOf('?') == -1 ? '?' : '&') + "hejhej=1234");
-            //}
         }
 
         public void Dispose()
