@@ -2,6 +2,8 @@
 using System.Web;
 using System.Web.UI;
 using LogRecorderAndPlayer.Common;
+using LogRecorderAndPlayer.Data;
+using LogRecorderAndPlayer.HTTP;
 
 namespace LogRecorderAndPlayer
 {
@@ -33,9 +35,34 @@ namespace LogRecorderAndPlayer
             context.EndRequest += Context_EndRequest; //After page
         }
 
+        private bool AllowApplicationObject(HttpApplication application)
+        {
+            return AllowRequestObject(application.Context.Request);
+        }
+
+        private bool AllowRequestObject(HttpRequest request)
+        {
+            var filePathExt = request.CurrentExecutionFilePathExtension.ToLower();            
+            return !String.IsNullOrEmpty(filePathExt) && filePathExt != ".axd";
+        }
+
+        private bool IsWebpage(HttpRequest request)
+        {
+            var filePath = request.FilePath;
+            var fileExtension = VirtualPathUtility.GetExtension(filePath);
+            return fileExtension.ToLower().Equals(".aspx");
+        }
+
+        private bool IsLRAP(HttpRequest request)
+        {
+            var filePath = request.FilePath;
+            var fileExtension = VirtualPathUtility.GetExtension(filePath);
+            return fileExtension.ToLower().Equals(".lrap");
+        }
+
         private void Context_BeginRequest(object sender, EventArgs e)
-        {            
-            if (!Configuration.Enabled || ((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+        {
+            if (!Configuration.Enabled || !AllowApplicationObject(sender as HttpApplication))
                 return;
 
             responseWatcher = new ResponseFilter(this.context.Response.Filter); 
@@ -44,17 +71,15 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostMapRequestHandler(object sender, EventArgs e)
         {
-            if (!Configuration.Enabled || ((HttpApplication)sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || !AllowApplicationObject(sender as HttpApplication))
                 return;
 
             HttpApplication app = (HttpApplication)sender;
             HttpContext context = app.Context;
-            string filePath = context.Request.FilePath;
-            string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
             try
             {
-                if (fileExtension.ToLower().Equals(".aspx"))
+                if (IsWebpage(context.Request))
                 {
                     var page = (Page)context.CurrentHandler;
 
@@ -67,21 +92,19 @@ namespace LogRecorderAndPlayer
             }
             catch (Exception ex)
             {
-                throw new Exception(filePath + " : " + ex.Message);
+                throw new Exception(context.Request.FilePath + " : " + ex.Message);
             }
         }
 
         private void Context_PreRequestHandlerExecute(object sender, EventArgs e)
         {
-            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || !AllowApplicationObject(sender as HttpApplication))
                 return;
 
             HttpApplication app = (HttpApplication) sender;
             HttpContext context = app.Context;
-            string filePath = context.Request.FilePath;
-            string fileExtension = VirtualPathUtility.GetExtension(filePath);
 
-            if (fileExtension.ToLower() == ".lrap")
+            if (IsLRAP(context.Request))
                 return;
 
             var page = context?.CurrentHandler as Page;
@@ -122,7 +145,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_PostRequestHandlerExecute(object sender, EventArgs e)
         {
-            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || !AllowApplicationObject(sender as HttpApplication))
             {
                 return;
             }
@@ -168,7 +191,7 @@ namespace LogRecorderAndPlayer
 
         private void Context_EndRequest(object sender, EventArgs e)
         {
-            if (!Configuration.Enabled || ((HttpApplication) sender).Context.Request.CurrentExecutionFilePathExtension.ToLower() == ".axd")
+            if (!Configuration.Enabled || !AllowApplicationObject(sender as HttpApplication))
             {
                 return;
             }
@@ -181,36 +204,11 @@ namespace LogRecorderAndPlayer
             HttpApplication application = (HttpApplication) sender;
             HttpContext context = application.Context;
 
-            string filePath = context.Request.FilePath;
-            string fileExtension = VirtualPathUtility.GetExtension(filePath);
-
-            if (filePath.ToLower() == "/logrecorderandplayerjs.lrap")
+            if (IsLRAP(context.Request))
             {
-                ResponseHelper.Write(context.Response, "text/javascript", ResourceHelper.GetResourceContent("LogRecorderAndPlayer.JS.LogRecorderAndPlayer.js"), new TimeSpan(1, 0, 0));
+                LRAPHttpManager.ProcessLRAPFile(context);
                 return;
-            }
-
-            if (filePath.ToLower() == "/logrecorderandplayerhandler.lrap")
-            {
-                try
-                {
-                    var logResponse = LoggingHelper.LogHandlerRequest(context.Request["request"]);
-                    var logResponseJSON = SerializationHelper.Serialize(logResponse, SerializationType.Json);
-                    context.Response.ContentType = "application/json";
-                    context.Response.Write(logResponseJSON);
-                }
-                catch (Exception)
-                {
-                    context.Response.Status = "500 Internal Server Error";
-                    context.Response.StatusCode = 500;
-                    context.Response.StatusDescription = "Internal Server Error";
-                }
-
-                return;
-            }
-
-            if (fileExtension.ToLower() == ".lrap")
-                return;
+            }            
 
             var page = context?.CurrentHandler as Page;
             var handler = context?.CurrentHandler as IHttpHandler;
@@ -225,12 +223,10 @@ namespace LogRecorderAndPlayer
                 else
                     response = LoggingHandler.LogResponse(context, response);
                 
-                if (context.Response.ContentType == ContentType.TextHtml) 
-                {                    
-                    string lrapPreScript = $"<script type=\"text/javascript\" src=\"/logrecorderandplayerjs.lrap?v={AssemblyHelper.RetrieveLinkerTimestamp().Ticks}\"></script><script type=\"text/javascript\">logRecorderAndPlayer.preInit(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
-                    var newResponse = response.Insert(LoggingHelper.GetHtmlIndexForInsertingLRAPJS(response), lrapPreScript);                    
-                    string lrapPostScript = $"<script type=\"text/javascript\">logRecorderAndPlayer.postInit(\"{sessionGUID}\", \"{pageGUID}\", \"{(serverGUID != null ? serverGUID.ToString() : "")}\");</script>";
-                    newResponse += lrapPostScript;
+                if (context.Response.ContentType == ContentType.TextHtml)
+                {
+                    var lrapValues = new LRAPValues(sessionGUID, pageGUID, serverGUID);
+                    var newResponse = LRAPHttpManager.InsertLRAPScript(response, lrapValues);
                     context.Response.Clear();
                     context.Response.Write(newResponse);
                 }

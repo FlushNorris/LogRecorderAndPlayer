@@ -130,7 +130,7 @@ namespace LogRecorderAndPlayer
                     PlayerCommunicationHelper.SetLogElementAsDone(serverGUID, sessionGUID, pageGUID, logElement.GUID, new JobStatus() { Success = true }); //, async: false);
                 }))
                     return;
-            }
+            }                
 
             LoggingHelper.LogElement(newLogElement);
         }        
