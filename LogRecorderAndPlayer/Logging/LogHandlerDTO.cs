@@ -211,5 +211,8 @@ namespace LogRecorderAndPlayer
 
         [DataMember]
         public LogElementDTO LogElementDTO { get; set; }
+
+        [DataMember]
+        public string Message { get; set; }
     }
 }

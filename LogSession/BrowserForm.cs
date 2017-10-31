@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Web.UI.WebControls;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
+using LogRecorderAndPlayer.Common;
 using Microsoft.Win32;
 
 namespace LogSession
@@ -256,7 +257,7 @@ namespace LogSession
         {
             //function playEventFor(elementPath, logElement /*json*/) {
 
-            var jsonLogElement = SerializationHelper.Serialize(logElement, SerializationType.Json);
+            var jsonLogElement = JsonHelper.Serialize(logElement);
 
             WaitTillDocumentIsComplete(delegate
             {
@@ -417,7 +418,7 @@ namespace LogSession
             //window.external.SetHandlerLogElementAsDone(options.lrapSessionGUID, options.lrapPageGUID, stripLRAPFromUrl(options.url), false, null);
 
             var logElement = OnHandlerJobCompleted?.Invoke(logType, handlerUrl, new JobStatus() { Success = !error, Message = errorMessage });
-            return SerializationHelper.Serialize(logElement, SerializationType.Json);
+            return JsonHelper.Serialize(logElement);
         }
 
         public void UpdatePageGUID(string pageGUIDString)

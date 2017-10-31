@@ -578,7 +578,7 @@ namespace LogPlayer
                         sessionElement.LogElementInfo.GUID = logElementDTO.GUID;
                         return new FetchLogElementResponse() {Type = FetchLogElementResponseType.OK, LogElementDTO = logElementDTO};
                     }
-                    return new FetchLogElementResponse() {Type = FetchLogElementResponseType.IncorrectLogType};
+                    return new FetchLogElementResponse() {Type = FetchLogElementResponseType.IncorrectLogType, Message = $"Found {sessionElement.LogElementInfo.LogType}"};
                     //throw new Exception("Shouldn't happen, unless the running events are in a different order now");
                 case SessionElementState.Waiting:
                     throw new Exception("Shouldn't happen");

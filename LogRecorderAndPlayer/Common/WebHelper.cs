@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
+using LogRecorderAndPlayer.Common;
 using mshtml;
 
 namespace LogRecorderAndPlayer
@@ -58,9 +59,9 @@ namespace LogRecorderAndPlayer
                 try
                 {
                     var v = page.Session[sessionKey];
-                    var typeAndValue = new TypeAndValue() {TypeName = v.GetType().ToString(), ValueJSON = SerializationHelper.Serialize(v, SerializationType.Json)};
+                    var typeAndValue = new TypeAndValue() {TypeName = v.GetType().ToString(), ValueJSON = JsonHelper.Serialize(v)};
 
-                    nvcSession[sessionKey] = SerializationHelper.Serialize(typeAndValue, SerializationType.Json);
+                    nvcSession[sessionKey] = JsonHelper.Serialize(typeAndValue);
                 }
                 catch (Exception ex)
                 {
@@ -78,8 +79,8 @@ namespace LogRecorderAndPlayer
             foreach (var key in nvcSession.AllKeys)
             {
                 var jsonSerialized = nvcSession[key];
-                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
-                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                var typeAndValue = JsonHelper.Deserialize<TypeAndValue>(jsonSerialized);                    
+                var v = JsonHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON);
                 page.Session[key] = v;
             }
         }
@@ -91,8 +92,8 @@ namespace LogRecorderAndPlayer
             foreach (var key in nvcSession.AllKeys)
             {
                 var jsonSerialized = nvcSession[key];
-                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
-                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                var typeAndValue = JsonHelper.Deserialize<TypeAndValue>(jsonSerialized);
+                var v = JsonHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON);
                 context.Session[key] = v;
             }
         }
@@ -107,7 +108,7 @@ namespace LogRecorderAndPlayer
             {
                 try
                 {
-                    nvcSession[sessionKey] = SerializationHelper.Serialize(context.Session[sessionKey], SerializationType.Json);
+                    nvcSession[sessionKey] = JsonHelper.Serialize(context.Session[sessionKey]);
                 }
                 catch (Exception ex)
                 {
@@ -127,8 +128,8 @@ namespace LogRecorderAndPlayer
             foreach (var key in nvcViewState.AllKeys)
             {
                 var jsonSerialized = nvcViewState[key];
-                var typeAndValue = SerializationHelper.Deserialize<TypeAndValue>(jsonSerialized, SerializationType.Json);
-                var v = SerializationHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON, SerializationType.Json);
+                var typeAndValue = JsonHelper.Deserialize<TypeAndValue>(jsonSerialized);
+                var v = JsonHelper.DeserializeByType(Type.GetType(typeAndValue.TypeName), typeAndValue.ValueJSON);
                 viewstate[key] = v;
             }
         }
@@ -142,9 +143,9 @@ namespace LogRecorderAndPlayer
                 try
                 {
                     var v = viewstate[viewStateKey];
-                    var typeAndValue = new TypeAndValue() { TypeName = v.GetType().ToString(), ValueJSON = SerializationHelper.Serialize(v, SerializationType.Json) };
+                    var typeAndValue = new TypeAndValue() { TypeName = v.GetType().ToString(), ValueJSON = JsonHelper.Serialize(v) };
 
-                    nvcViewState[viewStateKey] = SerializationHelper.Serialize(typeAndValue, SerializationType.Json);
+                    nvcViewState[viewStateKey] = JsonHelper.Serialize(typeAndValue);
                 }
                 catch (Exception ex)
                 {
@@ -258,10 +259,10 @@ namespace LogRecorderAndPlayer
             var requestParamsForm = requestForm != null ? requestForm : context.Request.Form;            
             var requestParams = new RequestParams()
             {
-                Form = SerializationHelper.NameValueCollectionToDictionary(requestParamsForm),
-                Cookies = SerializationHelper.HttpCookieCollectionToDictionary(context.Request.Cookies),
-                QueryString = SerializationHelper.NameValueCollectionToDictionary(context.Request.QueryString),
-                ServerVariables = SerializationHelper.NameValueCollectionToDictionary(context.Request.ServerVariables)
+                Form = CollectionHelper.NameValueCollectionToDictionary(requestParamsForm),
+                Cookies = CollectionHelper.HttpCookieCollectionToDictionary(context.Request.Cookies),
+                QueryString = CollectionHelper.NameValueCollectionToDictionary(context.Request.QueryString),
+                ServerVariables = CollectionHelper.NameValueCollectionToDictionary(context.Request.ServerVariables)
             };
             return requestParams;
         }

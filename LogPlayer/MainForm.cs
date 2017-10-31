@@ -86,10 +86,12 @@ namespace LogPlayer
             LogElementDTO logElementDTO = null;
             if (logElementGUID == null && !String.IsNullOrWhiteSpace(namedPipeBrowserJob.HandlerUrl) && namedPipeBrowserJob.LogType.HasValue)
             {
-                logElementDTO = eventsTable1.FetchLogElement(namedPipeBrowserJob.SessionGUID, namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl).LogElementDTO;
+                var fetchResult = eventsTable1.FetchLogElement(namedPipeBrowserJob.SessionGUID, namedPipeBrowserJob.PageGUID, namedPipeBrowserJob.LogType.Value, namedPipeBrowserJob.HandlerUrl);
+                logElementDTO = fetchResult.LogElementDTO;
                 logElementGUID = logElementDTO?.GUID;
+                
                 if (logElementGUID == null)
-                    return new TransferElementResponse() {Success = false, Message = $"LogElement could not be located ({namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl})"};
+                    return new TransferElementResponse() {Success = false, Message = $"LogElement could not be located (Reached {namedPipeBrowserJob.LogType.Value} : {namedPipeBrowserJob.HandlerUrl}) - (But log says we required {fetchResult.Type} - {fetchResult.Message ?? "NULL"})"};
             }
 
             if (logElementGUID != null) //BrowserJobComplete with LogElementGUID = null means that browser has been spawned with new url

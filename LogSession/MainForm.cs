@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LogRecorderAndPlayer;
+using LogRecorderAndPlayer.Common;
 
 namespace LogSession
 {
@@ -54,6 +55,8 @@ namespace LogSession
                 return;
             }
 
+            MessageBox.Show("Ready for debug attach!");
+
             refreshTimer.Enabled = true;
 
             //Send back process id related to guid
@@ -94,7 +97,7 @@ namespace LogSession
             switch (logElement.LogType)
             {
                 case LogType.OnResize:
-                    var browserResize = SerializationHelper.Deserialize<BrowserResize>(logElement.Value, SerializationType.Json);
+                    var browserResize = JsonHelper.Deserialize<BrowserResize>(logElement.Value);
                     FindBrowserAndExec(logElement.PageGUID, x =>
                     {
                         //MessageBox.Show($"Found Browser by pageGUID {logElement.PageGUID}");
@@ -102,7 +105,7 @@ namespace LogSession
                     }); //Hvis det er en redirect, så er PageGUID blevet ændret i response-html'et, men ikke opdateret i browseren endnu. Hvor længe skal jeg vente på at det sker?
                     break;
                 case LogType.OnPageRequest:
-                    var requestParams = SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
+                    var requestParams = JsonHelper.Deserialize<RequestParams>(logElement.Value);
                     RequestMethod requestMethod;
                     if (!Enum.TryParse(requestParams.ServerVariables["REQUEST_METHOD"], true, out requestMethod))
                         throw new Exception("PageRequest does not have a valid request method");

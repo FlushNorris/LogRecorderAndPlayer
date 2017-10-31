@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.UI;
+using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
 {
@@ -86,7 +87,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: cmdDTO.CommandText,
                 element2: null,
-                value: SerializationHelper.Serialize(cmdDTO, SerializationType.Json),
+                value: JsonHelper.Serialize(cmdDTO),
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -101,7 +102,7 @@ namespace LogRecorderAndPlayer
                 {
                     TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
 
-                    var loggedCmdDTO = SerializationHelper.Deserialize<SqlCommandDTO>(logElement.Value, SerializationType.Json);
+                    var loggedCmdDTO = JsonHelper.Deserialize<SqlCommandDTO>(logElement.Value);
 
                     if (!cmdDTO.Equals(loggedCmdDTO))
                     {
@@ -143,7 +144,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: cmdDTO.CommandText,
                 element2: null,
-                value: value != null ? SerializationHelper.Serialize(value, SerializationType.Json) : null,
+                value: value != null ? JsonHelper.Serialize(value) : null,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -158,7 +159,7 @@ namespace LogRecorderAndPlayer
                 {
                     TimeHelper.SetNow(HttpContext.Current, logElement.InstanceTime);
 
-                    var loggedValue = logElement.Value != null ? SerializationHelper.Deserialize<object>(logElement.Value, SerializationType.Json) : null;
+                    var loggedValue = logElement.Value != null ? JsonHelper.Deserialize<object>(logElement.Value) : null;
 
                     if (loggedValue != null && value != null && !loggedValue.Equals(value))
                     {

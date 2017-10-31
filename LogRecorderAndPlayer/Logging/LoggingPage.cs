@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.Script.Serialization;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using LogRecorderAndPlayer.Common;
 using Page = System.Web.UI.Page;
 
 namespace LogRecorderAndPlayer
@@ -40,7 +41,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: viewStateValues != null ? SerializationHelper.SerializeNameValueCollection(viewStateValues, SerializationType.Json) : null,
+                value: viewStateValues != null ? CollectionHelper.SerializeNameValueCollection(viewStateValues) : null,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -59,7 +60,7 @@ namespace LogRecorderAndPlayer
 
                     if (logElement.Value != null)
                     {
-                        NameValueCollection loggedViewStateValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        NameValueCollection loggedViewStateValues = CollectionHelper.DeserializeNameValueCollection(logElement.Value);
                         LoggingHelper.SetViewStateValues(page, loggedViewStateValues);
                     }
                     else if (viewStateValues != null)
@@ -77,7 +78,7 @@ namespace LogRecorderAndPlayer
 
         public static RequestParams DeserializeRequestValue(LogElementDTO logElement)
         {
-            return SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
+            return JsonHelper.Deserialize<RequestParams>(logElement.Value);
         }
 
         public static void LogRequest(HttpContext context, Page page, NameValueCollection requestForm)
@@ -97,7 +98,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: SerializationHelper.Serialize(requestParams, SerializationType.Json),
+                value: JsonHelper.Serialize(requestParams),
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -152,7 +153,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: postBackControlClientId,
-                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
+                value: sessionValues != null ? CollectionHelper.SerializeNameValueCollection(sessionValues) : null,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -171,7 +172,7 @@ namespace LogRecorderAndPlayer
 
                     if (logElement.Value != null)
                     {
-                        NameValueCollection loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        NameValueCollection loggedSessionValues = CollectionHelper.DeserializeNameValueCollection(logElement.Value);
                         //Kan jo ikke bare overskrive... uden at spørge brugeren om det er det der ønskes, det kan ihf ikke være default behavior
                         //LoggingHelper.SetSessionValues(page, loggedSessionValues);
                     }

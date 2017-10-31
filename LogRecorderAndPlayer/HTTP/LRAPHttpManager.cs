@@ -26,7 +26,7 @@ namespace LogRecorderAndPlayer.HTTP
                 try
                 {
                     var logResponse = LoggingHelper.LogHandlerRequest(context.Request["request"]);
-                    var logResponseJSON = SerializationHelper.Serialize(logResponse, SerializationType.Json);
+                    var logResponseJSON = JsonHelper.Serialize(logResponse);
                     context.Response.ContentType = "application/json";
                     context.Response.Write(logResponseJSON);
                 }

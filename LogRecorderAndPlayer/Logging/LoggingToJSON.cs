@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using LogRecorderAndPlayer.Common;
 using File = System.IO.File;
 using Path = System.IO.Path;
 
@@ -77,7 +78,7 @@ namespace LogRecorderAndPlayer
             var f = File.CreateText(fileName);
             try
             {
-                f.Write(SerializationHelper.Serialize(logElement, SerializationType.Json));
+                f.Write(JsonHelper.Serialize(logElement));
             }
             finally
             {
@@ -92,14 +93,14 @@ namespace LogRecorderAndPlayer
             {
                 var logElementInfo = BuildLogElementInfo(file);
                 if ((from == null || from.Value <= logElementInfo.Timestamp) && (to == null || to >= logElementInfo.Timestamp))
-                    yield return SerializationHelper.Deserialize<LogElementDTO>(System.IO.File.ReadAllText(file), SerializationType.Json);
+                    yield return JsonHelper.Deserialize<LogElementDTO>(System.IO.File.ReadAllText(file));
             }
         }
 
         public LogElementDTO LoadLogElement(LogElementInfo logElementInfo)
         {
             var json = File.ReadAllText(logElementInfo.FilePath);
-            return SerializationHelper.Deserialize<LogElementDTO>(json, SerializationType.Json);
+            return JsonHelper.Deserialize<LogElementDTO>(json);
         }
 
         public LogElementsInfo LoadLogElementsInfo(string filePath, DateTime? from, DateTime? to)

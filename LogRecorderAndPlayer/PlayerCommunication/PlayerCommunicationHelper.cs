@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
 {
@@ -12,13 +13,13 @@ namespace LogRecorderAndPlayer
         {
             var session = new TransferElementSession() { ProcessGUID = processGUID, ProcessId = processId };
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.ClosingSession, Data = session };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             if (!String.IsNullOrWhiteSpace(error))
                 throw new Exception(error);
 
-            var serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+            var serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
             return !serverResponse.Success;
         }
 
@@ -26,13 +27,14 @@ namespace LogRecorderAndPlayer
         {
             var fetchLogElement = new TransferElementFetchLogElement() { SessionGUID = sessionGUID, PageGUID = pageGUID, LogType = logType };
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.FetchLogElement, Data = fetchLogElement };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             string serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             if (!String.IsNullOrWhiteSpace(error))
                 throw new Exception(error);
-            var serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
-            return (FetchLogElementResponse)serverResponse.Data;
+            var serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
+            return JsonHelper.Deserialize<FetchLogElementResponse>(serverResponse.Data.ToString());
+            //return (FetchLogElementResponse)serverResponse.Data;
         }
 
         public static LogElementDTO SetHandlerLogElementAsDone(Guid serverGUID, Guid pageGUID, LogType logType, string handlerUrl, JobStatus jobStatus) //, bool async)
@@ -42,19 +44,21 @@ namespace LogRecorderAndPlayer
             var data = new TransferElementBrowserJob() { PageGUID = pageGUID, LogType = logType, HandlerUrl = handlerUrl, JobStatus = jobStatus };
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJobComplete, Data = data };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
             if (async && serverResponseJSON == null)
                 return null;
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
 
-            return serverResponse?.Data as LogElementDTO;
+            return serverResponse?.Data != null ? JsonHelper.Deserialize<LogElementDTO>(serverResponse.Data.ToString()) : null;
+
+//            return serverResponse?.Data as LogElementDTO;
         }
 
         public static void SetLogElementAsDone(Guid serverGUID, Guid? sessionGUID, Guid? pageGUID, Guid? logElementGUID, JobStatus jobStatus) //, bool async)
@@ -64,14 +68,14 @@ namespace LogRecorderAndPlayer
             var data = new TransferElementBrowserJob() { SessionGUID = sessionGUID, PageGUID = pageGUID, LogElementGUID = logElementGUID, JobStatus = jobStatus };
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJobComplete, Data = data };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error, async);
             if (async && serverResponseJSON == null)
                 return;
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
@@ -80,14 +84,14 @@ namespace LogRecorderAndPlayer
         public static void SendBrowserJob_ASYNC(TransferElementSession session, LogElementDTO logElement)
         {
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.BrowserJob, Data = logElement };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(session.ProcessGUID, serverRequestJSON, out error, async: true);
             if (serverResponseJSON == null)
                 return;
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while sending starting browser job ({error ?? serverResponse.Message})");
@@ -98,12 +102,12 @@ namespace LogRecorderAndPlayer
             var data = new TransferElementSession() { ProcessGUID = sessionGUID, ProcessId = processId };
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.SyncSession, Data = data };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
@@ -114,12 +118,12 @@ namespace LogRecorderAndPlayer
             var data = new TransferLogElementHistory() {PreviousLogElement = previousLogElement, NextLogElement = nextLogElement, AdditionalData = additionalData};
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.LogElementHistory, Data = data };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");
@@ -130,12 +134,12 @@ namespace LogRecorderAndPlayer
             var data = new TransferLogDifference() {PreviousLogElement = previousLogElement, NextLogElement = nextLogElement};
 
             var serverRequest = new TransferElementRequest() { Type = TransferElementRequestType.ReportDifference, Data = data };
-            var serverRequestJSON = SerializationHelper.Serialize(serverRequest, SerializationType.Json);
+            var serverRequestJSON = JsonHelper.Serialize(serverRequest);
             string error;
             var serverResponseJSON = PlayerCommunicationClient.SendRequest_Threading(serverGUID, serverRequestJSON, out error);
             TransferElementResponse serverResponse = null;
             if (error == null)
-                serverResponse = SerializationHelper.Deserialize<TransferElementResponse>(serverResponseJSON, SerializationType.Json);
+                serverResponse = JsonHelper.Deserialize<TransferElementResponse>(serverResponseJSON);
 
             if (error != null || !serverResponse.Success)
                 throw new Exception($"Error occured while communicating with player ({error ?? serverResponse.Message})");

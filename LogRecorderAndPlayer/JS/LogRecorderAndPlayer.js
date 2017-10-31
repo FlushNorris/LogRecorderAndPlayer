@@ -265,12 +265,10 @@
         });        
 
         bindWindowUnloadFirst(function () {
-            //console.log('unload');
             finalizeLogger();                        
         });
 
         bindWindowBeforeClose(function () {
-            //console.log('beforeclose');
             finalizeLogger();
         });
 
@@ -538,18 +536,14 @@
 
     function setupLRAPEvent(that, eventType/*e.g. 'click'*/, eventMethod) {
         var $that = $(that);
-        var debugid = $that.prop('id') || "unknown";
-        //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 0');
         var onEventProp = $that.prop('on' + eventType);
         if (onEventProp) {
-            //console.log('setupLRAPEvent: ' + debugid + ' - '+ eventType + ' - 1');
             var f = function (event) {
                 eventMethod(that, eventType);
                 return onEventProp(event);
             };
 
             if ($that.data('lrapOn' + eventType) !== onEventProp) {
-                //console.log('setupLRAPEvent : DOM-' + eventType);
                 eval("that.on" + eventType + "=f");
                 //this.onclick = f; // function () { console.log('1337') }; //Wont work, because the order of the function is behind everything else (even jQuery-bound-events). Det virker dog hvis man ikke kalder $this.prop('onclick', null) først!!!
                 $that.data('lrapOn' + eventType, f); //Kan ikke anvende prop til function-pointers... men derimod data kan jeg anvende!
@@ -559,12 +553,10 @@
             var handlerInfo = getHandlerInfoByEventType(that, eventType, eventMethod);
             if (handlerInfo != null) {
                 if (handlerInfo.index != 0) {
-                    //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 2');
                     moveEventToFirst(that, eventType, handlerInfo.index);
                 }
             } else {
                 $that.on(eventType, eventMethod);
-                //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 3');
                 moveLastEventToFirst(that, eventType);
             }
         }
@@ -609,7 +601,6 @@
     function preEvent(logType) {
         eventIndent++;
         logType = typeof (logType) == "undefined" ? -1 : logType;
-        //console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
         setTimeout(function() {
             postEvent(logType);
         }, 0); //Call postEvent as soon as possible, when there is no other code on the stack.
@@ -623,7 +614,6 @@
     }
 
     function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus, $focusedElement) {
-        //console.log('setupBasicClientsideControlEvents : ' + inputSelector);
 
         ableToGainFocus = typeof (ableToGainFocus) != "undefined" && ableToGainFocus;
 
@@ -831,14 +821,10 @@
     }
 
     function setupInputClientsideControlEvents(inputSelector, $focusedElement) {
-        //console.log('setupInputClientsideControlEvents : ' + inputSelector);
 
         var $document = $(document);
 
         function blurEvent(event) { //after focusin
-            //if (!preEvent(LogType.OnBlur))
-            //    return;
-
             if (event.target !== this)
                 return;
 
@@ -846,12 +832,6 @@
         };
 
         function focusEvent(event) { //after focusin
-            //console.log('focusevent called 1');
-            //if (!preEvent(LogType.OnFocus))
-            //    return;
-
-            //console.log('focusevent called 2');
-
             if (event.target !== this)
                 return;
 
@@ -1006,7 +986,6 @@
         });
 
         if ($focusedElement.length > 0 && $focusedElement.is(inputSelector)) {
-            //console.log('init setup for focused element : ' + inputSelector);
             setupElement($focusedElement[0]);
         }
     }
@@ -1033,15 +1012,6 @@
 
     function setupAllClientsideControlEvents() {
         var $document = $(document);
-        //$document.on('submit', 'form', function (e) { //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
-        //    logElementEx(LogType.OnSubmit, getElementPath(this), "");
-        //});
-
-        //$document.on('reset', 'form', function () { //ignore event, will be handled by reset-button.. or by other kind of action which calls reset()
-        //    logElementEx(LogType.OnReset, getElementPath(this), "");
-        //});
-
-        //console.log("#searchInput.length = " + $("#searchInput").length);
 
         var $focusedElement = $(document.activeElement);
 
@@ -1191,9 +1161,9 @@
             PageGUID: pageGUID,
             BundleGUID: bundleGUID,
             ProgressGUID: progressGUID,
-            UnixClientTimestamp: unixTimestamp, //getDataMemberDate(timestamp),
+            UnixClientTimestamp: unixTimestamp, 
             LogType: logType,
-            Element: htmlEncode(element), //denne burde html encodes (eller faktisk burde den kun html encodes når det ikke er status=200... hmmm... er jo heller ikke holdbart
+            Element: htmlEncode(element), 
             Element2: null,
             Value: value != null ? htmlEncode(value) : null,
             Times: 1,
@@ -1205,10 +1175,6 @@
         };
         logElements.push(request);
 
-        //console.log(logType);
-        //console.log(request);
-
-        //console.log('added logelement with logtype : ' + logType);
 
         compactLogElementList();
     }    

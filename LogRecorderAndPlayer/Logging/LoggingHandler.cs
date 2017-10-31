@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
 {
@@ -26,7 +27,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: null,
-                value: SerializationHelper.Serialize(requestParams, SerializationType.Json),
+                value: JsonHelper.Serialize(requestParams),
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -44,13 +45,13 @@ namespace LogRecorderAndPlayer
                     TimeHelper.SetNow(context, logElement.InstanceTime);
 
                     //                    var requestFormValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
-                    requestParams = SerializationHelper.Deserialize<RequestParams>(logElement.Value, SerializationType.Json);
+                    requestParams = JsonHelper.Deserialize<RequestParams>(logElement.Value);
 
                     var headers = context?.Request?.Headers;
                     if (headers != null)
                     {
-                        var json1 = SerializationHelper.Serialize(newLogElement, SerializationType.Json);
-                        var xxx = SerializationHelper.Deserialize<LogElementDTO>(json1, SerializationType.Json);
+                        var json1 = JsonHelper.Serialize(newLogElement);
+                        var xxx = JsonHelper.Deserialize<LogElementDTO>(json1);
                         var what = TimeHelper.UnixTimestamp(xxx.InstanceTime).ToString(CultureInfo.InvariantCulture);
 
                         headers[Consts.NowTimestampTag] = TimeHelper.UnixTimestamp(logElement.InstanceTime).ToString(CultureInfo.InvariantCulture);
@@ -81,7 +82,7 @@ namespace LogRecorderAndPlayer
                 unixTimestamp: TimeHelper.UnixTimestamp(),
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
-                element2: !requestContainsInstanceGuid ? SerializationHelper.SerializeNameValueCollection(context.Request.Form, SerializationType.Json) : null,
+                element2: !requestContainsInstanceGuid ? CollectionHelper.SerializeNameValueCollection(context.Request.Form) : null,
                 value: response,
                 times: 1,
                 unixTimestampEnd: null,
@@ -132,7 +133,7 @@ namespace LogRecorderAndPlayer
                 logType: logType,
                 element: LoggingHelper.StripUrlForLRAP(context.Request.RawUrl),
                 element2: null,
-                value: sessionValues != null ? SerializationHelper.SerializeNameValueCollection(sessionValues, SerializationType.Json) : null,
+                value: sessionValues != null ? CollectionHelper.SerializeNameValueCollection(sessionValues) : null,
                 times: 1,
                 unixTimestampEnd: null,
                 instanceTime: DateTime.Now,
@@ -151,7 +152,7 @@ namespace LogRecorderAndPlayer
 
                     if (logElement.Value != null)
                     {
-                        var loggedSessionValues = SerializationHelper.DeserializeNameValueCollection(logElement.Value, SerializationType.Json);
+                        var loggedSessionValues = CollectionHelper.DeserializeNameValueCollection(logElement.Value);
                         LoggingHelper.SetSessionValues(context, loggedSessionValues);
                     }
                     else if (sessionValues != null)

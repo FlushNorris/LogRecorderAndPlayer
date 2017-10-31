@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.SessionState;
 using System.Web.UI;
+using LogRecorderAndPlayer.Common;
 
 namespace LogRecorderAndPlayer
 {
@@ -325,7 +326,7 @@ namespace LogRecorderAndPlayer
 
         public static LogHandlerResponse LogHandlerRequest(string requestJSON)
         {
-            var request = SerializationHelper.Deserialize<LogHandlerDTO>(requestJSON, SerializationType.Json);
+            var request = JsonHelper.Deserialize<LogHandlerDTO>(requestJSON);
             var now = DateTime.Now;
             var logHandlerResponse = new LogHandlerResponse()
             {
