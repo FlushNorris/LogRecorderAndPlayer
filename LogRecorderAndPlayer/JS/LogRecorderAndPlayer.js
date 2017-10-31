@@ -44,7 +44,7 @@
 
         var $frm = getLocationForLRAPValues();
         var $pageGUID = $frm.find("." + PageGUIDTag);
-        if ($pageGUID.size() != 0)
+        if ($pageGUID.length != 0)
             pageGUIDCache = $pageGUID.val();
         return pageGUIDCache;
     }
@@ -68,7 +68,7 @@
 
         var $frm = getLocationForLRAPValues();
         var $serverGUID = $frm.find("." + ServerGUIDTag);
-        if ($serverGUID.size() != 0)
+        if ($serverGUID.length != 0)
             serverGUIDCache = $serverGUID.val();
         return serverGUIDCache;
     }
@@ -97,7 +97,7 @@
 
         var $frm = getLocationForLRAPValues();
         var $sessionGUID = $frm.find("." + SessionGUIDTag);
-        if ($sessionGUID.size() != 0) 
+        if ($sessionGUID.length != 0)
             sessionGUIDCache = $sessionGUID.val();        
         return sessionGUIDCache;
     }    
@@ -265,12 +265,12 @@
         });        
 
         bindWindowUnloadFirst(function () {
-            console.log('unload');
+            //console.log('unload');
             finalizeLogger();                        
         });
 
         bindWindowBeforeClose(function () {
-            console.log('beforeclose');
+            //console.log('beforeclose');
             finalizeLogger();
         });
 
@@ -340,7 +340,7 @@
         var $parent = $elm.parent();
         var parentPath = null;
         var idxPath = 0;
-        if ($parent != null && $parent.size() > 0) {
+        if ($parent != null && $parent.length > 0) {
             idxPath = -1;
             var $siblings = $parent.find(selector);
 
@@ -391,8 +391,9 @@
 
         var elementPathUpperCase = elementPath.toUpperCase();
 
-        if (elementPathUpperCase == 'WINDOW')
-            return $(window);
+        if (elementPathUpperCase == 'WINDOW') {
+            return $(window);            
+        }
         if (elementPathUpperCase == 'DOCUMENT')
             return $(document);
 
@@ -411,7 +412,7 @@
                 else
                     $elm = $(v);
             } else {
-                if ($elm == null || $elm.size() == 0)
+                if ($elm == null || $elm.length == 0)
                     return;
 
                 //Get int prefix, 
@@ -537,8 +538,11 @@
 
     function setupLRAPEvent(that, eventType/*e.g. 'click'*/, eventMethod) {
         var $that = $(that);
+        var debugid = $that.prop('id') || "unknown";
+        //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 0');
         var onEventProp = $that.prop('on' + eventType);
         if (onEventProp) {
+            //console.log('setupLRAPEvent: ' + debugid + ' - '+ eventType + ' - 1');
             var f = function (event) {
                 eventMethod(that, eventType);
                 return onEventProp(event);
@@ -555,10 +559,12 @@
             var handlerInfo = getHandlerInfoByEventType(that, eventType, eventMethod);
             if (handlerInfo != null) {
                 if (handlerInfo.index != 0) {
+                    //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 2');
                     moveEventToFirst(that, eventType, handlerInfo.index);
                 }
             } else {
                 $that.on(eventType, eventMethod);
+                //console.log('setupLRAPEvent: ' + debugid + ' - ' + eventType + ' - 3');
                 moveLastEventToFirst(that, eventType);
             }
         }
@@ -603,7 +609,7 @@
     function preEvent(logType) {
         eventIndent++;
         logType = typeof (logType) == "undefined" ? -1 : logType;
-        console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
+        //console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
         setTimeout(function() {
             postEvent(logType);
         }, 0); //Call postEvent as soon as possible, when there is no other code on the stack.
@@ -613,10 +619,12 @@
     function postEvent(logType) {
         eventIndent--;
         logType = typeof (logType) == "undefined" ? -1 : logType;
-        console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
+        //console.log('eventIdent++ => ' + eventIndent + ' logType=' + logTypeToString(logType));
     }
 
-    function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus) {
+    function setupBasicClientsideControlEvents(inputSelector, ableToGainFocus, $focusedElement) {
+        //console.log('setupBasicClientsideControlEvents : ' + inputSelector);
+
         ableToGainFocus = typeof (ableToGainFocus) != "undefined" && ableToGainFocus;
 
         var $document = $(document);
@@ -792,7 +800,12 @@
 
         $document.on('mouseenter', inputSelector, function () { //mousedown is called before activate, could use mouseenter... apparently it works on iPad, mouseenter-event is called when pressing a button. 
             setupElement(this, true);
-        });        
+        });
+
+        if (ableToGainFocus && $focusedElement.length > 0 && $focusedElement.is(inputSelector)) {
+            setupElement($focusedElement[0], false);
+            setupElement($focusedElement[0], true);
+        }
     }
 
     function logInputClientsideControlEvent(that, logType, value, event, compareFn, combineFn) {
@@ -817,7 +830,8 @@
         return r;
     }
 
-    function setupInputClientsideControlEvents(inputSelector) {
+    function setupInputClientsideControlEvents(inputSelector, $focusedElement) {
+        //console.log('setupInputClientsideControlEvents : ' + inputSelector);
 
         var $document = $(document);
 
@@ -990,6 +1004,11 @@
         $document.on('focusin', inputSelector, function () { 
             setupElement(this);
         });
+
+        if ($focusedElement.length > 0 && $focusedElement.is(inputSelector)) {
+            //console.log('init setup for focused element : ' + inputSelector);
+            setupElement($focusedElement[0]);
+        }
     }
 
     function logWindowScroll() {
@@ -1022,18 +1041,22 @@
         //    logElementEx(LogType.OnReset, getElementPath(this), "");
         //});
 
-        setupBasicClientsideControlEvents("a", true);
-        setupBasicClientsideControlEvents("p");
-        setupBasicClientsideControlEvents("div");
-        setupBasicClientsideControlEvents("span");
-        setupBasicClientsideControlEvents("textarea");
-        setupBasicClientsideControlEvents("input");
-        setupBasicClientsideControlEvents("select");
-        setupBasicClientsideControlEvents("img");
-        setupBasicClientsideControlEvents("area");
-        setupInputClientsideControlEvents("textarea");
-        setupInputClientsideControlEvents("input"); 
-        setupInputClientsideControlEvents("select"); 
+        //console.log("#searchInput.length = " + $("#searchInput").length);
+
+        var $focusedElement = $(document.activeElement);
+
+        setupBasicClientsideControlEvents("a", true, $focusedElement);
+        setupBasicClientsideControlEvents("p", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("div", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("span", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("textarea", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("input", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("select", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("img", undefined, $focusedElement);
+        setupBasicClientsideControlEvents("area", undefined, $focusedElement);
+        setupInputClientsideControlEvents("textarea", $focusedElement);
+        setupInputClientsideControlEvents("input", $focusedElement);
+        setupInputClientsideControlEvents("select", $focusedElement);
 
         $document.on('search', "input[type=search]", function () { //ignore event, will be handled by submit-button.. or by other kind of action which calls submit()
             logElementEx(LogType.OnSearch, getElementPath(this), $(this).val());
@@ -1181,6 +1204,10 @@
             InstanceTime: convertToJsonDate(new Date())
         };
         logElements.push(request);
+
+        //console.log(logType);
+        //console.log(request);
+
         //console.log('added logelement with logtype : ' + logType);
 
         compactLogElementList();
@@ -1623,13 +1650,13 @@
         $parent.append($child);
 
         var f = $parent.find(selector);
-        if (f.size() > 0)
+        if (f.length > 0)
             return f[0] == $child[0];
         return false;
     }
 
     function getJQueryEvents($elm, $curr, eventType /*e.g. 'focus'*/, level) {
-        if ($curr.size() == 0) //e.g. $(document).parent() / Top Level
+        if ($curr.length == 0) //e.g. $(document).parent() / Top Level
             return [];
 
         level = typeof (level) == "undefined" ? 0 : level;
@@ -1905,7 +1932,7 @@
 
         var $elm = getJQueryElementByElementPath(logElement.Element);
 
-        if ($elm == null || $elm.size() == 0) {
+        if ($elm == null || $elm.length == 0) {
             alert("Error occured while playing event for " + logElement.Element + ", could not be located");
             return;
         }
@@ -2202,7 +2229,7 @@
             case LogType.OnScroll:
                 //Perform.scroll
                 eventName = 'scroll';
-                //alert('scroll top=' + elementValue.top);
+                //alert('scroll top=' + elementValue.top);                
                 $elm[0].scrollTo(elementValue.left, elementValue.top);
                 break;
             case LogType.OnSubmit:
